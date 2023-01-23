@@ -1,0 +1,13 @@
+version: '1.0'
+services:
+  api:
+    build:
+      context: ./server
+      target: development
+    container_name: server_dev
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 5000:5000
+    command: npm run dev
