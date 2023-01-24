@@ -1,17 +1,13 @@
-version: '1.1'
-name: gigashop_dev
+version: '1.0'
+name: gigashop_prod
 services:
   server:
     build:
       context: ./server
-      target: development
+      target: production
     container_name: server
-    volumes:
-      - ./server:/usr/src/app
-      - /usr/src/app/node_modules
     ports:
       - 5000:5000
-    command: npm run dev
     environment:
       DB_NAME: gigashop
       DB_USER: gigashop

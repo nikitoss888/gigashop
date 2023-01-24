@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api', routes);
 
-const start = async () => {
+(async () => {
     try {
         await sequelize_db.authenticate();
         await sequelize_db.sync();
@@ -23,5 +23,4 @@ const start = async () => {
     } catch (error) {
         console.log(error);
     }
-}
-start();
+})();

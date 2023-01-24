@@ -14,7 +14,4 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --only=prod
 COPY --from=development /usr/src/app/dist ./dist
-ARG PORT
-ENV PORT=${PORT}
-EXPOSE $PORT
-CMD ['node', 'dist/index.js']
+CMD ["node", "dist/index.js"]
