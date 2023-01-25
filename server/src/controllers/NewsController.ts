@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 
-class GenresController {
+class UserController {
     // async create(req: Request, res: Response) {
     //
     // }
@@ -14,8 +14,8 @@ class GenresController {
     // }
 
     async test(req: Request, res: Response) {
-        res.json({message: `Genres route works!`, request: {body: req.body, query: req.query}})
+        res.json({message: `News route works!`, request: {body: req.body, query: req.query}})
     }
 }
 
-export default new GenresController();
+export default new UserController();

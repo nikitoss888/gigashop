@@ -55,18 +55,5 @@ function initModels() {
     PublicationComment.belongsTo(User, {foreignKey: 'userId'});
 }
 
-module.exports = {
-    initModels,
-    User,
-    Item,
-    ItemRate,
-    ItemImage,
-    ItemBought,
-    ItemFavorite,
-    ItemCharacteristics,
-    Company,
-    Genre,
-    Publication,
-    PublicationTag,
-    PublicationComment,
-};
+export default initModels;
+export {User, Item, ItemRate, ItemImage, ItemBought, ItemFavorite, ItemCharacteristics, Company, Genre, Publication, PublicationTag, PublicationComment};

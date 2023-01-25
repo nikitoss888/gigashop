@@ -1,11 +1,11 @@
-import {Request, Response} from "express";
 import {Router} from 'express';
+import UserController from "../controllers/UserController";
+
 const userRouter = Router()
 
-userRouter.post('/register');
-userRouter.post('/login');
-userRouter.get('/auth', (req: Request, res: Response): void => {
-    res.json({message: 'Auth route works!'})
-});
+userRouter.get(['', '/test'], UserController.test);
+// userRouter.post('/register', UserController.register);
+// userRouter.post('/login', UserController.login);
+userRouter.get('/auth', UserController.check);
 
 module.exports = userRouter
