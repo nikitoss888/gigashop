@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
+import Controller from '../Controller';
 
-class ItemsController {
+class ItemsController extends Controller {
     // async create(req: Request, res: Response) {
     //
     // }

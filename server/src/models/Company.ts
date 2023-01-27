@@ -7,6 +7,6 @@ module.exports = sequelize_db.define('company', {
     description: {type: DataTypes.TEXT},
     director: {type: DataTypes.STRING, allowNull: false},
     image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default_company.jpg'},
-    founded: {type: DataTypes.DATE, allowNull: false},
+    foundedYear: {type: DataTypes.DATE, allowNull: false},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
