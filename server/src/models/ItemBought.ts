@@ -1,6 +1,24 @@
 const sequelize = require('../db');
 import {DataTypes} from 'sequelize';
 
-module.exports = sequelize.define('item_bought', {
+const ItemBought = sequelize.define('item_bought', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 });
+const getItemsBought = async (userId?: number, itemId?: number) => {
+    let where: {userId?: {}, itemId?: {}} = {};
+
+    if (userId) {
+        where.userId = userId;
+    }
+    if (itemId) {
+        where.itemId = itemId;
+    }
+
+    return ItemBought.findAll({where});
+}
+
+export default ItemBought;
+export {
+    ItemBought,
+    getItemsBought
+}

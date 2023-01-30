@@ -1,17 +1,17 @@
-const User = require('./User');
-const Item = require('./Item');
-const ItemRate = require('./ItemRate');
-const ItemImage = require('./ItemImage');
-const ItemGenre = require('./ItemGenre');
-const ItemBought = require('./ItemBought');
-const ItemFavorite = require('./ItemFavorite');
-const ItemDevelopers = require('./ItemDevelopers');
-const ItemCharacteristics = require('./ItemCharacteristics');
-const Company = require('./Company');
-const Genre = require('./Genre');
-const Publication = require('./Publication');
-const PublicationTag = require('./PublicationTag');
-const PublicationComment = require('./PublicationComment');
+import User from "./User";
+import Item from "./Item";
+import ItemRate from "./ItemRate";
+import ItemImage from "./ItemImage";
+import ItemGenre from "./ItemGenre";
+import ItemBought from "./ItemBought";
+import ItemFavorite from "./ItemFavorite";
+import ItemDevelopers from "./ItemDevelopers";
+import ItemCharacteristics from "./ItemCharacteristics";
+import Company from "./Company";
+import Genre from "./Genre";
+import Publication from "./Publication";
+import PublicationTag from "./PublicationTag";
+import PublicationComment from "./PublicationComment";
 
 function initModels() {
     User.hasMany(ItemBought, {foreignKey: 'userId'});
