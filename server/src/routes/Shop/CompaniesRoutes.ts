@@ -2,7 +2,7 @@ import {Router} from 'express';
 import CompaniesController from "../../controllers/Shop/CompaniesController";
 import multerFactory from "../multerFactory";
 
-const upload = multerFactory('companies');
+const upload = multerFactory('companies', ['image/jpeg', 'image/png', 'image/jpg']);
 
 const companiesRouter = Router()
 

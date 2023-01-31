@@ -6,5 +6,5 @@ import ApiError from "../errors/ApiError";
 module.exports = function (err: Error, req: Request, res: Response, next: NextFunction): Response {
     let status = (err as ApiError).status || 500;
     let errors = (err as ApiError).errors || [];
-    return res.status(status).json({ message: err.message, errors: errors, request: {body: req.body, query: req.query} });
+    return res.status(status).json({ name: err.name, message: err.message, errors: errors, request: {body: req.body, query: req.query} });
 }

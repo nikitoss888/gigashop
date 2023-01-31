@@ -1,8 +1,7 @@
 import type {NextFunction, Request, Response} from 'express';
-import { Company } from "../../models";
 import ApiError from "../../errors/ApiError";
 import Controller from "../Controller";
-import {getCompanies} from "../../models/Company";
+import {Company, getCompanies} from "../../models/Company";
 
 class CompaniesController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {

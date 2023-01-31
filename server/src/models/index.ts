@@ -1,12 +1,10 @@
 import User from "./User";
 import Item from "./Item";
 import ItemRate from "./ItemRate";
-import ItemImage from "./ItemImage";
 import ItemGenre from "./ItemGenre";
 import ItemBought from "./ItemBought";
 import ItemFavorite from "./ItemFavorite";
 import ItemDevelopers from "./ItemDevelopers";
-import ItemCharacteristics from "./ItemCharacteristics";
 import Company from "./Company";
 import Genre from "./Genre";
 import Publication from "./Publication";
@@ -31,12 +29,6 @@ function initModels() {
 
     Item.hasMany(ItemRate, {foreignKey: 'itemId'});
     ItemRate.belongsTo(Item, {foreignKey: 'itemId'});
-
-    Item.hasMany(ItemImage, {foreignKey: 'itemId', onDelete: 'CASCADE'});
-    ItemImage.belongsTo(Item, {foreignKey: 'itemId'});
-
-    Item.hasMany(ItemCharacteristics, {foreignKey: 'itemId', onDelete: 'CASCADE'});
-    ItemCharacteristics.belongsTo(Item, {foreignKey: 'itemId'});
 
     Company.hasMany(Item, {foreignKey: 'company_publisherId'});
     Item.belongsTo(Company, {foreignKey: 'company_publisherId'});
@@ -65,12 +57,10 @@ export {
     User,
     Item,
     ItemRate,
-    ItemImage,
     ItemGenre,
     ItemBought,
     ItemFavorite,
     ItemDevelopers,
-    ItemCharacteristics,
     Company,
     Genre,
     Publication,

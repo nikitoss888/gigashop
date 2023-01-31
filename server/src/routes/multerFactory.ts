@@ -6,7 +6,7 @@ import ApiError from "../errors/ApiError";
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 
-export default (dir: string) => {
+export default (dir: string, mimetypes: string[]) => {
     const storage = multer.diskStorage({
         // @ts-ignore
         // req is not used
@@ -30,7 +30,7 @@ export default (dir: string) => {
     // @ts-ignore
     // req is not used
     const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
-        if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
+        if (mimetypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
             cb(ApiError.badRequest('Неправильний формат зображення'));
