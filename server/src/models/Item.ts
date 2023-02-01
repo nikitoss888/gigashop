@@ -18,11 +18,15 @@ const Item = sequelize.define('item', {
     characteristics: {type: DataTypes.JSON, allowNull: false, defaultValue: {}},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
-const getItems = async (name?: string, description?: string, price?: number, discount?: boolean,
-                        discountFrom?: Date, discountTo?: Date, discountSize?: number, publisherId?: number,
-                        priceFrom?: number, priceTo?: number, hide = false,
-                        descending = false, limit = 10, offset = 0) => {
-    let where: {name?: {}, description?: {}, price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
+const getItems = async (name?: string, description?: string,
+                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
+                        price?: number, priceFrom?: number, priceTo?: number,
+                        discount?: boolean, discountFrom?: Date, discountTo?: Date, discountSize?: number,
+                        publisherId?: number,
+                        descending = false, limit = 10, page = 0, sortBy = 'id',
+                        hide = false) => {
+    let where: {name?: {}, description?: {}, releaseDate?: {}, releaseDateFrom?: {}, releaseDateTo?: {},
+        price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
         discountSize?: {}, publisherId?: {}, hide?: boolean} = {};
     if (name) {
         where.name = {
@@ -33,6 +37,21 @@ const getItems = async (name?: string, description?: string, price?: number, dis
         where.description = {
             [Op.iLike]: `%${description}%`
         }
+    }
+    if (releaseDate) {
+        where.releaseDate = releaseDate;
+    }
+    if (releaseDateFrom) {
+        where.releaseDate = {
+            ...where.releaseDate,
+            [Op.gte]: releaseDateFrom
+        };
+    }
+    if (releaseDateTo) {
+        where.releaseDate = {
+            ...where.releaseDate,
+            [Op.lte]: releaseDateTo
+        };
     }
     if (price) {
         where.price = {
@@ -72,7 +91,7 @@ const getItems = async (name?: string, description?: string, price?: number, dis
     }
     where.hide = hide;
 
-    return Item.findAll({where, limit, offset, order: [['id', descending ? 'DESC' : 'ASC']]});
+    return Item.findAll({where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
 }
 const getItemsByGenre = async (genreId: number) => {
     return Item.findAll({

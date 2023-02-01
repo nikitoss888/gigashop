@@ -11,7 +11,9 @@ const Company = sequelize_db.define('company', {
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
 const getCompanies = async (name?: string, description?: string,
-                            director?: string, founded?: string, hide = false) => {
+                            director?: string, founded?: Date,
+                            descending = false, limit = 10, page = 0, sortBy = 'id',
+                            hide = false) => {
     let where: {name?: {}, description?: {}, director?: {}, founded?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -33,7 +35,7 @@ const getCompanies = async (name?: string, description?: string,
     }
     where.hide = hide;
 
-    return Company.findAll({where});
+    return Company.findAll({where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
 };
 
 export default Company;

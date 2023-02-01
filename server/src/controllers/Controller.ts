@@ -11,7 +11,7 @@ export default class Controller {
             return e;
         }
         else if (e instanceof Error) {
-            return ApiError.internal(e.name);
+            return ApiError.internal(e.message);
         }
         else return ApiError.internal("Помилка обробки запиту");
     }
@@ -19,6 +19,8 @@ export default class Controller {
     // Delete file from static folder
     protected deleteFile(dir: string, file: string) {
         const fs = require('fs');
+
+        if(!fs.existsSync(path.resolve('../static', dir, file))) return;
 
         fs.unlink(path.resolve('../static', dir, file), (err: unknown) => {
             if (err) {
@@ -41,5 +43,22 @@ export default class Controller {
         if (boolean === undefined) return undefined;
         if (!boolean) return false;
         return [true, 'true', 'True', 'on', 'yes', '1', 1].includes(boolean);
+    }
+
+    protected parsePagination(desc: string | boolean | number | undefined,
+                              descending: string | boolean | number | undefined,
+                              limit: string | undefined, page: string | undefined):
+        { descending: boolean | undefined, limit: number | undefined, page: number | undefined }
+    {
+        let controller = new Controller();
+
+        let descendingParsed: boolean | undefined;
+        if (desc) descendingParsed = controller.parseBoolean(desc as boolean | string | number | undefined);
+        else descendingParsed = controller.parseBoolean(descending as boolean | string | number | undefined);
+
+        let limitParsed = controller.parseNumber(limit as string | undefined);
+        let pageParsed = Math.max(controller.parseNumber(page as string | undefined) || 1, 1);
+
+        return { descending: descendingParsed, limit: limitParsed, page: pageParsed - 1 };
     }
 }

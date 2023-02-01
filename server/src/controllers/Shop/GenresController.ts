@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import Controller from '../Controller';
 import {Genre} from "../../models";
 import {getGenres} from "../../models/Genre";
+import ApiError from "../../errors/ApiError";
 
 class GenresController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
@@ -15,6 +16,10 @@ class GenresController extends Controller {
                     return next(super.exceptionHandle(e));
                 }
             );
+
+            if (!genre) {
+                return next(ApiError.badRequest('Жанр не створено'));
+            }
             res.json(genre);
         }
         catch (e: unknown) {
@@ -23,13 +28,19 @@ class GenresController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        let { name, description } = req.query;
+        let { name, description, desc, descending, limit, page, sortBy } = req.query;
 
-        const genres = await getGenres(name as string | undefined, description as string | undefined)
+        let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
+            super.parsePagination(desc as string | undefined, descending as string | undefined,
+                limit as string | undefined, page as string | undefined);
+
+        const genres = await getGenres(name as string | undefined, description as string | undefined,
+            descendingParsed, limitParsed, pageParsed, sortBy as string | undefined)
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             }
         );
+        if (!genres) return next(ApiError.badRequest('Жанрів не знайдено'));
         res.json(genres);
     }
 
@@ -42,6 +53,7 @@ class GenresController extends Controller {
                 return next(super.exceptionHandle(e));
             }
         );
+        if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
         res.json(genre);
     }
 
@@ -49,12 +61,15 @@ class GenresController extends Controller {
         const { id } = req.params;
         const { name, description, hide } = req.body;
 
+        let hideParsed = super.parseBoolean(hide as string | undefined);
+
         const genre = await Genre
-            .update({name, description, hide}, {where: {id}})
+            .update({name, description, hide: hideParsed}, {where: {id}})
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             }
         );
+        if (!genre) return next(ApiError.badRequest('Жанр не оновлено'));
         res.json(genre);
     }
 
@@ -67,6 +82,7 @@ class GenresController extends Controller {
                 return next(super.exceptionHandle(e));
             }
         );
+        if (!genre) return next(ApiError.badRequest('Жанр не видалено'));
         res.json(genre);
     }
 

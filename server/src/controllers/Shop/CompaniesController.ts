@@ -21,6 +21,12 @@ class CompaniesController extends Controller {
                     super.deleteFile('companies', imageName);
                     return next(super.exceptionHandle(e));
                 });
+
+            if (!company) {
+                super.deleteFile('companies', imageName);
+                return next(ApiError.badRequest('Компанію не створено'));
+            }
+
             res.json(company);
         }
         catch (e: unknown) {
@@ -29,13 +35,24 @@ class CompaniesController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        let { name, description, director, founded } = req.query;
+        let { name, description, director, founded, desc, descending, limit, page, sortBy } = req.query;
 
-        const companies = await getCompanies(name as string | undefined, description as string | undefined,
-            director as string | undefined, founded as string | undefined)
+        let foundedParsed = super.parseDate(founded as string | undefined);
+
+        let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
+            super.parsePagination(desc as string | undefined, descending as string | undefined,
+                limit as string | undefined, page as string | undefined);
+
+        const companies = await getCompanies(
+            name as string | undefined, description as string | undefined,
+            director as string | undefined, foundedParsed,
+            descendingParsed, limitParsed, pageParsed, sortBy as string | undefined
+        )
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
         });
+
+        if (!companies) return next(ApiError.badRequest('Компаній не знайдено'));
         res.json(companies);
     }
 
@@ -47,6 +64,8 @@ class CompaniesController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
+
+        if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
         res.json(company);
     }
 
@@ -59,15 +78,21 @@ class CompaniesController extends Controller {
             return next(ApiError.badRequest('Зображення не завантажено'));
         }
 
+        let hideParsed = super.parseBoolean(hide as string | undefined);
+
         let imageName = image.filename;
         let oldImageName = (await Company.findByPk(id)).image;
 
         const company = await Company
-            .update({ name, description, director, image: imageName, founded, hide }, {where: {id}})
+            .update({ name, description, director, image: imageName, founded, hide: hideParsed }, {where: {id}})
             .catch((e: unknown) => {
                 super.deleteFile('companies', imageName);
                 return next(super.exceptionHandle(e));
             });
+        if (!company) {
+            super.deleteFile('companies', imageName);
+            return next(ApiError.badRequest('Компанію не оновлено'));
+        }
         super.deleteFile('companies', oldImageName);
         res.json(company);
     }
@@ -86,6 +111,8 @@ class CompaniesController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
+
+        if (!deletedCompany) return next(ApiError.badRequest('Компанію не видалено'));
         super.deleteFile('companies', company.image);
         res.json(deletedCompany);
     }

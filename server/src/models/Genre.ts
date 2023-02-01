@@ -7,7 +7,9 @@ const Genre = sequelize.define('genre', {
     description: {type: DataTypes.TEXT, allowNull: true},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
-const getGenres = async (name?: string, description?: string, hide = false) => {
+const getGenres = async (name?: string, description?: string,
+                         descending = false, limit = 10, page = 0, sortBy = 'id',
+                         hide = false) => {
     let where: {name?: {}, description?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -21,7 +23,7 @@ const getGenres = async (name?: string, description?: string, hide = false) => {
     }
     where.hide = hide;
 
-    return Genre.findAll({where});
+    return Genre.findAll({where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
 }
 
 export default Genre;
