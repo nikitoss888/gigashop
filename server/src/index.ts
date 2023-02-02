@@ -8,11 +8,20 @@ initModels();
 const PORT = process.env.PORT || 5000;
 const cors = require('cors');
 const routes = require('./routes');
-const errorHandler = require('./middleware/ErrorHandlingMiddleware');
+import errorHandler from "./middleware/ErrorHandlingMiddleware";
+
+declare global {
+    namespace Express {
+        interface Request {
+            user?: any;
+        }
+    }
+}
 
 const app: Express = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('../static'));
 app.use('/api', routes);
 
 // last middleware!

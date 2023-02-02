@@ -6,10 +6,12 @@ import ApiError from "../errors/ApiError";
 class NewsController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { title, content } = req.body;
+            const { title, content, hide } = req.body;
+
+            const hideParsed = super.parseBoolean(hide);
 
             const company = await Publication
-                .create({ title, content })
+                .create({ title, content, hide: hideParsed })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
@@ -79,19 +81,47 @@ class NewsController extends Controller {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { title, content, hide, violation, violation_reason } = req.body;
+            const { title, content, hide } = req.body;
 
             let hideParsed = super.parseBoolean(hide as string | undefined);
-            let violationParsed = super.parseBoolean(violation as string | undefined);
 
-            const publication = await Publication.
-                update({ title, content, hide: hideParsed, violation: violationParsed, violation_reason },
+            let publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+
+            if (publication.violation) hideParsed = true;
+
+            const result = await Publication.
+                update({ title, content, hide: hideParsed },
                     { where: { id } })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json(publication);
+            res.json(result);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async violating(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { violation, violation_reason } = req.body;
+
+            let hide: true | undefined;
+            let violationParsed = super.parseBoolean(violation as string | undefined);
+            if (violationParsed) hide = true;
+
+            const result = await Publication.
+                update({ hide, violation: violationParsed, violation_reason: violationParsed ? violation_reason : null },
+                    { where: { id } })
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
+
+            res.json(result);
         }
         catch (e: unknown) {
             console.log(e);
@@ -103,13 +133,17 @@ class NewsController extends Controller {
         try {
             const { id } = req.params;
 
-            const publication = await Publication.
+            const publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+            if (publication.userId !== req.user.id) return next(ApiError.forbidden('Немає доступу'));
+
+            const result = await Publication.
                 destroy({ where: { id } })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json(publication);
+            res.json(result);
         }
         catch (e: unknown) {
             console.log(e);

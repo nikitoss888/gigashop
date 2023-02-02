@@ -3,6 +3,8 @@ import ApiError from "../../errors/ApiError";
 import Controller from "../Controller";
 import {Company, getCompanies} from "../../models/Company";
 
+const COMPANIES_DIR = 'companies';
+
 class CompaniesController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
@@ -18,12 +20,12 @@ class CompaniesController extends Controller {
             const company = await Company
                 .create({name, description, director, image: imageName, founded})
                 .catch((e: unknown) => {
-                    super.deleteFile('companies', imageName);
+                    super.deleteFile(COMPANIES_DIR, imageName);
                     return next(super.exceptionHandle(e));
                 });
 
             if (!company) {
-                super.deleteFile('companies', imageName);
+                super.deleteFile(COMPANIES_DIR, imageName);
                 return next(ApiError.badRequest('Компанію не створено'));
             }
 
@@ -74,26 +76,25 @@ class CompaniesController extends Controller {
         const { name, description, director, founded, hide } = req.body;
         const image = req.file;
 
-        if (!image) {
-            return next(ApiError.badRequest('Зображення не завантажено'));
+        let imageName: string | undefined;
+        let oldImageName = (await Company.findByPk(id)).image;
+        if (image) {
+            imageName = image.filename;
         }
 
         let hideParsed = super.parseBoolean(hide as string | undefined);
 
-        let imageName = image.filename;
-        let oldImageName = (await Company.findByPk(id)).image;
-
         const company = await Company
             .update({ name, description, director, image: imageName, founded, hide: hideParsed }, {where: {id}})
             .catch((e: unknown) => {
-                super.deleteFile('companies', imageName);
+                if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
                 return next(super.exceptionHandle(e));
             });
         if (!company) {
-            super.deleteFile('companies', imageName);
+            if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
             return next(ApiError.badRequest('Компанію не оновлено'));
         }
-        super.deleteFile('companies', oldImageName);
+        if (imageName) super.deleteFile(COMPANIES_DIR, oldImageName);
         res.json(company);
     }
 
@@ -113,7 +114,7 @@ class CompaniesController extends Controller {
             });
 
         if (!deletedCompany) return next(ApiError.badRequest('Компанію не видалено'));
-        super.deleteFile('companies', company.image);
+        super.deleteFile(COMPANIES_DIR, company.image);
         res.json(deletedCompany);
     }
 
