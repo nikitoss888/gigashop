@@ -9,6 +9,7 @@ const Item = sequelize.define('item', {
     description: {type: DataTypes.TEXT},
     releaseDate: {type: DataTypes.DATE, allowNull: false},
     price: {type: DataTypes.FLOAT, allowNull: false},
+    amount: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, validate: {min: 0}},
     discount: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
     discountFrom: {type: DataTypes.DATE, allowNull: true},
     discountTo: {type: DataTypes.DATE, allowNull: true},
@@ -21,12 +22,14 @@ const Item = sequelize.define('item', {
 const getItems = async (name?: string, description?: string,
                         releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
                         price?: number, priceFrom?: number, priceTo?: number,
+                        amount?: number, amountFrom?: number, amountTo?: number,
                         discount?: boolean, discountFrom?: Date, discountTo?: Date, discountSize?: number,
                         publisherId?: number,
                         descending = false, limit = 10, page = 0, sortBy = 'id',
                         hide = false) => {
     let where: {name?: {}, description?: {}, releaseDate?: {}, releaseDateFrom?: {}, releaseDateTo?: {},
         price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
+        amount?: {}, amountFrom?: {}, amountTo?: {},
         discountSize?: {}, publisherId?: {}, hide?: boolean} = {};
     if (name) {
         where.name = {
@@ -68,6 +71,21 @@ const getItems = async (name?: string, description?: string,
         where.price = {
             ...where.price,
             [Op.lte]: priceTo
+        };
+    }
+    if (amount) {
+        where.amount = amount;
+    }
+    if (amountFrom) {
+        where.amount = {
+            ...where.amount,
+            [Op.gte]: amountFrom
+        };
+    }
+    if (amountTo) {
+        where.amount = {
+            ...where.amount,
+            [Op.lte]: amountTo
         };
     }
     if (discount !== undefined) {

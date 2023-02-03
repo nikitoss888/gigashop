@@ -5,10 +5,11 @@ import ApiError from "../../errors/ApiError";
 
 class ItemsController extends Controller {
     static parseData({price, priceFrom, priceTo,
-                   releaseDate, releaseDateFrom, releaseDateTo,
-                   discount, discountFrom, discountTo, discountSize,
-                   publisherId,
-                   desc, descending, limit, page, hide}: any): any {
+                         releaseDate, releaseDateFrom, releaseDateTo,
+                         amount, amountFrom, amountTo,
+                         discount, discountFrom, discountTo, discountSize,
+                         publisherId,
+                         desc, descending, limit, page, hide}: any): any {
         let Controller = new ItemsController();
 
         let priceParsed = Controller.parseNumber(price as string | undefined);
@@ -18,6 +19,10 @@ class ItemsController extends Controller {
         let releaseDateParsed = Controller.parseDate(releaseDate as string | undefined);
         let releaseDateFromParsed = Controller.parseDate(releaseDateFrom as string | undefined);
         let releaseDateToParsed = Controller.parseDate(releaseDateTo as string | undefined);
+
+        let amountParsed = Controller.parseNumber(amount as string | undefined);
+        let amountFromParsed = Controller.parseNumber(amountFrom as string | undefined);
+        let amountToParsed = Controller.parseNumber(amountTo as string | undefined);
 
         let discountParsed = Controller.parseBoolean(discount as boolean | string | number | undefined);
         let discountFromParsed: Date | undefined = undefined;
@@ -45,6 +50,9 @@ class ItemsController extends Controller {
             releaseDate: releaseDateParsed,
             releaseDateFrom: releaseDateFromParsed,
             releaseDateTo: releaseDateToParsed,
+            amount: amountParsed,
+            amountFrom: amountFromParsed,
+            amountTo: amountToParsed,
             discount: discountParsed,
             discountFrom: discountFromParsed,
             discountTo: discountToParsed,
@@ -124,6 +132,7 @@ class ItemsController extends Controller {
         const { name, description, sortBy } = req.query;
         const { releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
+            amount, amountFrom, amountTo,
             discount, discountFrom, discountTo, discountSize,
             publisherId,
             descending, limit, page } = ItemsController.parseData(req.query);
@@ -132,6 +141,7 @@ class ItemsController extends Controller {
             name as string | undefined, description as string | undefined,
             releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
+            amount, amountFrom, amountTo,
             discount, discountFrom, discountTo, discountSize,
             publisherId,
             descending, limit, page, sortBy as string | undefined
