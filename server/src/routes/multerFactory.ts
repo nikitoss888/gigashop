@@ -12,7 +12,7 @@ export default (dir: string, mimetypes: string[]) => {
         // req is not used
         destination: function (req: Request, file: Express.Multer.File, cb: DestinationCallback) {
             const fs = require('fs');
-            const destination = `/static/${dir}`;
+            const destination = `./static/${dir}`;
             if (!fs.existsSync(destination)) {
                 fs.mkdirSync(destination, {recursive: true});
             }

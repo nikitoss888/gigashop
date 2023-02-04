@@ -8,7 +8,6 @@ class GenresController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
             const {name, description} = req.body;
-            console.log(req.body);
 
             const genre = await Genre
                 .create({name, description})
