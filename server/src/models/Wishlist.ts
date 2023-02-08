@@ -1,10 +1,10 @@
 const sequelize = require('../db');
 import {DataTypes} from 'sequelize';
 
-const ItemFavorite = sequelize.define('item_favorite', {
+const Wishlist = sequelize.define('item_favorite', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 });
-const getItemsFavorite = async (userId?: number, itemId?: number) => {
+const getWishlists = async (userId?: number, itemId?: number) => {
     let where: {userId?: {}, itemId?: {}} = {};
 
     if (userId) {
@@ -14,11 +14,11 @@ const getItemsFavorite = async (userId?: number, itemId?: number) => {
         where.itemId = itemId;
     }
 
-    return ItemFavorite.findAll({where});
+    return Wishlist.findAll({where});
 }
 
-export default ItemFavorite;
+export default Wishlist;
 export {
-    ItemFavorite,
-    getItemsFavorite
+    Wishlist,
+    getWishlists
 }

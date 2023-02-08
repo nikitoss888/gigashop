@@ -21,12 +21,39 @@ class UserController extends Controller {
         }, process.env.SECRET_KEY as string, {expiresIn: '24h'});
     }
 
-    static async validateData(email: string, login: string, firstName: string,
+    private static async _createUser(email: string, login: string, firstName: string, lastName: string,
+                                     password: string, imageName: string | undefined, role: string) {
+        const [emailValid, loginValid, firstNameValid, lastNameValid, hashPasswordValid] =
+            await UserController._validateData(email, login, firstName, lastName, password) as string[];
+
+        const user = await User.create({
+            email: emailValid, login: loginValid, firstName: firstNameValid,
+            lastName: lastNameValid, password: hashPasswordValid, image: imageName, role
+        });
+
+        return UserController.generateJwt(user.id, user.login, user.email, user.role);
+    }
+
+    private static async _validateData(email: string, login: string, firstName: string,
                               lastName: string, password: string): Promise<string[]> {
         if (!email || !login || !firstName || !lastName || !password) {
             throw ApiError.badRequest('Не всі поля заповнені');
         }
 
+        await UserController._checkCandidate(email, login).catch((e: ApiError) => {
+            throw e
+        });
+
+        await UserController._checkPassword(password).catch((e: ApiError) => {
+            throw e
+        });
+
+        const hashPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+        return [ email, login, firstName, lastName, hashPassword ];
+    }
+
+    private static async _checkCandidate(email = '', login = '') {
         const candidate = await User.findOne({ where: {
                 [Op.or]: [
                     { email },
@@ -36,31 +63,18 @@ class UserController extends Controller {
         if (candidate) {
             throw ApiError.badRequest('Користувач з таким email або логіном вже існує');
         }
+    }
 
+    private static async _checkPassword(password: string) {
         if (password.length < 6) {
             throw ApiError.badRequest('Пароль має бути не менше 6 символів');
         }
+
         let passwordRegex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/);
         if (!passwordRegex.test(password)) {
             throw ApiError.badRequest('Пароль повинен містити хоча б одну велику літеру, ' +
                 'одну малу літеру та одну цифру');
         }
-        const hashPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-        return [ email, login, firstName, lastName, hashPassword ];
-    }
-
-    private static async _createUser(email: string, login: string, firstName: string, lastName: string,
-                             password: string, imageName: string | undefined, role: string) {
-        const [emailValid, loginValid, firstNameValid, lastNameValid, hashPasswordValid] =
-            await UserController.validateData(email, login, firstName, lastName, password) as string[];
-
-        const user = await User.create({
-            email: emailValid, login: loginValid, firstName: firstNameValid,
-            lastName: lastNameValid, password: hashPasswordValid, image: imageName, role
-        });
-
-        return UserController.generateJwt(user.id, user.login, user.email, user.role);
     }
 
     async register(req: Request, res: Response, next: NextFunction) {
@@ -150,6 +164,83 @@ class UserController extends Controller {
     async check(req: Request, res: Response) {
         const token = UserController.generateJwt(req.user.id, req.user.login, req.user.email, req.user.role);
         return res.json({token});
+    }
+
+    async update(req: Request, res: Response, next: NextFunction) {
+        const image = req.file;
+        let imageName: string | undefined = undefined;
+        if (image) {
+            imageName = image.filename;
+        }
+        try {
+            const user = await User.findByPk(req.user.id);
+            if (!user) {
+                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                return next(ApiError.internal('Користувача не знайдено'));
+            }
+
+            const { email, login, firstName, lastName, password, newPassword } = req.body;
+
+            if (!password) {
+                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                return next(ApiError.badRequest('Введіть пароль'));
+            }
+
+            await UserController._checkCandidate(email, login).catch((e: unknown ) => {
+                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                return next(super.exceptionHandle(e));
+            });
+
+            if (newPassword) {
+                await UserController._checkPassword(newPassword).catch((e: unknown) => {
+                    if (imageName) super.deleteFile(USERS_DIR, imageName);
+                    return next(super.exceptionHandle(e));
+                });
+            }
+
+            let comparePassword = bcrypt.compareSync(password, user.password);
+            if (!comparePassword) {
+                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                return next(ApiError.badRequest('Невірний пароль'));
+            }
+
+            if (email) user.email = email;
+            if (login) user.login = login;
+            if (firstName) user.firstName = firstName;
+            if (lastName) user.lastName = lastName;
+            if (newPassword) user.password = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+            if (imageName) user.image = imageName;
+
+            let oldImageName: string | undefined = user.image;
+
+            await user.save().catch((e: unknown) => {
+                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                return next(super.exceptionHandle(e));
+            });
+
+            if (imageName && oldImageName) super.deleteFile(USERS_DIR, oldImageName);
+
+            const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
+
+            return res.json({user, token});
+        }
+        catch (e: unknown) {
+            if (imageName) super.deleteFile(USERS_DIR, imageName);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async profile(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = await User.findByPk(req.user.id, {include: {all: true}});
+            if (!user) {
+                return next(ApiError.internal('Користувача не знайдено'));
+            }
+            return res.json(user);
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
     }
 
     async test(req: Request, res: Response) {

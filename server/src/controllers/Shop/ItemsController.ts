@@ -2,6 +2,8 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
 import Item, {getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
+import User from "../../models/User";
+import Wishlist from "../../models/Wishlist";
 
 class ItemsController extends Controller {
     static parseData({price, priceFrom, priceTo,
@@ -275,6 +277,31 @@ class ItemsController extends Controller {
         }
         catch (e: unknown) {
             console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async addToWishList(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {id} = req.query;
+            const request_user = req.user;
+
+            const item = await Item.findByPk(id);
+            if (!item) return next(ApiError.notFound('Товар не знайдено'));
+
+            const user = await User.findByPk(request_user.Id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const wishList = await Wishlist.findAll({where: {userId: user.id}});
+
+            if (wishList && wishList.any((item: typeof Wishlist) => item.itemId === id))
+                return next(ApiError.badRequest('Товар вже є в списку бажань'));
+
+            const wishListItem = await Wishlist.create({userId: user.id, itemId: id});
+
+            return res.json({message: 'Товар успішно додано до списку бажань', wishListItem});
+        }
+        catch (e: unknown) {
             return next(super.exceptionHandle(e));
         }
     }

@@ -3,7 +3,7 @@ import Item from "./Item";
 import ItemRate from "./ItemRate";
 import ItemGenre from "./ItemGenre";
 import ItemBought from "./ItemBought";
-import ItemFavorite from "./ItemFavorite";
+import Wishlist from "./Wishlist";
 import ItemDevelopers from "./ItemDevelopers";
 import Company from "./Company";
 import Genre from "./Genre";
@@ -15,8 +15,8 @@ function initModels() {
     User.hasMany(ItemBought, {foreignKey: 'userId'});
     ItemBought.belongsTo(User, {foreignKey: 'userId'});
 
-    User.hasMany(ItemFavorite, {foreignKey: 'userId'});
-    ItemFavorite.belongsTo(User, {foreignKey: 'userId'});
+    User.hasMany(Wishlist, {foreignKey: 'userId'});
+    Wishlist.belongsTo(User, {foreignKey: 'userId'});
 
     User.hasMany(ItemRate, {foreignKey: 'userId'});
     ItemRate.belongsTo(User, {foreignKey: 'userId'});
@@ -24,8 +24,8 @@ function initModels() {
     Item.hasMany(ItemBought, {foreignKey: 'itemId'});
     ItemBought.belongsTo(Item, {foreignKey: 'itemId'});
 
-    Item.hasMany(ItemFavorite, {foreignKey: 'itemId'});
-    ItemFavorite.belongsTo(Item, {foreignKey: 'itemId'});
+    Item.hasMany(Wishlist, {foreignKey: 'itemId'});
+    Wishlist.belongsTo(Item, {foreignKey: 'itemId'});
 
     Item.hasMany(ItemRate, {foreignKey: 'itemId'});
     ItemRate.belongsTo(Item, {foreignKey: 'itemId'});
@@ -59,7 +59,7 @@ export {
     ItemRate,
     ItemGenre,
     ItemBought,
-    ItemFavorite,
+    Wishlist,
     ItemDevelopers,
     Company,
     Genre,
