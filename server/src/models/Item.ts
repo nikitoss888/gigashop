@@ -2,6 +2,7 @@ import {Company, Genre} from "./index";
 
 const sequelize = require('../db');
 import {DataTypes, Op} from 'sequelize';
+import ApiError from "../errors/ApiError";
 
 const Item = sequelize.define('item', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
@@ -57,32 +58,38 @@ const getItems = async (name?: string, description?: string,
         };
     }
     if (price) {
+        if (price < 0) throw ApiError.badRequest('Ціна не може бути меншою за 0');
         where.price = {
             [Op.eq]: price
         }
     }
     if (priceFrom) {
+        if (priceFrom < 0) throw ApiError.badRequest('Ціна не може бути меншою за 0');
         where.price = {
             ...where.price,
             [Op.gte]: priceFrom
         };
     }
     if (priceTo) {
+        if (priceTo < 0) throw ApiError.badRequest('Ціна не може бути меншою за 0');
         where.price = {
             ...where.price,
             [Op.lte]: priceTo
         };
     }
     if (amount) {
+        if (amount < 0) throw ApiError.badRequest('Кількість не може бути меншою за 0');
         where.amount = amount;
     }
     if (amountFrom) {
+        if (amountFrom < 0) throw ApiError.badRequest('Кількість не може бути меншою за 0');
         where.amount = {
             ...where.amount,
             [Op.gte]: amountFrom
         };
     }
     if (amountTo) {
+        if (amountTo < 0) throw ApiError.badRequest('Кількість не може бути меншою за 0');
         where.amount = {
             ...where.amount,
             [Op.lte]: amountTo
@@ -102,6 +109,8 @@ const getItems = async (name?: string, description?: string,
         };
     }
     if (discountSize) {
+        if (discountSize < 0 || discountSize > 100)
+            throw ApiError.badRequest('Розмір знижки не може бути меншим за 0 або більшим за 100');
         where.discountSize = discountSize;
     }
     if (publisherId) {
