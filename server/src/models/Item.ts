@@ -1,8 +1,7 @@
 import {Company, Genre} from "./index";
-
-const sequelize = require('../db');
 import {DataTypes, Op} from 'sequelize';
 import ApiError from "../errors/ApiError";
+const sequelize = require('../db');
 
 const Item = sequelize.define('item', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
@@ -20,18 +19,19 @@ const Item = sequelize.define('item', {
     characteristics: {type: DataTypes.JSON, allowNull: false, defaultValue: {}},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
-const getItems = async (name?: string, description?: string,
-                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
-                        price?: number, priceFrom?: number, priceTo?: number,
-                        amount?: number, amountFrom?: number, amountTo?: number,
-                        discount?: boolean, discountFrom?: Date, discountTo?: Date, discountSize?: number,
-                        publisherId?: number,
-                        descending = false, limit = 10, page = 0, sortBy = 'id',
-                        hide = false) => {
+
+const _whereHandler = (name?: string, description?: string,
+                       releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
+                       price?: number, priceFrom?: number, priceTo?: number,
+                       amount?: number, amountFrom?: number, amountTo?: number,
+                       discount?: boolean, discountFrom?: Date, discountTo?: Date,
+                       discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
+                       hide = true) => {
     let where: {name?: {}, description?: {}, releaseDate?: {}, releaseDateFrom?: {}, releaseDateTo?: {},
         price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
         amount?: {}, amountFrom?: {}, amountTo?: {},
-        discountSize?: {}, publisherId?: {}, hide?: boolean} = {};
+        discountSize?: {}, company_publisherId?: {}, hide?: boolean} = {};
+
     if (name) {
         where.name = {
             [Op.iLike]: `%${name}%`
@@ -42,6 +42,7 @@ const getItems = async (name?: string, description?: string,
             [Op.iLike]: `%${description}%`
         }
     }
+
     if (releaseDate) {
         where.releaseDate = releaseDate;
     }
@@ -57,6 +58,7 @@ const getItems = async (name?: string, description?: string,
             [Op.lte]: releaseDateTo
         };
     }
+
     if (price) {
         if (price < 0) throw ApiError.badRequest('Ціна не може бути меншою за 0');
         where.price = {
@@ -77,6 +79,7 @@ const getItems = async (name?: string, description?: string,
             [Op.lte]: priceTo
         };
     }
+
     if (amount) {
         if (amount < 0) throw ApiError.badRequest('Кількість не може бути меншою за 0');
         where.amount = amount;
@@ -95,6 +98,7 @@ const getItems = async (name?: string, description?: string,
             [Op.lte]: amountTo
         };
     }
+
     if (discount !== undefined) {
         where.discount = discount
     }
@@ -108,27 +112,110 @@ const getItems = async (name?: string, description?: string,
             [Op.lte]: discountTo
         };
     }
+
     if (discountSize) {
         if (discountSize < 0 || discountSize > 100)
             throw ApiError.badRequest('Розмір знижки не може бути меншим за 0 або більшим за 100');
         where.discountSize = discountSize;
     }
-    if (publisherId) {
-        where.publisherId = publisherId;
+    if (discountSizeFrom) {
+        if (discountSizeFrom < 0 || discountSizeFrom > 100)
+            throw ApiError.badRequest('Розмір знижки не може бути меншим за 0 або більшим за 100');
+        where.discountSize = {
+            ...where.discountSize,
+            [Op.gte]: discountSizeFrom
+        };
     }
+    if (discountSizeTo) {
+        if (discountSizeTo < 0 || discountSizeTo > 100)
+            throw ApiError.badRequest('Розмір знижки не може бути меншим за 0 або більшим за 100');
+        where.discountSize = {
+            ...where.discountSize,
+            [Op.lte]: discountSizeTo
+        };
+    }
+
     where.hide = hide;
 
-    return Item.findAll({where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
+    return where;
 }
-const getItemsByGenre = async (genreId: number) => {
+
+const getItems = async (name?: string, description?: string,
+                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
+                        price?: number, priceFrom?: number, priceTo?: number,
+                        amount?: number, amountFrom?: number, amountTo?: number,
+                        discount?: boolean, discountFrom?: Date, discountTo?: Date,
+                        discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
+                        descending = false, limit = 10, page = 0, sortBy = 'id',
+                        includePublisher = false, publisherId?: number,
+                        includeGenres = false, genresId?: number[],
+                        includeDevelopers = false, developersId?: number[],
+                        hide = false) => {
+    let where = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
+        price, priceFrom, priceTo, amount, amountFrom, amountTo,
+        discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, hide)
+
+    let include: {}[] = [];
+
+    if (includePublisher) {
+        include.push({
+            model: Company,
+            as: 'Publisher',
+            attributes: ['id', 'name'],
+            where: publisherId ? {id: publisherId} : {},
+            required: !!publisherId
+        });
+    }
+    if (includeGenres) {
+        let innerWhere = {};
+        let required = false;
+        if (genresId) {
+            innerWhere = {
+                id: {[Op.in]: genresId}
+            }
+            required = genresId.length > 0
+        }
+
+        include.push({
+            model: Genre,
+            as: 'Genres',
+            attributes: ['id', 'name'],
+            where: innerWhere,
+            required
+        });
+    }
+    if (includeDevelopers) {
+        let innerWhere = {};
+        let required = false;
+        if (developersId) {
+            innerWhere = {
+                id: {[Op.in]: developersId}
+            }
+            required = developersId.length > 0
+        }
+
+        include.push({
+            model: Company,
+            as: 'Developers',
+            attributes: ['id', 'name'],
+            where: innerWhere,
+            required
+        });
+    }
+
+    return Item.findAll({
+        where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
+    });
+}
+const getItemsByGenres = async (genreIds: number[]) => {
     return Item.findAll({
         include: [{
             model: Genre,
-            where: {id: genreId}
+            where: {id: genreIds}
         }]
     });
 }
-const getItemsByCompany = async (companyId: number) => {
+const getItemsByPublisher = async (companyId: number) => {
     return Item.findAll({
         include: [{
             model: Company,
@@ -165,8 +252,8 @@ export default Item;
 export {
     Item,
     getItems,
-    getItemsByGenre,
-    getItemsByCompany,
+    getItemsByGenres,
+    getItemsByPublisher,
     getItemsByGenreAndCompany,
     getDiscountItems
 }

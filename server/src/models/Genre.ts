@@ -1,3 +1,5 @@
+import Item from "./Item";
+
 const sequelize = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
@@ -9,7 +11,7 @@ const Genre = sequelize.define('genre', {
 });
 const getGenres = async (name?: string, description?: string,
                          descending = false, limit = 10, page = 0, sortBy = 'id',
-                         hide = false) => {
+                         includeItems = false, hide = false) => {
     let where: {name?: {}, description?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -23,7 +25,18 @@ const getGenres = async (name?: string, description?: string,
     }
     where.hide = hide;
 
-    return Genre.findAll({where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
+    let include: any[] = [];
+    if (includeItems) {
+        include.push({
+            model: Item,
+            as: 'Items',
+            attributes: ['id', 'name', 'description', 'image', 'releaseDate', 'hide']
+        });
+    }
+
+    return Genre.findAll({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
+    });
 }
 
 export default Genre;

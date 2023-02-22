@@ -2,78 +2,90 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
 import Item, {getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
-import User from "../../models/User";
-import Wishlist from "../../models/Wishlist";
+import { User, Wishlist, Company, ItemDevelopers, Genre } from "../../models";
 
 class ItemsController extends Controller {
-    static parseData({price, priceFrom, priceTo,
+    static parseData({name, description, sortBy,
+                         price, priceFrom, priceTo,
                          releaseDate, releaseDateFrom, releaseDateTo,
                          amount, amountFrom, amountTo,
-                         discount, discountFrom, discountTo, discountSize,
-                         publisherId,
-                         desc, descending, limit, page, hide}: any): any {
+                         discount, discountFrom, discountTo,
+                         discountSize, discountSizeFrom, discountSizeTo,
+                         desc, descending, limit, page, hide,
+                         includePublisher, publisherId,
+                         includeGenres, genresIds,
+                         includeDevelopers, developersIds }: any): any {
         let Controller = new ItemsController();
 
-        let priceParsed = Controller.parseNumber(price as string | undefined);
-        let priceFromParsed = Controller.parseNumber(priceFrom as string | undefined);
-        let priceToParsed = Controller.parseNumber(priceTo as string | undefined);
+        price = Controller.parseNumber(price as string | undefined);
+        priceFrom = Controller.parseNumber(priceFrom as string | undefined);
+        priceTo = Controller.parseNumber(priceTo as string | undefined);
 
-        let releaseDateParsed = Controller.parseDate(releaseDate as string | undefined);
-        let releaseDateFromParsed = Controller.parseDate(releaseDateFrom as string | undefined);
-        let releaseDateToParsed = Controller.parseDate(releaseDateTo as string | undefined);
+        releaseDate = Controller.parseDate(releaseDate as string | undefined);
+        releaseDateFrom = Controller.parseDate(releaseDateFrom as string | undefined);
+        releaseDateTo = Controller.parseDate(releaseDateTo as string | undefined);
 
-        let amountParsed = Controller.parseNumber(amount as string | undefined);
-        let amountFromParsed = Controller.parseNumber(amountFrom as string | undefined);
-        let amountToParsed = Controller.parseNumber(amountTo as string | undefined);
+        amount = Controller.parseNumber(amount as string | undefined);
+        amountFrom = Controller.parseNumber(amountFrom as string | undefined);
+        amountTo = Controller.parseNumber(amountTo as string | undefined);
 
-        let discountParsed = Controller.parseBoolean(discount as boolean | string | number | undefined);
-        let discountFromParsed: Date | undefined = undefined;
-        let discountToParsed: Date | undefined = undefined;
-        let discountSizeParsed: number | undefined = undefined;
-
-        if (discountParsed) {
-            discountFromParsed = Controller.parseDate(discountFrom as string | undefined);
-            discountToParsed = Controller.parseDate(discountTo as string | undefined);
-            discountSizeParsed = Controller.parseNumber(discountSize as string | undefined);
+        discount = Controller.parseBoolean(discount as boolean | string | number | undefined);
+        if (discount) {
+            discountFrom = Controller.parseDate(discountFrom as string | undefined);
+            discountTo = Controller.parseDate(discountTo as string | undefined);
+            discountSize = Controller.parseNumber(discountSize as string | undefined);
+            discountSizeFrom = Controller.parseNumber(discountSizeFrom as string | undefined);
+            discountSizeTo = Controller.parseNumber(discountSizeTo as string | undefined);
         }
-
-        let publisherIdParsed = Controller.parseNumber(publisherId as string | undefined);
 
         let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
             Controller.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        let hideParsed = Controller.parseBoolean(hide as boolean | string | number | undefined);
+        hide = Controller.parseBoolean(hide as boolean | string | number | undefined);
+
+        if (includePublisher) {
+            includePublisher = Controller.parseBoolean(includePublisher as boolean | string | number | undefined);
+        }
+        if (includeGenres) {
+            includeGenres = Controller.parseBoolean(includeGenres as boolean | string | number | undefined);
+        }
+        if (includeDevelopers) {
+            includeDevelopers = Controller.parseBoolean(includeDevelopers as boolean | string | number | undefined);
+        }
+
+        publisherId = Controller.parseNumber(publisherId as string | undefined);
+        if (genresIds) {
+            if (typeof genresIds === 'string') genresIds = JSON.parse(genresIds);
+            if (genresIds instanceof Array) genresIds = genresIds.map((id: string) => Controller.parseNumber(id));
+        }
+
+        if (developersIds) {
+            if (typeof developersIds === 'string') developersIds = JSON.parse(developersIds);
+            if (developersIds instanceof Array) developersIds = developersIds.map((id: string) => Controller.parseNumber(id));
+        }
 
         return {
-            price: priceParsed,
-            priceFrom: priceFromParsed,
-            priceTo: priceToParsed,
-            releaseDate: releaseDateParsed,
-            releaseDateFrom: releaseDateFromParsed,
-            releaseDateTo: releaseDateToParsed,
-            amount: amountParsed,
-            amountFrom: amountFromParsed,
-            amountTo: amountToParsed,
-            discount: discountParsed,
-            discountFrom: discountFromParsed,
-            discountTo: discountToParsed,
-            discountSize: discountSizeParsed,
-            publisherId: publisherIdParsed,
-            descending: descendingParsed,
-            limit: limitParsed,
-            page: pageParsed,
-            hide: hideParsed
+            name, description, sortBy,
+            price, priceFrom, priceTo,
+            releaseDate, releaseDateFrom, releaseDateTo,
+            amount, amountFrom, amountTo,
+            discount, discountFrom, discountTo,
+            discountSize, discountSizeFrom, discountSizeTo,
+            descending: descendingParsed, limit: limitParsed, page: pageParsed,
+            hide,
+            includePublisher, publisherId,
+            includeGenres, genresIds,
+            includeDevelopers, developersIds
         }
     }
 
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, description, company_publisherId, characteristics } = req.body;
+            const { name, description, company_publisherId, characteristics, developersIds } = req.body;
             const files = req.files;
 
-            let {releaseDate, discount: isDiscount, discountFrom: discountFromParsed, discountTo: discountToParsed,
-                discountSize: discountSizeParsed, price} = ItemsController.parseData(req.body);
+            let {releaseDate, discount, discountFrom, discountTo, discountSize, price, amount} = ItemsController.parseData(req.body);
 
             let characteristicsParsed: Object | undefined = undefined;
             if (characteristics) {
@@ -98,8 +110,8 @@ class ItemsController extends Controller {
             else imagesNames = images.map((file: Express.Multer.File) => file.filename);
 
             const item = await Item
-                .create({name, description, price, releaseDate, discount: isDiscount, discountFrom: discountFromParsed,
-                    discountTo: discountToParsed, discountSize: discountSizeParsed, mainImage: imageName,
+                .create({name, description, price, releaseDate, amount,
+                    discount, discountFrom, discountTo, discountSize, mainImage: imageName,
                     images: imagesNames, characteristics: characteristicsParsed, company_publisherId})
                 .catch((e: unknown) => {
                     console.log(e);
@@ -122,6 +134,22 @@ class ItemsController extends Controller {
                 return next(ApiError.badRequest('Не вдалося створити товар'));
             }
 
+            if (!developersIds) {
+                return res.json(item);
+            }
+
+            let developersIdsParsed: number[] | undefined = JSON.parse(developersIds);
+            if (!developersIdsParsed) {
+                return res.json(item);
+            }
+
+            for (const developerId of developersIdsParsed) {
+                let res = await ItemDevelopers.create({itemId: item.id, companyId: developerId});
+                if (!res) {
+                    return next(ApiError.badRequest('Не вдалося створити запис про розробника'));
+                }
+            }
+
             return res.json(item);
         }
         catch (e: unknown) {
@@ -135,18 +163,24 @@ class ItemsController extends Controller {
         const { releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
             amount, amountFrom, amountTo,
-            discount, discountFrom, discountTo, discountSize,
-            publisherId,
-            descending, limit, page } = ItemsController.parseData(req.query);
+            discount, discountFrom, discountTo,
+            discountSize, discountSizeFrom, discountSizeTo,
+            descending, limit, page,
+            includePublisher, publisherId,
+            includeGenres, genresIds,
+            includeDevelopers, developersIds } = ItemsController.parseData(req.query);
 
         const items = await getItems(
             name as string | undefined, description as string | undefined,
             releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
             amount, amountFrom, amountTo,
-            discount, discountFrom, discountTo, discountSize,
-            publisherId,
-            descending, limit, page, sortBy as string | undefined
+            discount, discountFrom, discountTo,
+            discountSize, discountSizeFrom, discountSizeTo,
+            descending, limit, page, sortBy as string | undefined,
+            includePublisher, publisherId,
+            includeGenres, genresIds,
+            includeDevelopers, developersIds
         )
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
@@ -159,7 +193,22 @@ class ItemsController extends Controller {
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
 
-        const item = await Item.findByPk(id)
+        const item = await Item.findByPk(id, {
+            include: [
+                {
+                    model: Company,
+                    as: 'Publisher',
+                    attributes: ['id', 'name'],
+                },
+                {
+                    model: Genre,
+                    as: 'Genres',
+                },
+                {
+                    model: Company,
+                    as: 'Developers',
+                }
+            ]})
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });

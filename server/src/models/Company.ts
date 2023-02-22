@@ -1,3 +1,5 @@
+import Item from "./Item";
+
 const sequelize_db = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
@@ -13,7 +15,8 @@ const Company = sequelize_db.define('company', {
 const getCompanies = async (name?: string, description?: string,
                             director?: string, founded?: Date,
                             descending = false, limit = 10, page = 0, sortBy = 'id',
-                            hide = false) => {
+                            includeItemsDeveloped = false,
+                            includeItemsPublished = false, hide = false) => {
     let where: {name?: {}, description?: {}, director?: {}, founded?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -35,7 +38,24 @@ const getCompanies = async (name?: string, description?: string,
     }
     where.hide = hide;
 
-    return Company.findAll({where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']]});
+    let include: any[] = [];
+    if (includeItemsDeveloped) {
+        include.push({
+            model: Item,
+            as: 'ItemsDeveloped'
+        });
+    }
+    if (includeItemsPublished) {
+        include.push({
+            model: Item,
+            as: 'ItemsPublished',
+            attributes: ['id', 'name', 'description', 'image', 'releaseDate', 'hide']
+        });
+    }
+
+    return Company.findAll({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
+    });
 };
 
 export default Company;
