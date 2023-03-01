@@ -139,38 +139,46 @@ const _whereHandler = (name?: string, description?: string,
 
     return where;
 }
-
-const getItems = async (name?: string, description?: string,
-                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
-                        price?: number, priceFrom?: number, priceTo?: number,
-                        amount?: number, amountFrom?: number, amountTo?: number,
-                        discount?: boolean, discountFrom?: Date, discountTo?: Date,
-                        discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
-                        descending = false, limit = 10, page = 0, sortBy = 'id',
-                        includePublisher = false, publisherId?: number,
-                        includeGenres = false, genresId?: number[],
-                        includeDevelopers = false, developersId?: number[],
-                        hide = false) => {
-    let where = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
-        price, priceFrom, priceTo, amount, amountFrom, amountTo,
-        discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, hide)
-
+let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean, includeHidden: boolean,
+                       publisherId?: number, genresId?: number[], developersId?: number[]) => {
     let include: {}[] = [];
 
     if (includePublisher) {
+        let where = {};
+
+        if (!includeHidden) {
+            where = {
+                hide: false
+            }
+        }
+        if (publisherId) {
+            where = {
+                ...where,
+                id: publisherId
+            }
+        }
+
         include.push({
             model: Company,
             as: 'Publisher',
             attributes: ['id', 'name'],
-            where: publisherId ? {id: publisherId} : {},
+            where,
             required: !!publisherId
         });
     }
+
     if (includeGenres) {
-        let innerWhere = {};
+        let where = {};
         let required = false;
+
+        if (!includeHidden) {
+            where = {
+                hide: false
+            }
+        }
         if (genresId) {
-            innerWhere = {
+            where = {
+                ...where,
                 id: {[Op.in]: genresId}
             }
             required = genresId.length > 0
@@ -180,15 +188,21 @@ const getItems = async (name?: string, description?: string,
             model: Genre,
             as: 'Genres',
             attributes: ['id', 'name'],
-            where: innerWhere,
+            where,
             required
         });
     }
     if (includeDevelopers) {
-        let innerWhere = {};
+        let where = {};
         let required = false;
+
+        if (!includeHidden) {
+            where = {
+                hide: false
+            }
+        }
         if (developersId) {
-            innerWhere = {
+            where = {
                 id: {[Op.in]: developersId}
             }
             required = developersId.length > 0
@@ -198,10 +212,30 @@ const getItems = async (name?: string, description?: string,
             model: Company,
             as: 'Developers',
             attributes: ['id', 'name'],
-            where: innerWhere,
+            where: where,
             required
         });
     }
+
+    return include;
+}
+
+const getItems = async (name?: string, description?: string,
+                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
+                        price?: number, priceFrom?: number, priceTo?: number,
+                        amount?: number, amountFrom?: number, amountTo?: number,
+                        discount?: boolean, discountFrom?: Date, discountTo?: Date,
+                        discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
+                        descending = false, limit = 10, page = 0, sortBy = 'id',
+                        includePublisher = true, publisherId?: number,
+                        includeGenres = true, genresId?: number[],
+                        includeDevelopers = true, developersId?: number[],
+                        hide = false) => {
+    const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
+        price, priceFrom, priceTo, amount, amountFrom, amountTo,
+        discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, hide)
+    const include = _includeHandler(includePublisher, includeGenres, includeDevelopers, hide,
+        publisherId, genresId, developersId);
 
     return Item.findAll({
         where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include

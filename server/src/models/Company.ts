@@ -12,11 +12,9 @@ const Company = sequelize_db.define('company', {
     founded: {type: DataTypes.DATEONLY, allowNull: false},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });
-const getCompanies = async (name?: string, description?: string,
-                            director?: string, founded?: Date,
-                            descending = false, limit = 10, page = 0, sortBy = 'id',
-                            includeItemsDeveloped = false,
-                            includeItemsPublished = false, hide = false) => {
+
+const _whereHandler = (name?: string, description?: string,
+                            director?: string, founded?: Date, hide?: boolean) => {
     let where: {name?: {}, description?: {}, director?: {}, founded?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -38,28 +36,52 @@ const getCompanies = async (name?: string, description?: string,
     }
     where.hide = hide;
 
+    return where;
+}
+const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: boolean, includeHidden: boolean) => {
     let include: any[] = [];
+
     if (includeItemsDeveloped) {
         include.push({
             model: Item,
-            as: 'ItemsDeveloped'
+            as: 'ItemsDeveloped',
+            attributes: ['id', 'name', 'image', 'releaseDate'],
+            where: includeHidden ? {} : {hide: false}
         });
     }
     if (includeItemsPublished) {
         include.push({
             model: Item,
             as: 'ItemsPublished',
-            attributes: ['id', 'name', 'description', 'image', 'releaseDate', 'hide']
+            attributes: ['id', 'name', 'image', 'releaseDate'],
+            where: includeHidden ? {} : {hide: false}
         });
     }
+
+    return include;
+}
+const getCompanies = async (name?: string, description?: string,
+                            director?: string, founded?: Date,
+                            descending = false, limit = 10, page = 0, sortBy = 'id',
+                            includeItemsDeveloped = false,
+                            includeItemsPublished = false, hide = false) => {
+    const where   = _whereHandler(name, description, director, founded, hide);
+    const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, hide);
 
     return Company.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 };
 
+const getCompany = async (id: number, includeItemsDeveloped = true,
+                            includeItemsPublished = true, includeHidden = false) => {
+    const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
+    return Company.findByPk(id, {include});
+}
+
 export default Company;
 export {
     Company,
-    getCompanies
+    getCompanies,
+    getCompany
 };

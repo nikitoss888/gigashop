@@ -2,6 +2,8 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from './Controller';
 import Publication, { getPublications } from "../models/Publication";
 import ApiError from "../errors/ApiError";
+import PublicationComment from "../models/PublicationComment";
+import {User} from "../models";
 
 class NewsController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
@@ -105,7 +107,7 @@ class NewsController extends Controller {
         }
     }
 
-    async violating(req: Request, res: Response, next: NextFunction) {
+    async violation(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
             const { violation, violation_reason } = req.body;
@@ -142,6 +144,129 @@ class NewsController extends Controller {
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
+
+            res.json(result);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async createComment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { content, rate } = req.body;
+
+            let rateParsed = super.parseNumber(rate as string | undefined) || 0;
+
+            const publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+
+            const result = await PublicationComment
+                .create({ content, rate: rateParsed, publicationId: id, userId: req.user.id })
+
+            res.json(result);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async getComments(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            const publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+
+            const comments = await PublicationComment.findAll({
+                where: { publicationId: id },
+                include: [
+                    {
+                        model: User,
+                        as: 'User',
+                        attributes: ['id', 'firstName', 'lastName', 'login', 'image'],
+                    },
+                ],
+            });
+
+            res.json(comments);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async updateComment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { content, rate } = req.body;
+
+            let rateParsed = super.parseNumber(rate as string | undefined) || 0;
+
+            const publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+
+            const comment = await PublicationComment.findByPk(id);
+            if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
+            if (comment.userId !== req.user.id) return next(ApiError.forbidden('Немає доступу'));
+
+            publication.content = content;
+            publication.rate = rateParsed;
+            const result = await publication.save();
+
+            res.json(result);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async deleteComment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            const publication = await Publication.findByPk(id);
+            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+
+            const comment = await PublicationComment.findByPk(id);
+            if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
+            if (comment.userId !== req.user.id) return next(ApiError.forbidden('Немає доступу'));
+
+            const result = await PublicationComment.
+                destroy({ where: { id } })
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
+
+            res.json(result);
+        }
+        catch (e: unknown) {
+            console.log(e);
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async commentViolation(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { violation, violation_reason } = req.body;
+
+            let hide: true | undefined;
+            let violationParsed = super.parseBoolean(violation as string | undefined);
+            if (violationParsed) hide = true;
+
+            const comment = await PublicationComment.findByPk(id);
+            if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
+
+            comment.violation = violationParsed;
+            comment.violation_reason = violationParsed ? violation_reason : null;
+            comment.hide = hide;
+            const result = await comment.save();
 
             res.json(result);
         }

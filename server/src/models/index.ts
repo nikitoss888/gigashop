@@ -4,6 +4,7 @@ import ItemRate from "./ItemRate";
 import ItemGenre from "./ItemGenre";
 import ItemBought from "./ItemBought";
 import Wishlist from "./Wishlist";
+import ItemCart from "./ItemCart";
 import ItemDevelopers from "./ItemDevelopers";
 import Company from "./Company";
 import Genre from "./Genre";
@@ -12,23 +13,17 @@ import PublicationTag from "./PublicationTag";
 import PublicationComment from "./PublicationComment";
 
 function initModels() {
-    User.hasMany(ItemBought, {foreignKey: 'userId', as: 'Bought'});
-    ItemBought.belongsTo(User, {foreignKey: 'userId', as: 'User'});
+    User.belongsToMany(Item, {through: ItemCart, foreignKey: 'userId', as: 'Cart'});
+    Item.belongsToMany(User, {through: ItemCart, foreignKey: 'itemId', as: 'Users'});
 
-    User.hasMany(Wishlist, {foreignKey: 'userId', as: 'Wishlists'});
-    Wishlist.belongsTo(User, {foreignKey: 'userId', as: 'User'});
+    User.belongsToMany(Item, {through: Wishlist, foreignKey: 'userId', as: 'Wishlist'});
+    Item.belongsToMany(User, {through: Wishlist, foreignKey: 'itemId', as: 'Users'});
 
-    User.hasMany(ItemRate, {foreignKey: 'userId', as: 'Rates'});
-    ItemRate.belongsTo(User, {foreignKey: 'userId', as: 'User'});
+    User.belongsToMany(Item, {through: ItemBought, foreignKey: 'userId', as: 'Bought'});
+    Item.belongsToMany(User, {through: ItemBought, foreignKey: 'itemId', as: 'Users'});
 
-    Item.hasMany(ItemBought, {foreignKey: 'itemId', as: 'Bought'});
-    ItemBought.belongsTo(Item, {foreignKey: 'itemId', as: 'Item'});
-
-    Item.hasMany(Wishlist, {foreignKey: 'itemId', as: 'Wishlists'});
-    Wishlist.belongsTo(Item, {foreignKey: 'itemId', as: 'Item'});
-
-    Item.hasMany(ItemRate, {foreignKey: 'itemId', as: 'Rates'});
-    ItemRate.belongsTo(Item, {foreignKey: 'itemId', as: 'Item'});
+    User.belongsToMany(Item, {through: ItemRate, foreignKey: 'userId', as: 'Rates'});
+    Item.belongsToMany(User, {through: ItemRate, foreignKey: 'itemId', as: 'Users'});
 
     Company.hasMany(Item, {foreignKey: 'company_publisherId', as: 'ItemsPublished'});
     Item.belongsTo(Company, {foreignKey: 'company_publisherId', as: 'Publisher'});
@@ -39,17 +34,14 @@ function initModels() {
     Genre.belongsToMany(Item, {through: ItemGenre, as: 'Items'});
     Item.belongsToMany(Genre, {through: ItemGenre, as: 'Genres'});
 
-    Publication.hasMany(PublicationComment, {foreignKey: 'publicationId', as: 'Comments'});
-    PublicationComment.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication'});
+    Publication.belongsToMany(User, {through: PublicationComment, foreignKey: 'publicationId', as: 'Comments'});
+    User.belongsToMany(Publication, {through: PublicationComment, foreignKey: 'userId', as: 'Publications'});
 
     Publication.hasMany(PublicationTag, {foreignKey: 'publicationId', as: 'Tags'});
     PublicationTag.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication'});
 
     User.hasMany(Publication, {foreignKey: 'userId', as: 'Publications'});
     Publication.belongsTo(User, {foreignKey: 'userId', as: 'User'});
-
-    User.hasMany(PublicationComment, {foreignKey: 'userId', as: 'Comments'});
-    PublicationComment.belongsTo(User, {foreignKey: 'userId', as: 'User'});
 }
 
 export default initModels;

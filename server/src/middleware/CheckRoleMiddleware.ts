@@ -27,5 +27,12 @@ const checkRoles = (roles: string[]) => {
         }
     }
 }
+const checkWorker = checkRoles(['ADMIN', 'MODERATOR']);
+const checkAdmin = checkRoles(['ADMIN']);
 
 export default checkRoles;
+export {
+    checkRoles,
+    checkWorker,
+    checkAdmin
+}
