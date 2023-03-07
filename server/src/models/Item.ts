@@ -1,4 +1,4 @@
-import {Company, Genre} from "./index";
+import {Company, Genre, User} from "./index";
 import {DataTypes, Op} from 'sequelize';
 import ApiError from "../errors/ApiError";
 const sequelize = require('../db');
@@ -139,7 +139,9 @@ const _whereHandler = (name?: string, description?: string,
 
     return where;
 }
-let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean, includeHidden: boolean,
+let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean,
+                       includeWishlisted: boolean, includeInCart: boolean, includeBought: boolean,
+                       includeRated: boolean, includeHidden: boolean,
                        publisherId?: number, genresId?: number[], developersId?: number[]) => {
     let include: {}[] = [];
 
@@ -192,6 +194,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             required
         });
     }
+
     if (includeDevelopers) {
         let where = {};
         let required = false;
@@ -217,6 +220,42 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         });
     }
 
+    if (includeWishlisted) {
+        include.push({
+            model: User,
+            as: 'WishlistedUsers',
+            attributes: ['id', 'email', 'login'],
+            required: false
+        });
+    }
+
+    if (includeInCart) {
+        include.push({
+            model: User,
+            as: 'CartedUsers',
+            attributes: ['id', 'email', 'login'],
+            required: false
+        });
+    }
+
+    if (includeBought) {
+        include.push({
+            model: User,
+            as: 'BoughtUsers',
+            attributes: ['id', 'email', 'login'],
+            required: false
+        });
+    }
+
+    if (includeRated) {
+        include.push({
+            model: User,
+            as: 'RatedUsers',
+            attributes: ['id', 'email', 'login'],
+            required: false
+        });
+    }
+
     return include;
 }
 
@@ -230,45 +269,33 @@ const getItems = async (name?: string, description?: string,
                         includePublisher = true, publisherId?: number,
                         includeGenres = true, genresId?: number[],
                         includeDevelopers = true, developersId?: number[],
-                        hide = false) => {
+                        includeWishlisted = false, includeInCart = false,
+                        includeBought = false, includeRated = false,
+                        includeHidden = false) => {
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
-        discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, hide)
-    const include = _includeHandler(includePublisher, includeGenres, includeDevelopers, hide,
+        discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
+    const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
+        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden,
         publisherId, genresId, developersId);
 
     return Item.findAll({
         where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 }
-const getItemsByGenres = async (genreIds: number[]) => {
-    return Item.findAll({
-        include: [{
-            model: Genre,
-            where: {id: genreIds}
-        }]
-    });
+
+const getItem = async (id: number, includePublisher = true, includeGenres = true,
+                        includeDevelopers = true, includeWishlisted = false, includeInCart = false,
+                        includeBought = false, includeRated = false, includeHidden = false) => {
+    const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
+        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden);
+
+    return Item.findByPk(id, {include});
 }
-const getItemsByPublisher = async (companyId: number) => {
-    return Item.findAll({
-        include: [{
-            model: Company,
-            where: {id: companyId}
-        }]
-    });
-}
-const getItemsByGenreAndCompany = async (genreId: number, companyId: number) => {
-    return Item.findAll({
-        include: [{
-            model: Genre,
-            where: {id: genreId}
-        }, {
-            model: Company,
-            where: {id: companyId}
-        }]
-    });
-}
-const getDiscountItems = async (date = Date.now()) => {
+
+
+const getDiscountItems = async () => {
+    const date = Date.now();
     return Item.findAll({
         where: {
             discount: true,
@@ -286,8 +313,6 @@ export default Item;
 export {
     Item,
     getItems,
-    getItemsByGenres,
-    getItemsByPublisher,
-    getItemsByGenreAndCompany,
+    getItem,
     getDiscountItems
 }

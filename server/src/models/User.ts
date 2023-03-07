@@ -9,7 +9,7 @@ const User = sequelize.define('user', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     login: {type: DataTypes.STRING, unique: true, allowNull: false, validate: {len: [4, 20], isAlphanumeric: true}},
     email: {type: DataTypes.STRING, unique: true, allowNull: false, validate: {isEmail: true}},
-    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default_avatar.png'},
+    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default.png'},
     firstName: {type: DataTypes.STRING, allowNull: false, validate: {len: [2, 20], is: /^[a-zA-Z\-']+|[а-яА-ЯЄєЇїІіҐґ\-']+$/}},
     lastName: {type: DataTypes.STRING, allowNull: false, validate: {len: [2, 20], is: /^[a-zA-Z\-']+|[а-яА-ЯЄєЇїІіҐґ\-']+$/}},
     role: {type: DataTypes.STRING, defaultValue: 'USER', allowNull: false},

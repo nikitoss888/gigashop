@@ -23,19 +23,20 @@ class UserController extends Controller {
 
     private static async _createUser(email: string, login: string, firstName: string, lastName: string,
                                      password: string, imageName: string | undefined, role: string) {
-        const [emailValid, loginValid, firstNameValid, lastNameValid, hashPasswordValid] =
-            await UserController._validateData(email, login, firstName, lastName, password) as string[];
+        const hashPasswordValid = await UserController._validateData(email, login, firstName, lastName, password)
+            .catch((e: ApiError) => {
+                throw e;
+            });
 
         const user = await User.create({
-            email: emailValid, login: loginValid, firstName: firstNameValid,
-            lastName: lastNameValid, password: hashPasswordValid, image: imageName, role
+            email, login, firstName, lastName, password: hashPasswordValid, image: imageName, role
         });
 
         return UserController.generateJwt(user.id, user.login, user.email, user.role);
     }
 
     private static async _validateData(email: string, login: string, firstName: string,
-                              lastName: string, password: string): Promise<string[]> {
+                              lastName: string, password: string): Promise<string> {
         if (!email || !login || !firstName || !lastName || !password) {
             throw ApiError.badRequest('Не всі поля заповнені');
         }
@@ -48,9 +49,7 @@ class UserController extends Controller {
             throw e
         });
 
-        const hashPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-        return [ email, login, firstName, lastName, hashPassword ];
+        return await bcrypt.hash(password, SALT_ROUNDS);
     }
 
     private static async _checkCandidate(email = '', login = '') {
@@ -94,12 +93,12 @@ class UserController extends Controller {
                     'адміністраторів та модераторів'));
             }
 
-            let token = await UserController._createUser(req.body.email, req.body.login,
-                req.body.firstName, req.body.lastName,
-                req.body.password, imageName, role)
+            const { email, login, firstName, lastName, password } = req.body;
+
+            let token = await UserController._createUser(email, login, firstName, lastName,
+                password, imageName, role)
                 .catch((e: ApiError | Error | unknown) => {
                     if (imageName) super.deleteFile(USERS_DIR, imageName);
-                    if (e instanceof ApiError) return next(e);
                     return next(super.exceptionHandle(e));
                 });
 

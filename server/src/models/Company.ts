@@ -8,7 +8,7 @@ const Company = sequelize_db.define('company', {
     name: {type: DataTypes.STRING, allowNull: false},
     description: {type: DataTypes.TEXT},
     director: {type: DataTypes.STRING, allowNull: false},
-    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default_company.jpg'},
+    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default.jpg'},
     founded: {type: DataTypes.DATEONLY, allowNull: false},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
 });

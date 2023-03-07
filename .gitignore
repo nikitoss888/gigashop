@@ -3,3 +3,6 @@
 /data/
 /static/
 /server/static/
+!/static/companies/default.jpg
+!/static/items/default.jpg
+!/static/users/default.jpg

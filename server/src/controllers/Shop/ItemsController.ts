@@ -1,8 +1,8 @@
 import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
-import Item, {getItems} from "../../models/Item";
+import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
-import { User, Wishlist, Company, ItemDevelopers, Genre } from "../../models";
+import { User, Wishlist, ItemDevelopers } from "../../models";
 
 class ItemsController extends Controller {
     static parseData({name, description, sortBy,
@@ -14,7 +14,9 @@ class ItemsController extends Controller {
                          desc, descending, limit, page, hide,
                          includePublisher, publisherId,
                          includeGenres, genresIds,
-                         includeDevelopers, developersIds }: any): any {
+                         includeDevelopers, developersIds,
+                         includeWishlisted, includeInCart,
+                         includeBought, includeRated}: any): any {
         let Controller = new ItemsController();
 
         price = Controller.parseNumber(price as string | undefined);
@@ -54,7 +56,21 @@ class ItemsController extends Controller {
             includeDevelopers = Controller.parseBoolean(includeDevelopers as boolean | string | number | undefined);
         }
 
+        if (includeWishlisted) {
+            includeWishlisted = Controller.parseBoolean(includeWishlisted as boolean | string | number | undefined);
+        }
+        if (includeInCart) {
+            includeInCart = Controller.parseBoolean(includeInCart as boolean | string | number | undefined);
+        }
+        if (includeBought) {
+            includeBought = Controller.parseBoolean(includeBought as boolean | string | number | undefined);
+        }
+        if (includeRated) {
+            includeRated = Controller.parseBoolean(includeRated as boolean | string | number | undefined);
+        }
+
         publisherId = Controller.parseNumber(publisherId as string | undefined);
+
         if (genresIds) {
             if (typeof genresIds === 'string') genresIds = JSON.parse(genresIds);
             if (genresIds instanceof Array) genresIds = genresIds.map((id: string) => Controller.parseNumber(id));
@@ -76,16 +92,19 @@ class ItemsController extends Controller {
             hide,
             includePublisher, publisherId,
             includeGenres, genresIds,
-            includeDevelopers, developersIds
+            includeDevelopers, developersIds,
+            includeWishlisted, includeInCart,
+            includeBought, includeRated
         }
     }
 
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, description, company_publisherId, characteristics, developersIds } = req.body;
+            const { characteristics } = req.body;
             const files = req.files;
 
-            let {releaseDate, discount, discountFrom, discountTo, discountSize, price, amount} = ItemsController.parseData(req.body);
+            let {name, description, releaseDate, publisherId: company_publisherId, developersIds,
+                discount, discountFrom, discountTo, discountSize, price, amount} = ItemsController.parseData(req.body);
 
             let characteristicsParsed: Object | undefined = undefined;
             if (characteristics) {
@@ -159,29 +178,7 @@ class ItemsController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        const { name, description, sortBy } = req.query;
-        const { releaseDate, releaseDateFrom, releaseDateTo,
-            price, priceFrom, priceTo,
-            amount, amountFrom, amountTo,
-            discount, discountFrom, discountTo,
-            discountSize, discountSizeFrom, discountSizeTo,
-            descending, limit, page,
-            includePublisher, publisherId,
-            includeGenres, genresIds,
-            includeDevelopers, developersIds } = ItemsController.parseData(req.query);
-
-        const items = await getItems(
-            name as string | undefined, description as string | undefined,
-            releaseDate, releaseDateFrom, releaseDateTo,
-            price, priceFrom, priceTo,
-            amount, amountFrom, amountTo,
-            discount, discountFrom, discountTo,
-            discountSize, discountSizeFrom, discountSizeTo,
-            descending, limit, page, sortBy as string | undefined,
-            includePublisher, publisherId,
-            includeGenres, genresIds,
-            includeDevelopers, developersIds
-        )
+        const items = await getItems(ItemsController.parseData({name: req.query}))
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -192,23 +189,10 @@ class ItemsController extends Controller {
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
+        const idParsed = (new ItemsController()).parseNumber(id as string | undefined);
+        if (!idParsed) return next(ApiError.badRequest('Неправильний id товару'));
 
-        const item = await Item.findByPk(id, {
-            include: [
-                {
-                    model: Company,
-                    as: 'Publisher',
-                    attributes: ['id', 'name'],
-                },
-                {
-                    model: Genre,
-                    as: 'Genres',
-                },
-                {
-                    model: Company,
-                    as: 'Developers',
-                }
-            ]})
+        const item = await getItem(idParsed, ItemsController.parseData(req.query))
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -222,7 +206,7 @@ class ItemsController extends Controller {
 
             const { name, description, characteristics, hide } = req.body;
             const { releaseDate, price, discount, discountFrom, discountTo,
-                discountSize, publisherId } = ItemsController.parseData(req.body);
+                discountSize, publisherId } = ItemsController.parseData({name: req.body});
             const files = req.files;
 
             let hideParsed: boolean | undefined = super.parseBoolean(hide);

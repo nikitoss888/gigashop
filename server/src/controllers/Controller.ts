@@ -20,9 +20,9 @@ export default class Controller {
     protected deleteFile(dir: string, file: string) {
         const fs = require('fs');
 
-        if(!fs.existsSync(path.resolve('../static', dir, file))) return;
+        if(!fs.existsSync(path.resolve('./static', dir, file))) return;
 
-        fs.unlink(path.resolve('../static', dir, file), (err: unknown) => {
+        fs.unlink(path.resolve('./static', dir, file), (err: unknown) => {
             if (err) {
                 console.error(err);
             }
