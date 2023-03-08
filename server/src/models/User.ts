@@ -16,6 +16,8 @@ const User = sequelize.define('user', {
     password: {type: DataTypes.STRING, allowNull: false},
     isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},
     isBanned: {type: DataTypes.BOOLEAN, defaultValue: false},
+}, {
+    paranoid: true,
 });
 
 const _whereHandler = (login?: string, email?: string, firstName?: string, lastName?: string,

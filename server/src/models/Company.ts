@@ -11,6 +11,8 @@ const Company = sequelize_db.define('company', {
     image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default.jpg'},
     founded: {type: DataTypes.DATEONLY, allowNull: false},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+}, {
+    paranoid: true,
 });
 
 const _whereHandler = (name?: string, description?: string,

@@ -9,6 +9,7 @@ const itemsRouter = Router()
 
 itemsRouter.post('/', checkWorker, upload.fields([{name: 'image', maxCount: 1}, {name: 'images'}]),
     ItemsController.create);
+itemsRouter.post('/addDeveloper/:id', upload.single('image'), checkWorker, ItemsController.addDevelopers);
 itemsRouter.patch('/:id', checkWorker, upload.fields([{name: 'image', maxCount: 1}, {name: 'images'}]),
     ItemsController.update);
 itemsRouter.delete('/:id', checkWorker, ItemsController.delete);

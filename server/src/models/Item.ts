@@ -1,4 +1,4 @@
-import {Company, Genre, User} from "./index";
+import {Company, Genre, User, Tag} from "./index";
 import {DataTypes, Op} from 'sequelize';
 import ApiError from "../errors/ApiError";
 const sequelize = require('../db');
@@ -18,6 +18,8 @@ const Item = sequelize.define('item', {
     images: {type: DataTypes.ARRAY(DataTypes.STRING), allowNull: false, defaultValue: []},
     characteristics: {type: DataTypes.JSON, allowNull: false, defaultValue: {}},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+}, {
+    paranoid: true,
 });
 
 const _whereHandler = (name?: string, description?: string,
@@ -141,7 +143,7 @@ const _whereHandler = (name?: string, description?: string,
 }
 let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean,
                        includeWishlisted: boolean, includeInCart: boolean, includeBought: boolean,
-                       includeRated: boolean, includeHidden: boolean,
+                       includeRated: boolean, includeTags: boolean, includeHidden: boolean,
                        publisherId?: number, genresId?: number[], developersId?: number[]) => {
     let include: {}[] = [];
 
@@ -256,6 +258,17 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         });
     }
 
+    if (includeTags) {
+        include.push({
+            model: Tag,
+            as: 'Tags',
+            through: { attributes: [] },
+            attributes: ['id', 'name', [sequelize.fn('COUNT', sequelize.col('Tags.id')), 'count']],
+            group: ['Tags.id'],
+            required: false
+        });
+    }
+
     return include;
 }
 
@@ -271,12 +284,12 @@ const getItems = async (name?: string, description?: string,
                         includeDevelopers = true, developersId?: number[],
                         includeWishlisted = false, includeInCart = false,
                         includeBought = false, includeRated = false,
-                        includeHidden = false) => {
+                        includeTags = true, includeHidden = false) => {
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
         discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden,
+        includeWishlisted, includeInCart, includeBought, includeRated, includeTags, includeHidden,
         publisherId, genresId, developersId);
 
     return Item.findAll({
@@ -285,10 +298,11 @@ const getItems = async (name?: string, description?: string,
 }
 
 const getItem = async (id: number, includePublisher = true, includeGenres = true,
-                        includeDevelopers = true, includeWishlisted = false, includeInCart = false,
-                        includeBought = false, includeRated = false, includeHidden = false) => {
+                       includeDevelopers = true, includeWishlisted = false, includeInCart = false,
+                       includeBought = false, includeRated = false,
+                       includeTags = true, includeHidden = false) => {
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden);
+        includeWishlisted, includeInCart, includeBought, includeRated, includeTags, includeHidden);
 
     return Item.findByPk(id, {include});
 }

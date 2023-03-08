@@ -1,8 +1,6 @@
-import PublicationTag from "./PublicationTag";
-
 const sequelize = require('../db');
 import {DataTypes, Op} from 'sequelize';
-import {PublicationComment} from "./PublicationComment";
+import {PublicationComment, Tag} from "./index";
 import User from "./User";
 
 const Publication = sequelize.define('publication', {
@@ -12,6 +10,8 @@ const Publication = sequelize.define('publication', {
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
     violation: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
     violation_reason: {type: DataTypes.TEXT, allowNull: true},
+}, {
+    paranoid: true,
 });
 
 const _whereHandler = async (title?: string, content?: string,
@@ -60,9 +60,11 @@ const _includeHandler = async (includeTags: boolean, includeComments: boolean, i
 
     if (includeTags) {
         include.push({
-            model: PublicationTag,
+            model: Tag,
             as: 'Tags',
-            attributes: ['id', 'name']
+            through: {attributes: []},
+            attributes: ['id', 'name', [sequelize.fn('COUNT', sequelize.col('Tags.id')), 'count']],
+            group: ['Tags.id'],
         });
     }
 

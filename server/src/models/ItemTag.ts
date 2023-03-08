@@ -1,11 +1,11 @@
 const sequelize = require('../db');
 import {DataTypes} from 'sequelize';
 
-const PublicationTag = sequelize.define('publication_tag', {
+const ItemTag = sequelize.define('item_tag', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 });
 
-export default PublicationTag;
+export default ItemTag;
 export {
-    PublicationTag
+    ItemTag
 }

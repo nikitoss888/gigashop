@@ -3,6 +3,8 @@ import {DataTypes} from 'sequelize';
 
 const ItemBought = sequelize.define('item_bought', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+}, {
+    paranoid: true,
 });
 const getItemsBought = async (userId?: number, itemId?: number) => {
     let where: {userId?: {}, itemId?: {}} = {};

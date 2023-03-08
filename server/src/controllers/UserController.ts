@@ -3,7 +3,7 @@ import ApiError from "../errors/ApiError";
 import Controller from "./Controller";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../models/User";
+import User, {getUser} from "../models/User";
 import {Op} from "sequelize";
 
 const USER = 'USER'
@@ -78,7 +78,7 @@ class UserController extends Controller {
 
     async register(req: Request, res: Response, next: NextFunction) {
         const image = req.file;
-        let imageName: string | undefined = undefined;
+        let imageName: string | undefined;
         if (image) {
             imageName = image.filename;
         }
@@ -102,7 +102,7 @@ class UserController extends Controller {
                     return next(super.exceptionHandle(e));
                 });
 
-            return res.json({token});
+            return res.json({message: "Реєстрацію пройдено успішно", token});
         }
         catch (e: unknown) {
             if (imageName) super.deleteFile(USERS_DIR, imageName);
@@ -117,16 +117,17 @@ class UserController extends Controller {
             imageName = image.filename;
         }
         try {
-            const token = await UserController._createUser(req.body.email, req.body.login,
-                req.body.firstName, req.body.lastName,
-                req.body.password, imageName, MODERATOR)
+            const { email, login, firstName, lastName, password } = req.body;
+
+            const token = await UserController._createUser(email, login, firstName, lastName,
+                password, imageName, MODERATOR)
                 .catch((e: ApiError | Error | unknown) => {
                     if (imageName) super.deleteFile(USERS_DIR, imageName);
                     if (e instanceof ApiError) return next(e);
                     return next(super.exceptionHandle(e));
                 });
 
-            return res.json({token});
+            return res.json({message: "Успішно створено модератора", token});
         }
         catch (e: unknown) {
             if (imageName) super.deleteFile(USERS_DIR, imageName);
@@ -157,7 +158,7 @@ class UserController extends Controller {
         }
 
         const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
-        return res.json({token});
+        return res.json({message: "Авторизацію пройдено успішно", token});
     }
 
     async check(req: Request, res: Response) {
@@ -221,7 +222,7 @@ class UserController extends Controller {
 
             const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
 
-            return res.json({user, token});
+            return res.json({message: "Користувача відредаговано успішно", user, token});
         }
         catch (e: unknown) {
             if (imageName) super.deleteFile(USERS_DIR, imageName);
@@ -231,7 +232,22 @@ class UserController extends Controller {
 
     async profile(req: Request, res: Response, next: NextFunction) {
         try {
-            const user = await User.findByPk(req.user.id, {include: {all: true}});
+            let { includeBoughtItems, includeCart,
+                includeItemsRates,
+                includeWishlist, includePublications,
+                includePublicationComments } = req.query;
+            let Controller = new UserController();
+
+            let includeBoughtItemsParsed = Controller.parseBoolean(includeBoughtItems as string) || true;
+            let includeCartParsed = Controller.parseBoolean(includeCart as string) || true;
+            let includeItemsRatesParsed = Controller.parseBoolean(includeItemsRates as string) || true;
+            let includeWishlistParsed = Controller.parseBoolean(includeWishlist as string) || true;
+            let includePublicationsParsed = Controller.parseBoolean(includePublications as string) || true;
+            let includePublicationCommentsParsed = Controller.parseBoolean(includePublicationComments as string) || true;
+
+            const user = await getUser(req.user.id, includeBoughtItemsParsed, includeCartParsed,
+                includeItemsRatesParsed, includeWishlistParsed, includePublicationsParsed,
+                includePublicationCommentsParsed);
             if (!user) {
                 return next(ApiError.internal('Користувача не знайдено'));
             }

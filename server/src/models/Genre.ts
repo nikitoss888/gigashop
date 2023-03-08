@@ -8,6 +8,8 @@ const Genre = sequelize.define('genre', {
     name: {type: DataTypes.STRING, allowNull: false},
     description: {type: DataTypes.TEXT, allowNull: true},
     hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+}, {
+    paranoid: true,
 });
 
 const _whereHandler = (includeHidden: boolean, name?: string, description?: string) => {

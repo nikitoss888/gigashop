@@ -2,7 +2,9 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
 import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
-import { User, Wishlist, ItemDevelopers } from "../../models";
+import {User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company} from "../../models";
+
+const ITEMS_DIR = 'items';
 
 class ItemsController extends Controller {
     static parseData({name, description, sortBy,
@@ -71,16 +73,6 @@ class ItemsController extends Controller {
 
         publisherId = Controller.parseNumber(publisherId as string | undefined);
 
-        if (genresIds) {
-            if (typeof genresIds === 'string') genresIds = JSON.parse(genresIds);
-            if (genresIds instanceof Array) genresIds = genresIds.map((id: string) => Controller.parseNumber(id));
-        }
-
-        if (developersIds) {
-            if (typeof developersIds === 'string') developersIds = JSON.parse(developersIds);
-            if (developersIds instanceof Array) developersIds = developersIds.map((id: string) => Controller.parseNumber(id));
-        }
-
         return {
             name, description, sortBy,
             price, priceFrom, priceTo,
@@ -98,12 +90,163 @@ class ItemsController extends Controller {
         }
     }
 
-    async create(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { characteristics } = req.body;
-            const files = req.files;
+    private async _checkDevelopers(developersIds?: number | string | (number | string)[], id?: number | string) {
+        if (!id) throw ApiError.badRequest('Неправильний id товару');
+        const item = await Item.findByPk(id);
+        if (!item) throw ApiError.notFound('Товар не знайдено');
 
-            let {name, description, releaseDate, publisherId: company_publisherId, developersIds,
+        if (!developersIds) throw ApiError.badRequest('Неправильні дані розробників');
+        let developers: unknown[] | unknown | undefined;
+
+        if (developersIds instanceof Array) developers = await Company.findAll({where: {id: developersIds}});
+        else developers = await Company.findByPk(developersIds);
+
+        if (!developers) throw ApiError.notFound('Розробника(-ів) не знайдено');
+    }
+
+    private async _addDevelopers(developersIds: number | string | (number | string)[], itemId: number | string) {
+        let candidates = await ItemDevelopers.findAll({where: {itemId: itemId, companyId: developersIds}});
+        if (candidates.length > 0) throw ApiError.badRequest('Товар вже має такого(-их) розробника(-ів)');
+
+        await this._checkDevelopers(developersIds, itemId)
+            .catch((e: unknown) => {
+                throw e;
+            });
+
+        let res;
+        if (developersIds instanceof Array) {
+            let data = developersIds.map((devId: number | string) => {
+                return {itemId: itemId, companyId: devId};
+            });
+            res = await ItemDevelopers.bulkCreate(data)
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        else if (typeof developersIds === 'number' || typeof developersIds === 'string') {
+            res = await ItemDevelopers.create({itemId: itemId, companyId: developersIds})
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        return res;
+    }
+
+    private async _removeDevelopers(developersIds: number | string | (number | string)[], itemId: number | string) {
+        let candidates = await ItemDevelopers.findAll({where: {itemId: itemId, companyId: developersIds}});
+        if (candidates.length === 0) throw ApiError.badRequest('Товар не має такого(-их) розробника(-ів)');
+
+        await this._checkDevelopers(developersIds, itemId)
+            .catch((e: unknown) => {
+                throw e;
+            });
+
+        let res;
+        if (developersIds instanceof Array) {
+            res = await ItemDevelopers.destroy({where: {itemId: itemId, companyId: developersIds}})
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        else if (typeof developersIds === 'number' || typeof developersIds === 'string') {
+            res = await ItemDevelopers.destroy({where: {itemId: itemId, companyId: developersIds}})
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        return res;
+    }
+
+
+
+    private async _checkGenres(genresIds?: number | string | (number | string)[], id?: number | string) {
+        if (!id) throw ApiError.badRequest('Неправильний id товару');
+        const item = await Item.findByPk(id);
+        if (!item) throw ApiError.notFound('Товар не знайдено');
+
+        if (!genresIds) throw ApiError.badRequest('Неправильні дані жанрів');
+        let genres: unknown[] | unknown | undefined;
+
+        if (genresIds instanceof Array) genres = await Genre.findAll({where: {id: genresIds}});
+        else genres = await Genre.findByPk(genresIds);
+
+        if (!genres) throw ApiError.notFound('Жанр(-и) не знайдено');
+    }
+
+    private async _addGenres(genresIds?: number | string | (number | string)[], itemId?: number | string) {
+        let candidates = await ItemGenre.findAll({where: {itemId, genreId: genresIds}});
+        if (candidates.length > 0) throw ApiError.badRequest('Товар вже має такий(-і) жанр(и)');
+
+        await this._checkGenres(genresIds, itemId)
+            .catch((e: unknown) => {
+                throw e;
+            });
+
+        let res;
+        if (genresIds instanceof Array) {
+            let data = genresIds.map((genreId: number | string) => {
+                return {itemId: itemId, genreId: genreId};
+            });
+            res = await ItemGenre.bulkCreate(data)
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        else if (typeof genresIds === 'number' || typeof genresIds === 'string') {
+            res = await ItemGenre.create({itemId: itemId, genreId: genresIds})
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        return res;
+    }
+
+    private async _removeGenres(genresIds: number | string | (number | string)[] | undefined, itemId: number | string) {
+        let candidates = await ItemGenre.findAll({where: {itemId: itemId, genreId: genresIds}});
+        if (candidates.length === 0) throw ApiError.badRequest('Товар не має такого(-их) жанра(-ів)');
+
+        await this._checkGenres(genresIds, itemId)
+            .catch((e: unknown) => {
+                throw e;
+            });
+
+        let res;
+        if (genresIds instanceof Array) {
+            res = await ItemGenre.destroy({where: {itemId: itemId, genreId: genresIds}});
+        }
+        else if (typeof genresIds === 'number' || typeof genresIds === 'string') {
+            res = await ItemGenre.destroy({where: {itemId: itemId, genreId: genresIds}})
+                .catch((e: unknown) => {
+                    throw e;
+                });
+        }
+        return res;
+    }
+
+    async create(req: Request, res: Response, next: NextFunction) {
+        const files = req.files;
+
+        if (!files || files instanceof Array) {
+            return next(ApiError.badRequest('Неправильна передача зображень'));
+        }
+
+        const image = files.image[0];
+        if(!image) {
+            return next(ApiError.badRequest('Необхідно завантажити головне зображення товару'));
+        }
+        let imageName = image.filename;
+
+        const images = files.images;
+        let imagesNames: string[] | undefined;
+        if(!images) {
+            imagesNames = [];
+        }
+        else imagesNames = images.map((file: Express.Multer.File) => file.filename);
+
+        try {
+            const { characteristics, developersIds, genresIds } = req.body;
+
+            let {name, description, releaseDate, publisherId: company_publisherId,
                 discount, discountFrom, discountTo, discountSize, price, amount} = ItemsController.parseData(req.body);
 
             let characteristicsParsed: Object | undefined = undefined;
@@ -111,74 +254,65 @@ class ItemsController extends Controller {
                 characteristicsParsed = JSON.parse(characteristics);
             }
 
-            if (!files || files instanceof Array) {
-                return next(ApiError.badRequest('Неправильна передача зображень'));
-            }
-
-            const image = files.image[0];
-            if(!image) {
-                return next(ApiError.badRequest('Необхідно завантажити головне зображення товару'));
-            }
-            let imageName = image.filename;
-
-            const images = files.images;
-            let imagesNames: string[] | undefined;
-            if(!images) {
-                imagesNames = [];
-            }
-            else imagesNames = images.map((file: Express.Multer.File) => file.filename);
-
             const item = await Item
                 .create({name, description, price, releaseDate, amount,
                     discount, discountFrom, discountTo, discountSize, mainImage: imageName,
                     images: imagesNames, characteristics: characteristicsParsed, company_publisherId})
                 .catch((e: unknown) => {
                     console.log(e);
-                    super.deleteFile('items', imageName);
+                    super.deleteFile(ITEMS_DIR, imageName);
                     if(imagesNames) {
                         imagesNames.forEach((name: string) => {
-                            super.deleteFile('items', name);
+                            super.deleteFile(ITEMS_DIR, name);
                         });
                     }
                     return next(super.exceptionHandle(e));
                 });
 
             if (!item) {
-                super.deleteFile('items', imageName);
+                super.deleteFile(ITEMS_DIR, imageName);
                 if(imagesNames) {
                     imagesNames.forEach((name: string) => {
-                        super.deleteFile('items', name);
+                        super.deleteFile(ITEMS_DIR, name);
                     });
                 }
                 return next(ApiError.badRequest('Не вдалося створити товар'));
             }
 
-            if (!developersIds) {
-                return res.json(item);
+            let developersRes;
+            if (developersIds) {
+                developersRes = await this._addDevelopers(developersIds, item.id)
+                    .catch((e: unknown) => {
+                        console.log(e);
+                        return next(super.exceptionHandle(e));
+                    });
             }
 
-            let developersIdsParsed: number[] | undefined = JSON.parse(developersIds);
-            if (!developersIdsParsed) {
-                return res.json(item);
+            let genresRes;
+            if (genresIds) {
+                genresRes = await this._addGenres(genresIds, item.id)
+                    .catch((e: unknown) => {
+                        console.log(e);
+                        return next(super.exceptionHandle(e));
+                    });
             }
 
-            for (const developerId of developersIdsParsed) {
-                let res = await ItemDevelopers.create({itemId: item.id, companyId: developerId});
-                if (!res) {
-                    return next(ApiError.badRequest('Не вдалося створити запис про розробника'));
-                }
-            }
-
-            return res.json(item);
+            return res.json({message: "Товар успішно створено", item, devIdsRes: developersRes, genresRes});
         }
         catch (e: unknown) {
             console.log(e);
+            super.deleteFile(ITEMS_DIR, imageName);
+            if(imagesNames) {
+                imagesNames.forEach((name: string) => {
+                    super.deleteFile(ITEMS_DIR, name);
+                });
+            }
             return next(super.exceptionHandle(e));
         }
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        const items = await getItems(ItemsController.parseData({name: req.query}))
+        const items = await getItems(ItemsController.parseData(req.query))
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -192,7 +326,7 @@ class ItemsController extends Controller {
         const idParsed = (new ItemsController()).parseNumber(id as string | undefined);
         if (!idParsed) return next(ApiError.badRequest('Неправильний id товару'));
 
-        const item = await getItem(idParsed, ItemsController.parseData(req.query))
+        const item = await getItem(idParsed, ...ItemsController.parseData(req.query))
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -244,11 +378,11 @@ class ItemsController extends Controller {
                 .catch((e: unknown) => {
                     console.log(e);
                     if(newImageName) {
-                        super.deleteFile('items', newImageName);
+                        super.deleteFile(ITEMS_DIR, newImageName);
                     }
                     if(newImagesNames) {
                         newImagesNames.forEach((name: string) => {
-                            super.deleteFile('items', name);
+                            super.deleteFile(ITEMS_DIR, name);
                         });
                     }
                     return next(super.exceptionHandle(e));
@@ -257,22 +391,22 @@ class ItemsController extends Controller {
 
             if (!item) {
                 if(newImageName) {
-                    super.deleteFile('items', newImageName);
+                    super.deleteFile(ITEMS_DIR, newImageName);
                 }
                 if(newImagesNames) {
                     newImagesNames.forEach((name: string) => {
-                        super.deleteFile('items', name);
+                        super.deleteFile(ITEMS_DIR, name);
                     });
                 }
                 return next(ApiError.badRequest('Не вдалося оновити товар'));
             }
 
             if(oldImageName && newImageName) {
-                super.deleteFile('items', oldImageName);
+                super.deleteFile(ITEMS_DIR, oldImageName);
             }
             if(oldImagesNames && newImagesNames) {
                 oldImagesNames.forEach((name: string) => {
-                    super.deleteFile('items', name);
+                    super.deleteFile(ITEMS_DIR, name);
                 });
             }
 
@@ -300,10 +434,10 @@ class ItemsController extends Controller {
 
             if (!item) return next(ApiError.badRequest('Не вдалося видалити товар'));
 
-            if(oldImageName) super.deleteFile('items', oldImageName);
+            if(oldImageName) super.deleteFile(ITEMS_DIR, oldImageName);
             if(oldImagesNames) {
                 oldImagesNames.forEach((name: string) => {
-                    super.deleteFile('items', name);
+                    super.deleteFile(ITEMS_DIR, name);
                 });
             }
             return res.json(item);
@@ -312,6 +446,58 @@ class ItemsController extends Controller {
             console.log(e);
             return next(super.exceptionHandle(e));
         }
+    }
+
+    async addGenres(req: Request, res: Response, next: NextFunction) {
+        const { id } = req.params;
+        const { genresIds } = req.body;
+
+        const result = await this._addGenres(genresIds, id)
+            .catch((e: unknown) => {
+                console.log(e);
+                return next(super.exceptionHandle(e));
+            });
+
+        res.json({message: "Жанр(-и) успішно додано товару", result});
+    }
+
+    async removeGenres(req: Request, res: Response, next: NextFunction) {
+        const { id } = req.params;
+        const { genresIds } = req.body;
+
+        const result = await this._removeGenres(genresIds, id)
+            .catch((e: unknown) => {
+                console.log(e);
+                return next(super.exceptionHandle(e));
+            });
+
+        res.json({message: "Жанр успішно видалено з товару", result});
+    }
+
+    async addDevelopers(req: Request, res: Response, next: NextFunction) {
+        const { id } = req.params;
+        const { developersIds } = req.body;
+
+        const result = await this._addDevelopers(developersIds, id)
+            .catch((e: unknown) => {
+                console.log(e);
+                return next(super.exceptionHandle(e));
+            });
+
+        res.json({message: "Розробника(-ів) успішно додано товару", result});
+    }
+
+    async removeDevelopers(req: Request, res: Response, next: NextFunction) {
+        const { id } = req.params;
+        const { developersIds } = req.body;
+
+        const result = await this._removeDevelopers(developersIds, id)
+            .catch((e: unknown) => {
+                console.log(e);
+                return next(super.exceptionHandle(e));
+            });
+
+        res.json({message: "Розробника(-ів) успішно видалено з товару", result});
     }
 
     async addToWishList(req: Request, res: Response, next: NextFunction) {
@@ -325,14 +511,39 @@ class ItemsController extends Controller {
             const user = await User.findByPk(request_user.Id);
             if (!user) return next(ApiError.notFound('Користувача не знайдено'));
 
-            const wishList = await Wishlist.findAll({where: {userId: user.id}});
+            const wishList = await Wishlist.findAll({where: {userId: user.id, itemId: id}});
 
-            if (wishList && wishList.any((item: typeof Wishlist) => item.itemId === id))
+            if (wishList.length > 0)
                 return next(ApiError.badRequest('Товар вже є в списку бажань'));
 
             const wishListItem = await Wishlist.create({userId: user.id, itemId: id});
 
             return res.json({message: 'Товар успішно додано до списку бажань', wishListItem});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async removeFromWishList(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {id} = req.query;
+            const request_user = req.user;
+
+            const item = await Item.findByPk(id);
+            if (!item) return next(ApiError.notFound('Товар не знайдено'));
+
+            const user = await User.findByPk(request_user.Id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const wishList = await Wishlist.findAll({where: {userId: user.id, itemId: id}});
+
+            if (wishList.length === 0)
+                return next(ApiError.badRequest('Товару немає в списку бажань'));
+
+            const wishListItem = await Wishlist.destroy({where: {userId: user.id, itemId: id}});
+
+            return res.json({message: 'Товар успішно видалено зі списку бажань', wishListItem});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
