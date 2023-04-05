@@ -1,16 +1,44 @@
 import Item from "./Item";
 
-const sequelize_db = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
 const Company = sequelize_db.define('company', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    name: {type: DataTypes.STRING, allowNull: false},
-    description: {type: DataTypes.TEXT},
-    director: {type: DataTypes.STRING, allowNull: false},
-    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default.jpg'},
-    founded: {type: DataTypes.DATEONLY, allowNull: false},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT,
+    },
+    director: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            len: {args: [2, 20], msg: 'Поле "Директор" повинно бути довжиною від 2 до 20 символів'},
+            is: {args: /^([A-Z][a-zA-Z\-']+ ?)*$|^([А-ЯЄЇІҐ][а-яА-ЯЄєЇїІіҐґ\-']+ ?)*$/,
+                msg: 'Поле "Директор" повинно містити лише літери'}
+        }
+    },
+    image: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'default.jpg'
+    },
+    founded: {
+        type: DataTypes.DATE,
+        allowNull: false
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
 }, {
     paranoid: true,
 });
@@ -47,7 +75,7 @@ const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: 
         include.push({
             model: Item,
             as: 'ItemsDeveloped',
-            attributes: ['id', 'name', 'image', 'releaseDate'],
+            attributes: ['id', 'name', 'mainImage', 'releaseDate'],
             where: includeHidden ? {} : {hide: false}
         });
     }
@@ -55,7 +83,7 @@ const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: 
         include.push({
             model: Item,
             as: 'ItemsPublished',
-            attributes: ['id', 'name', 'image', 'releaseDate'],
+            attributes: ['id', 'name', 'mainImage', 'releaseDate'],
             where: includeHidden ? {} : {hide: false}
         });
     }

@@ -11,9 +11,10 @@ class NewsController extends Controller {
             const { title, content, hide } = req.body;
 
             const hideParsed = super.parseBoolean(hide);
+            const userId = req.user.id;
 
             const company = await Publication
-                .create({ title, content, hide: hideParsed })
+                .create({ title, content, hide: hideParsed, userId })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });

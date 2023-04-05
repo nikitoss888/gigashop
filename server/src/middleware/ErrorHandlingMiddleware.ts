@@ -3,7 +3,7 @@ import ApiError from "../errors/ApiError";
 
 // error handler is last middleware, hence next() is not used
 // @ts-ignore
-const errorHandler = function (err: Error, req: Request, res: Response, next: NextFunction): Response {
+const errorHandler = function (err: Error | ApiError, req: Request, res: Response, next: NextFunction): Response {
     let status = (err as ApiError).status || 500;
     let errors = (err as ApiError).errors || [];
 

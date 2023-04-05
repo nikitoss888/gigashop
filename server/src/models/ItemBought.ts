@@ -1,7 +1,7 @@
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes} from 'sequelize';
 
-const ItemBought = sequelize.define('item_bought', {
+const ItemBought = sequelize_db.define('item_bought', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 }, {
     paranoid: true,

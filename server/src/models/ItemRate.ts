@@ -1,15 +1,36 @@
 import ApiError from "../errors/ApiError";
 
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
-const ItemRate = sequelize.define('item_rate', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    content: {type: DataTypes.TEXT, allowNull: true},
-    rate: {type: DataTypes.INTEGER, allowNull: false},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation_reason: {type: DataTypes.TEXT, allowNull: true},
+const ItemRate = sequelize_db.define('item_rate', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    content: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    rate: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation_reason: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
 });
 const getItemRates = async (itemId?: number, content?: string, rate?: number, rateFrom?: number, rateTo?: number,
                             hide = false, violation = false, violationReason?: string) => {

@@ -1,7 +1,7 @@
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes} from 'sequelize';
 
-const ItemCart = sequelize.define('item_favorite', {
+const ItemCart = sequelize_db.define('item_favorite', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
 });
 const getCarts = async (userId?: number, itemId?: number) => {

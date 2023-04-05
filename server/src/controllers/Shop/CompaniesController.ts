@@ -1,7 +1,7 @@
 import type {NextFunction, Request, Response} from 'express';
 import ApiError from "../../errors/ApiError";
 import Controller from "../Controller";
-import {Company, getCompanies} from "../../models/Company";
+import {Company, getCompanies, getCompany} from "../../models/Company";
 
 const COMPANIES_DIR = 'companies';
 
@@ -16,9 +16,10 @@ class CompaniesController extends Controller {
             }
 
             let imageName = image.filename;
+            let foundedParsed = super.parseDate(founded);
 
             const company = await Company
-                .create({name, description, director, image: imageName, founded})
+                .create({name, description, director, image: imageName, founded: foundedParsed})
                 .catch((e: unknown) => {
                     super.deleteFile(COMPANIES_DIR, imageName);
                     return next(super.exceptionHandle(e));
@@ -60,12 +61,10 @@ class CompaniesController extends Controller {
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
+        let includeItemsDeveloped = super.parseBoolean(req.query.includeItemsDeveloped as string | undefined);
+        let includeItemsPublished = super.parseBoolean(req.query.includeItemsPublished as string | undefined);
 
-        const company = await Company
-            .findByPk(id)
-            .catch((e: unknown) => {
-                return next(super.exceptionHandle(e));
-            });
+        const company = await getCompany(+id, includeItemsDeveloped, includeItemsPublished);
 
         if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
         res.json(company);
@@ -76,24 +75,39 @@ class CompaniesController extends Controller {
         const { name, description, director, founded, hide } = req.body;
         const image = req.file;
 
+        const company = await Company.findByPk(id)
+            .catch((e: unknown) => {
+                return next(super.exceptionHandle(e));
+            });
+        if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
+
         let imageName: string | undefined;
-        let oldImageName = (await Company.findByPk(id)).image;
+        let oldImageName = company.image;
         if (image) {
             imageName = image.filename;
         }
 
         let hideParsed = super.parseBoolean(hide as string | undefined);
+        let foundedParsed = super.parseDate(founded);
 
-        const company = await Company
-            .update({ name, description, director, image: imageName, founded, hide: hideParsed }, {where: {id}})
+        if (name) company.name = name;
+        if (description) company.description = description;
+        if (director) company.director = director;
+        if (founded) company.founded = foundedParsed;
+        if (hide) company.hide = hideParsed;
+        if (imageName) company.image = imageName;
+
+        let result = await company.save()
             .catch((e: unknown) => {
                 if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
                 return next(super.exceptionHandle(e));
             });
-        if (!company) {
+
+        if (!result) {
             if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
             return next(ApiError.badRequest('Компанію не оновлено'));
         }
+
         if (imageName) super.deleteFile(COMPANIES_DIR, oldImageName);
         res.json(company);
     }
@@ -106,16 +120,17 @@ class CompaniesController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
+        const { image } = company;
 
-        const deletedCompany = await Company
-            .destroy({where: {id}})
+        const result = await company.destroy()
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
 
-        if (!deletedCompany) return next(ApiError.badRequest('Компанію не видалено'));
-        super.deleteFile(COMPANIES_DIR, company.image);
-        res.json(deletedCompany);
+        if (!result) return next(ApiError.badRequest('Компанію не видалено'));
+
+        super.deleteFile(COMPANIES_DIR, image);
+        res.json(result);
     }
 
     async test(req: Request, res: Response) {

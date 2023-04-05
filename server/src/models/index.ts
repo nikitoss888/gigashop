@@ -1,6 +1,5 @@
 import User from "./User";
 import Item from "./Item";
-import ItemTag from "./ItemTag";
 import ItemRate from "./ItemRate";
 import ItemGenre from "./ItemGenre";
 import ItemBought from "./ItemBought";
@@ -12,7 +11,6 @@ import Genre from "./Genre";
 import Publication from "./Publication";
 import PublicationTag from "./PublicationTag";
 import PublicationComment from "./PublicationComment";
-import Tag from "./Tag";
 
 function initModels() {
     User.belongsToMany(Item, {through: ItemCart, foreignKey: 'userId', as: 'Cart', onDelete: 'CASCADE'});
@@ -36,14 +34,13 @@ function initModels() {
     Genre.belongsToMany(Item, {through: ItemGenre, as: 'Items', onDelete: 'CASCADE'});
     Item.belongsToMany(Genre, {through: ItemGenre, as: 'Genres', onDelete: 'CASCADE'});
 
-    Item.belongsToMany(Tag, {through: ItemTag, as: 'Tags', onDelete: 'CASCADE'});
-    Tag.belongsToMany(Item, {through: ItemTag, as: 'TaggedItems', onDelete: 'CASCADE'});
+    Publication.belongsToMany(User, {through: PublicationComment, foreignKey: 'publicationId',
+        as: 'Comments', onDelete: 'CASCADE'});
+    User.belongsToMany(Publication, {through: PublicationComment, foreignKey: 'userId',
+        as: 'CommentedPublications', onDelete: 'CASCADE'});
 
-    Publication.belongsToMany(User, {through: PublicationComment, foreignKey: 'publicationId', as: 'Comments', onDelete: 'CASCADE'});
-    User.belongsToMany(Publication, {through: PublicationComment, foreignKey: 'userId', as: 'CommentedPublications', onDelete: 'CASCADE'});
-
-    Publication.belongsToMany(Tag, {through: PublicationTag, foreignKey: 'publicationId', as: 'Tags', onDelete: 'CASCADE'});
-    Tag.belongsToMany(Publication, {through: PublicationTag, foreignKey: 'tagId', as: 'TaggedPublications', onDelete: 'CASCADE'});
+    Publication.hasMany(PublicationTag, {foreignKey: 'publicationId', as: 'Tags', onDelete: 'CASCADE'});
+    PublicationTag.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});
 
     User.hasMany(Publication, {foreignKey: 'userId', as: 'Publications'});
     Publication.belongsTo(User, {foreignKey: 'userId', as: 'AuthoredUser'});
@@ -53,7 +50,6 @@ export default initModels;
 export {
     User,
     Item,
-    ItemTag,
     ItemRate,
     ItemGenre,
     ItemBought,
@@ -64,5 +60,4 @@ export {
     Publication,
     PublicationTag,
     PublicationComment,
-    Tag,
 };

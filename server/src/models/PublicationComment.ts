@@ -1,15 +1,36 @@
 import ApiError from "../errors/ApiError";
 
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
-const PublicationComment = sequelize.define('publication_comment', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    content: {type: DataTypes.TEXT, allowNull: false},
-    rate: {type: DataTypes.INTEGER, allowNull: false},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation_reason: {type: DataTypes.TEXT, allowNull: true},
+const PublicationComment = sequelize_db.define('publication_comment', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    content: {
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    rate: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation_reason: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
 });
 const getPublicationComments = async (publicationId?: number, content?: string,
                                       rate?: number, rateFrom?: number, rateTo?: number,

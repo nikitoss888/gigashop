@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import NewsController from "../controllers/NewsController";
-import auth from "../middleware/AuthMiddleware";
 import {checkWorker} from "../middleware/CheckRoleMiddleware";
+import auth from "../middleware/AuthMiddleware";
 
 const newsRouter = Router()
 
@@ -15,7 +15,7 @@ newsRouter.get('/test', NewsController.test);
 newsRouter.post('/comment', auth, NewsController.createComment);
 newsRouter.patch('/comment/:id', auth, NewsController.updateComment);
 newsRouter.delete('/comment/:id', auth, NewsController.deleteComment);
-newsRouter.get('/comment', NewsController.getComments);
+newsRouter.get('/comments', NewsController.getComments);
 
 newsRouter.patch('/violations/:id', checkWorker, NewsController.violation);
 newsRouter.patch('/violations/comment/:id', checkWorker, NewsController.commentViolation);

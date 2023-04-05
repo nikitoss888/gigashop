@@ -1,8 +1,8 @@
 import {Router} from 'express';
 import UserController from "../controllers/UserController";
+import {checkAdmin} from "../middleware/CheckRoleMiddleware";
 import multerFactory from "./multerFactory";
 import auth from "../middleware/AuthMiddleware";
-import {checkAdmin} from "../middleware/CheckRoleMiddleware";
 
 const upload = multerFactory('users', ['image/jpeg', 'image/png', 'image/jpg']);
 

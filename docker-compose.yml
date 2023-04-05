@@ -18,6 +18,8 @@ services:
       DB_PASSWORD: root
       DB_PORT: 5432
       DB_HOST: database
+      CONNECT_TIMEOUT: 5000
+      CONNECT_RETRIES: 10
     depends_on:
       - database
   database:

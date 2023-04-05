@@ -1,21 +1,67 @@
 import Item from "./Item";
 
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
 import {ItemRate, PublicationComment} from "./index";
 import Publication from "./Publication";
 
-const User = sequelize.define('user', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    login: {type: DataTypes.STRING, unique: true, allowNull: false, validate: {len: [4, 20], isAlphanumeric: true}},
-    email: {type: DataTypes.STRING, unique: true, allowNull: false, validate: {isEmail: true}},
-    image: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default.png'},
-    firstName: {type: DataTypes.STRING, allowNull: false, validate: {len: [2, 20], is: /^[a-zA-Z\-']+|[а-яА-ЯЄєЇїІіҐґ\-']+$/}},
-    lastName: {type: DataTypes.STRING, allowNull: false, validate: {len: [2, 20], is: /^[a-zA-Z\-']+|[а-яА-ЯЄєЇїІіҐґ\-']+$/}},
-    role: {type: DataTypes.STRING, defaultValue: 'USER', allowNull: false},
-    password: {type: DataTypes.STRING, allowNull: false},
-    isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},
-    isBanned: {type: DataTypes.BOOLEAN, defaultValue: false},
+const User = sequelize_db.define('user', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    login: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: false,
+        validate: {
+            len: {args: [4, 20], msg: 'Поле "Логін" повинно бути довжиною від 4 до 20 символів'},
+            isAlphanumeric: {msg: 'Поле "Логін" повинно містити лише літери латинського алфавіту та цифри'},
+        }
+    },
+    email: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: false,
+        validate: {
+            isEmail: {msg: 'Поле "Email" повинно бути валідним email-адресом'},
+        }
+    },
+    image: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'default.png'
+    },
+    firstName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            len: {args: [2, 20], msg: 'Поле "Ім\'я" повинно бути довжиною від 2 до 20 символів'},
+            is: {args: /^[A-Z][a-zA-Z\-']+$|^[А-ЯЄЇІҐ][а-яА-ЯЄєЇїІіҐґ\-']+$/, msg: 'Поле "Ім\'я" повинно містити лише літери'}
+        }
+    },
+    lastName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            len: {args: [2, 20], msg: 'Поле "Прізвище" повинно бути довжиною від 2 до 20 символів'},
+            is: {args: /^[A-Z][a-zA-Z\-']+$|^[А-ЯЄЇІҐ][а-яА-ЯЄєЇїІіҐґ\-']+$/, msg: 'Поле "Прізвище" повинно містити лише літери'}
+        }
+    },
+    role: {
+        type: DataTypes.ENUM('USER', 'MODERATOR', 'ADMIN'),
+        defaultValue: 'USER',
+        allowNull: false
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    isBanned: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
 }, {
     paranoid: true,
 });

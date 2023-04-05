@@ -1,13 +1,27 @@
 import Item from "./Item";
 
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
 
-const Genre = sequelize.define('genre', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    name: {type: DataTypes.STRING, allowNull: false},
-    description: {type: DataTypes.TEXT, allowNull: true},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+const Genre = sequelize_db.define('genre', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
 }, {
     paranoid: true,
 });

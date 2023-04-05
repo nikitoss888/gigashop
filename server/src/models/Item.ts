@@ -1,23 +1,74 @@
-import {Company, Genre, User, Tag} from "./index";
+import {Company, Genre, User} from "./index";
 import {DataTypes, Op} from 'sequelize';
 import ApiError from "../errors/ApiError";
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 
-const Item = sequelize.define('item', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    name: {type: DataTypes.STRING, allowNull: false},
-    description: {type: DataTypes.TEXT},
-    releaseDate: {type: DataTypes.DATE, allowNull: false},
-    price: {type: DataTypes.FLOAT, allowNull: false},
-    amount: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, validate: {min: 0}},
-    discount: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    discountFrom: {type: DataTypes.DATE, allowNull: true},
-    discountTo: {type: DataTypes.DATE, allowNull: true},
-    discountSize: {type: DataTypes.FLOAT, allowNull: true},
-    mainImage: {type: DataTypes.STRING, allowNull: false, defaultValue: 'default_item.jpg'},
-    images: {type: DataTypes.ARRAY(DataTypes.STRING), allowNull: false, defaultValue: []},
-    characteristics: {type: DataTypes.JSON, allowNull: false, defaultValue: {}},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
+const Item = sequelize_db.define('item', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT,
+    },
+    releaseDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false
+    },
+    price: {
+        type: DataTypes.FLOAT,
+        allowNull: false
+    },
+    amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+            min: {args: [0], msg: 'Поле "Кількість" повинно бути більше 0'}
+        }
+    },
+    discount: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    discountFrom: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
+    discountTo: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+    },
+    discountSize: {
+        type: DataTypes.FLOAT,
+        allowNull: true
+    },
+    mainImage: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'default.png'
+    },
+    images: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        allowNull: false,
+        defaultValue: []
+    },
+    characteristics: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: {}
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
 }, {
     paranoid: true,
 });
@@ -143,8 +194,8 @@ const _whereHandler = (name?: string, description?: string,
 }
 let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean,
                        includeWishlisted: boolean, includeInCart: boolean, includeBought: boolean,
-                       includeRated: boolean, includeTags: boolean, includeHidden: boolean,
-                       publisherId?: number, genresId?: number[], developersId?: number[]) => {
+                       includeRated: boolean, includeHidden: boolean,
+                       publisherId?: number, genresIds?: number[], developersId?: number[]) => {
     let include: {}[] = [];
 
     if (includePublisher) {
@@ -167,6 +218,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             as: 'Publisher',
             attributes: ['id', 'name'],
             where,
+            through: null,
             required: !!publisherId
         });
     }
@@ -180,12 +232,12 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
                 hide: false
             }
         }
-        if (genresId) {
+        if (genresIds) {
             where = {
                 ...where,
-                id: {[Op.in]: genresId}
+                id: {[Op.in]: genresIds}
             }
-            required = genresId.length > 0
+            required = genresIds.length > 0
         }
 
         include.push({
@@ -193,6 +245,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             as: 'Genres',
             attributes: ['id', 'name'],
             where,
+            through: {
+                attributes: []
+            },
             required
         });
     }
@@ -217,7 +272,10 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             model: Company,
             as: 'Developers',
             attributes: ['id', 'name'],
-            where: where,
+            where,
+            through: {
+                attributes: []
+            },
             required
         });
     }
@@ -227,6 +285,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             model: User,
             as: 'WishlistedUsers',
             attributes: ['id', 'email', 'login'],
+            through: {
+                attributes: []
+            },
             required: false
         });
     }
@@ -236,6 +297,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             model: User,
             as: 'CartedUsers',
             attributes: ['id', 'email', 'login'],
+            through: {
+                attributes: []
+            },
             required: false
         });
     }
@@ -245,6 +309,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             model: User,
             as: 'BoughtUsers',
             attributes: ['id', 'email', 'login'],
+            through: {
+                attributes: []
+            },
             required: false
         });
     }
@@ -254,17 +321,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
             model: User,
             as: 'RatedUsers',
             attributes: ['id', 'email', 'login'],
-            required: false
-        });
-    }
-
-    if (includeTags) {
-        include.push({
-            model: Tag,
-            as: 'Tags',
-            through: { attributes: [] },
-            attributes: ['id', 'name', [sequelize.fn('COUNT', sequelize.col('Tags.id')), 'count']],
-            group: ['Tags.id'],
+            through: {
+                attributes: []
+            },
             required: false
         });
     }
@@ -279,18 +338,19 @@ const getItems = async (name?: string, description?: string,
                         discount?: boolean, discountFrom?: Date, discountTo?: Date,
                         discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
                         descending = false, limit = 10, page = 0, sortBy = 'id',
-                        includePublisher = true, publisherId?: number,
-                        includeGenres = true, genresId?: number[],
-                        includeDevelopers = true, developersId?: number[],
+                        includePublisher = false, publisherId?: number,
+                        includeGenres = false, genresIds?: number[],
+                        includeDevelopers = false, developersIds?: number[],
                         includeWishlisted = false, includeInCart = false,
                         includeBought = false, includeRated = false,
-                        includeTags = true, includeHidden = false) => {
+                        includeHidden = false) => {
+
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
         discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeTags, includeHidden,
-        publisherId, genresId, developersId);
+        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden,
+        publisherId, genresIds, developersIds);
 
     return Item.findAll({
         where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
@@ -299,10 +359,9 @@ const getItems = async (name?: string, description?: string,
 
 const getItem = async (id: number, includePublisher = true, includeGenres = true,
                        includeDevelopers = true, includeWishlisted = false, includeInCart = false,
-                       includeBought = false, includeRated = false,
-                       includeTags = true, includeHidden = false) => {
+                       includeBought = false, includeRated = false, includeHidden = false) => {
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeTags, includeHidden);
+        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden);
 
     return Item.findByPk(id, {include});
 }

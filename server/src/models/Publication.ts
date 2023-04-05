@@ -1,20 +1,41 @@
-const sequelize = require('../db');
+const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
-import {PublicationComment, Tag} from "./index";
+import {PublicationComment, PublicationTag} from "./index";
 import User from "./User";
 
-const Publication = sequelize.define('publication', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    title: {type: DataTypes.STRING, allowNull: false},
-    content: {type: DataTypes.TEXT, allowNull: false},
-    hide: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false},
-    violation_reason: {type: DataTypes.TEXT, allowNull: true},
+const Publication = sequelize_db.define('publication', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    title: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    content: {
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    hide: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    violation_reason: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
 }, {
     paranoid: true,
 });
 
-const _whereHandler = async (title?: string, content?: string,
+const _whereHandler = (title?: string, content?: string,
                             createdAt?: Date, createdFrom?: Date, createdTo?: Date,
                             includeHidden = false, violation = false, violationReason?: string) => {
     let where: {title?: {}, content?: {}, createdAt?: {}, hide?: {}, violation?: {}, violationReason?: {}} = {};
@@ -54,17 +75,17 @@ const _whereHandler = async (title?: string, content?: string,
 
     return where;
 }
-const _includeHandler = async (includeTags: boolean, includeComments: boolean, includeViolations: boolean,
+const _includeHandler = (includeTags: boolean, includeComments: boolean, includeViolations: boolean,
                                includeHidden: boolean) => {
     let include: {}[] = [];
 
     if (includeTags) {
         include.push({
-            model: Tag,
+            model: PublicationTag,
             as: 'Tags',
             through: {attributes: []},
-            attributes: ['id', 'name', [sequelize.fn('COUNT', sequelize.col('Tags.id')), 'count']],
-            group: ['Tags.id'],
+            attributes: ['name', [sequelize_db.fn('COUNT', sequelize_db.col('Tags.id')), 'count']],
+            group: ['Tags.name'],
         });
     }
 
@@ -79,7 +100,7 @@ const _includeHandler = async (includeTags: boolean, includeComments: boolean, i
         if (!includeViolations) {
             where = {
                 ...where,
-                violation: {[Op.not]: true},
+                violation: false,
             };
         }
 
@@ -117,9 +138,41 @@ const getPublication = async (id: number, includeTags = true, includeComments = 
     return Publication.findByPk(id, {include});
 }
 
+const getPublicationsByTags = async (tagNames: string[] | string, includeComments = true,
+                                     includeViolations = false, includeHidden = false) => {
+    const include = _includeHandler(false, includeComments, includeViolations, includeHidden);
+
+    let where;
+    if (tagNames instanceof Array) {
+        where = {
+            [Op.or]: tagNames.map((name: string) => {
+                return { [Op.like]: `%${name}%` };
+            })
+        };
+    }
+    else {
+        where = {
+            [Op.like]: `%${tagNames}%`
+        };
+    }
+
+    include.push({
+        model: PublicationTag,
+        as: 'Tags',
+        where,
+        attributes: ['name', [sequelize_db.fn('COUNT', sequelize_db.col('Tags.id')), 'count']],
+        group: ['Tags.name'],
+    });
+
+    return Publication.findAll({
+        include: include,
+    });
+}
+
 export default Publication;
 export {
     Publication,
     getPublications,
-    getPublication
+    getPublication,
+    getPublicationsByTags
 }
