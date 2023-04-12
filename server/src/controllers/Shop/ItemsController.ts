@@ -6,7 +6,7 @@ import {User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company} from "../../m
 
 const ITEMS_DIR = 'items';
 
-interface parseReturn {
+type parseOutput = {
     name: string | undefined, description: string | undefined, sortBy: string | undefined,
     price: number | undefined, priceFrom: number | undefined, priceTo: number | undefined,
     releaseDate: Date | undefined, releaseDateFrom: Date | undefined, releaseDateTo: Date | undefined,
@@ -34,7 +34,7 @@ class ItemsController extends Controller {
                          includeGenres, genresIds,
                          includeDevelopers, developersIds,
                          includeWishlisted, includeInCart,
-                         includeBought, includeRated, hide}: any): parseReturn {
+                         includeBought, includeRated, hide}: any): parseOutput {
         let Controller = new ItemsController();
 
         price = Controller.parseNumber(price as string | undefined);

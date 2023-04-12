@@ -43,12 +43,14 @@ const _whereHandler = (includeHidden: boolean, name?: string, description?: stri
     return where;
 }
 const _includeHandler = (includeItems: boolean, includeHidden: boolean) => {
-    let include: any[] = [];
+    let include: {}[] = [];
+
     if (includeItems) {
         include.push({
             model: Item,
             as: 'Items',
-            attributes: ['id', 'name', 'description', 'image', 'releaseDate'],
+            attributes: ['id', 'name', 'description', 'mainImage', 'releaseDate'],
+            through: {attributes: []},
             where: includeHidden ? {} : {hide: false}
         });
     }

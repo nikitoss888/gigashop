@@ -61,8 +61,8 @@ class CompaniesController extends Controller {
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
-        let includeItemsDeveloped = super.parseBoolean(req.query.includeItemsDeveloped as string | undefined);
-        let includeItemsPublished = super.parseBoolean(req.query.includeItemsPublished as string | undefined);
+        let includeItemsDeveloped = super.parseBoolean(req.query.includeDeveloped as string | undefined);
+        let includeItemsPublished = super.parseBoolean(req.query.includePublished as string | undefined);
 
         const company = await getCompany(+id, includeItemsDeveloped, includeItemsPublished);
 

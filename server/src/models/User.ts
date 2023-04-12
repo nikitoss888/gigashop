@@ -1,9 +1,10 @@
+import ItemRate from "./ItemRate";
+import PublicationComment from "./PublicationComment";
+import Publication from "./Publication";
 import Item from "./Item";
 
 const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
-import {ItemRate, PublicationComment} from "./index";
-import Publication from "./Publication";
 
 const User = sequelize_db.define('user', {
     id: {
@@ -100,16 +101,17 @@ const _whereHandler = (login?: string, email?: string, firstName?: string, lastN
 
     return where;
 }
-const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, includeItemsRates: boolean, includeWishlist: boolean,
-                         includePublications: boolean, includePublicationComments: boolean, includeHidden = false) => {
+
+const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, includeItemsRates: boolean,
+                         includeWishlist: boolean, includePublications: boolean, includePublicationComments: boolean) => {
     let include: {}[] = [];
 
     if (includeCart) {
         include.push({
             model: Item,
             as: 'Cart',
-            attributes: ['id', 'name', 'image', 'releaseDate', 'price', 'hide'],
-            where: includeHidden ? {hide: false} : {}
+            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide'],
+            through: {attributes: []}
         });
     }
 
@@ -117,8 +119,7 @@ const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, incl
         include.push({
             model: Item,
             as: 'Bought',
-            attributes: ['id', 'name', 'image', 'releaseDate', 'price', 'hide'],
-            where: includeHidden ? {} : {hide: false}
+            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide']
         });
     }
 
@@ -126,7 +127,7 @@ const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, incl
         include.push({
             model: ItemRate,
             as: 'Rates',
-            attributes: ['id', 'rate', 'content', 'itemId', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide'],
+            attributes: ['itemId', 'rate', 'content', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide'],
         });
     }
 
@@ -134,7 +135,7 @@ const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, incl
         include.push({
             model: Item,
             as: 'Wishlist',
-            attributes: ['id', 'name', 'image', 'releaseDate', 'price', 'hide'],
+            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide'],
         });
     }
 
@@ -142,8 +143,7 @@ const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, incl
         include.push({
             model: Publication,
             as: 'Publications',
-            attributes: ['id', 'title', 'content', 'violation', 'violation_reason', 'hide'],
-            where: includeHidden ? {} : {hide: false}
+            attributes: ['id', 'title', 'content', 'violation', 'violation_reason', 'hide']
         });
     }
 
@@ -151,8 +151,7 @@ const _includeHandler = (includeCart: boolean, includeBoughtItems: boolean, incl
         include.push({
             model: PublicationComment,
             as: 'Comments',
-            attributes: ['id', 'content', 'rate', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide'],
-            where: includeHidden ? {} : {hide: false}
+            attributes: ['id', 'content', 'rate', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide']
         });
     }
 
@@ -167,9 +166,9 @@ const getUsers = async (login?: string, email?: string, firstName?: string, last
 const getUser = async (id: number, includeBoughtItems= true, includeCart = true,
                        includeItemsRates= true,
                        includeWishlist= true, includePublications= true,
-                       includePublicationComments= true, hide= false) => {
-    let include = _includeHandler(includeCart, includeBoughtItems, includeItemsRates, includeWishlist,
-        includePublications, includePublicationComments, hide);
+                       includePublicationComments= true) => {
+    let include = _includeHandler(includeBoughtItems, includeCart, includeItemsRates, includeWishlist,
+        includePublications, includePublicationComments);
 
     return User.findByPk(id, {include});
 }

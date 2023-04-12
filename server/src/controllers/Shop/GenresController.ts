@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import Controller from '../Controller';
 import {Genre} from "../../models";
-import {getGenres} from "../../models/Genre";
+import {getGenre, getGenres} from "../../models/Genre";
 import ApiError from "../../errors/ApiError";
 
 class GenresController extends Controller {
@@ -46,12 +46,7 @@ class GenresController extends Controller {
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
 
-        const genre = await Genre
-            .findByPk(id)
-            .catch((e: unknown) => {
-                return next(super.exceptionHandle(e));
-            }
-        );
+        const genre = await getGenre(+id, true);
         if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
         res.json(genre);
     }

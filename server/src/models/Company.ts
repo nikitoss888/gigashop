@@ -44,7 +44,7 @@ const Company = sequelize_db.define('company', {
 });
 
 const _whereHandler = (name?: string, description?: string,
-                            director?: string, founded?: Date, hide?: boolean) => {
+                            director?: string, founded?: Date, includeHidden?: boolean) => {
     let where: {name?: {}, description?: {}, director?: {}, founded?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -64,7 +64,7 @@ const _whereHandler = (name?: string, description?: string,
     if (founded) {
         where.founded = founded;
     }
-    where.hide = hide;
+    where.hide = includeHidden;
 
     return where;
 }
@@ -76,6 +76,7 @@ const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: 
             model: Item,
             as: 'ItemsDeveloped',
             attributes: ['id', 'name', 'mainImage', 'releaseDate'],
+            through: {attributes: []},
             where: includeHidden ? {} : {hide: false}
         });
     }
@@ -94,9 +95,9 @@ const getCompanies = async (name?: string, description?: string,
                             director?: string, founded?: Date,
                             descending = false, limit = 10, page = 0, sortBy = 'id',
                             includeItemsDeveloped = false,
-                            includeItemsPublished = false, hide = false) => {
-    const where   = _whereHandler(name, description, director, founded, hide);
-    const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, hide);
+                            includeItemsPublished = false, includeHidden = false) => {
+    const where   = _whereHandler(name, description, director, founded, includeHidden);
+    const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
 
     return Company.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include

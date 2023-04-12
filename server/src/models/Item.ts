@@ -263,6 +263,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         }
         if (developersId) {
             where = {
+                ...where,
                 id: {[Op.in]: developersId}
             }
             required = developersId.length > 0

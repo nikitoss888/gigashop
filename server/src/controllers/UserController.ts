@@ -14,7 +14,6 @@ const USERS_DIR = 'users';
 const SALT_ROUNDS = 5;
 
 class UserController extends Controller {
-
     static generateJwt(id: number, login: string, email: string, role: string) {
         return jwt.sign({
             id, login, email, role
@@ -172,6 +171,7 @@ class UserController extends Controller {
         if (image) {
             imageName = image.filename;
         }
+        let error: unknown;
         try {
             const user = await User.findByPk(req.user.id);
             if (!user) {
@@ -188,14 +188,16 @@ class UserController extends Controller {
 
             await UserController._checkCandidate(email, login).catch((e: unknown ) => {
                 if (imageName) super.deleteFile(USERS_DIR, imageName);
-                return next(super.exceptionHandle(e));
+                error = e;
             });
+            if (error) return next(super.exceptionHandle(error));
 
             if (newPassword) {
                 await UserController._checkPassword(newPassword).catch((e: unknown) => {
                     if (imageName) super.deleteFile(USERS_DIR, imageName);
-                    return next(super.exceptionHandle(e));
+                    error = e;
                 });
+                if (error) return next(super.exceptionHandle(error));
             }
 
             let comparePassword = bcrypt.compareSync(password, user.password);
@@ -204,6 +206,9 @@ class UserController extends Controller {
                 return next(ApiError.badRequest('Невірний пароль'));
             }
 
+            let oldImageName: string | undefined = user.image;
+            if (oldImageName === 'default.png') oldImageName = undefined;
+
             if (email) user.email = email;
             if (login) user.login = login;
             if (firstName) user.firstName = firstName;
@@ -211,18 +216,17 @@ class UserController extends Controller {
             if (newPassword) user.password = bcrypt.hashSync(newPassword, SALT_ROUNDS);
             if (imageName) user.image = imageName;
 
-            let oldImageName: string | undefined = user.image;
-
             await user.save().catch((e: unknown) => {
                 if (imageName) super.deleteFile(USERS_DIR, imageName);
-                return next(super.exceptionHandle(e));
+                error = e;
             });
+            if (error) return next(super.exceptionHandle(error));
 
             if (imageName && oldImageName) super.deleteFile(USERS_DIR, oldImageName);
 
             const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
 
-            return res.json({message: "Користувача відредаговано успішно", user, token});
+            return res.json({message: "Користувача відредаговано успішно", token});
         }
         catch (e: unknown) {
             if (imageName) super.deleteFile(USERS_DIR, imageName);
@@ -232,18 +236,17 @@ class UserController extends Controller {
 
     async profile(req: Request, res: Response, next: NextFunction) {
         try {
-            let { includeBoughtItems, includeCart,
-                includeItemsRates,
+            let { includeBought, includeCart,
+                includeRates,
                 includeWishlist, includePublications,
                 includePublicationComments } = req.query;
-            let Controller = new UserController();
 
-            let includeBoughtItemsParsed = Controller.parseBoolean(includeBoughtItems as string) || true;
-            let includeCartParsed = Controller.parseBoolean(includeCart as string) || true;
-            let includeItemsRatesParsed = Controller.parseBoolean(includeItemsRates as string) || true;
-            let includeWishlistParsed = Controller.parseBoolean(includeWishlist as string) || true;
-            let includePublicationsParsed = Controller.parseBoolean(includePublications as string) || true;
-            let includePublicationCommentsParsed = Controller.parseBoolean(includePublicationComments as string) || true;
+            let includeBoughtItemsParsed = super.parseBoolean(includeBought as string);
+            let includeCartParsed = super.parseBoolean(includeCart as string);
+            let includeItemsRatesParsed = super.parseBoolean(includeRates as string);
+            let includeWishlistParsed = super.parseBoolean(includeWishlist as string);
+            let includePublicationsParsed = super.parseBoolean(includePublications as string);
+            let includePublicationCommentsParsed = super.parseBoolean(includePublicationComments as string);
 
             const user = await getUser(req.user.id, includeBoughtItemsParsed, includeCartParsed,
                 includeItemsRatesParsed, includeWishlistParsed, includePublicationsParsed,
@@ -251,6 +254,7 @@ class UserController extends Controller {
             if (!user) {
                 return next(ApiError.internal('Користувача не знайдено'));
             }
+
             return res.json(user);
         }
         catch (e: unknown) {

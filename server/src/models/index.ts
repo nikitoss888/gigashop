@@ -22,11 +22,8 @@ function initModels() {
     User.belongsToMany(Item, {through: ItemBought, foreignKey: 'userId', as: 'Bought'});
     Item.belongsToMany(User, {through: ItemBought, foreignKey: 'itemId', as: 'BoughtUsers'});
 
-    User.belongsToMany(Item, {through: ItemRate, foreignKey: 'userId', as: 'Rates', onDelete: 'CASCADE'});
-    Item.belongsToMany(User, {through: ItemRate, foreignKey: 'itemId', as: 'RatedUsers', onDelete: 'CASCADE'});
-
     Company.hasMany(Item, {foreignKey: 'company_publisherId', as: 'ItemsPublished', onDelete: 'CASCADE'});
-    Item.belongsTo(Company, {foreignKey: 'company_publisherId', as: 'Publisher'});
+    Item.belongsTo(Company, {foreignKey: 'company_publisherId', as: 'Publisher', onDelete: 'CASCADE'});
 
     Company.belongsToMany(Item, {through: ItemDevelopers, as: 'ItemsDeveloped', onDelete: 'CASCADE'});
     Item.belongsToMany(Company, {through: ItemDevelopers, as: 'Developers', onDelete: 'CASCADE'});
@@ -34,10 +31,15 @@ function initModels() {
     Genre.belongsToMany(Item, {through: ItemGenre, as: 'Items', onDelete: 'CASCADE'});
     Item.belongsToMany(Genre, {through: ItemGenre, as: 'Genres', onDelete: 'CASCADE'});
 
-    Publication.belongsToMany(User, {through: PublicationComment, foreignKey: 'publicationId',
-        as: 'Comments', onDelete: 'CASCADE'});
-    User.belongsToMany(Publication, {through: PublicationComment, foreignKey: 'userId',
-        as: 'CommentedPublications', onDelete: 'CASCADE'});
+    ItemRate.belongsTo(User, {foreignKey: 'userId', as: 'User', onDelete: 'CASCADE'});
+    User.hasMany(ItemRate, {foreignKey: 'userId', as: 'Rates', onDelete: 'CASCADE'});
+    ItemRate.belongsTo(Item, {foreignKey: 'itemId', as: 'Item', onDelete: 'CASCADE'});
+    Item.hasMany(ItemRate, {foreignKey: 'itemId', as: 'Rates', onDelete: 'CASCADE'});
+
+    PublicationComment.belongsTo(User, {foreignKey: 'userId', as: 'User', onDelete: 'CASCADE'});
+    User.hasMany(PublicationComment, {foreignKey: 'userId', as: 'Comments', onDelete: 'CASCADE'});
+    PublicationComment.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});
+    Publication.hasMany(PublicationComment, {foreignKey: 'publicationId', as: 'Comments', onDelete: 'CASCADE'});
 
     Publication.hasMany(PublicationTag, {foreignKey: 'publicationId', as: 'Tags', onDelete: 'CASCADE'});
     PublicationTag.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});

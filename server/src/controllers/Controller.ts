@@ -3,15 +3,15 @@ import ApiError from "../errors/ApiError";
 import path from "path";
 
 export default class Controller {
-    protected exceptionHandle(e: unknown): ApiError {
-        if (e instanceof SequelizeValidationError) {
-            return ApiError.badRequest(e.name, e.errors);
+    protected exceptionHandle(error: unknown): ApiError {
+        if (error instanceof SequelizeValidationError) {
+            return ApiError.badRequest(error.name, error.errors);
         }
-        else if (e instanceof ApiError) {
-            return e;
+        else if (error instanceof ApiError) {
+            return error;
         }
-        else if (e instanceof Error) {
-            return ApiError.internal(e.message);
+        else if (error instanceof Error) {
+            return ApiError.internal(error.message);
         }
         else return ApiError.internal("Помилка обробки запиту");
     }
@@ -42,7 +42,9 @@ export default class Controller {
     protected parseBoolean(boolean: boolean | string | number | undefined): boolean | undefined {
         if (boolean === undefined) return undefined;
         if (!boolean) return false;
-        return [true, 'true', 'True', 'on', 'yes', '1', 1].includes(boolean);
+        let res = [true, 'true', 'True', 'on', 'yes', '1', 1].includes(boolean);
+        console.log(res);
+        return res;
     }
 
     protected parsePagination(desc: string | boolean | number | undefined,
