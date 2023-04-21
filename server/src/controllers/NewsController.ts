@@ -3,27 +3,83 @@ import Controller from './Controller';
 import Publication, { getPublications } from "../models/Publication";
 import ApiError from "../errors/ApiError";
 import PublicationComment from "../models/PublicationComment";
-import {User} from "../models";
+import User from "../models/User";
+import PublicationTag from "../models/PublicationTag";
 
 class NewsController extends Controller {
+    private static async _checkPublication(id?: number | string) {
+        if (!id) throw ApiError.badRequest('Неправильний id публікації');
+        const news = await Publication.findByPk(id);
+        if (!news) throw ApiError.badRequest('Публікацію не знайдено');
+    }
+    private static async _createTags(id: number | string, tagsNames: string | string[]) {
+        if (tagsNames instanceof Array) {
+            let data = tagsNames.map((name: string) => {
+                return { publicationId: id, name }
+            });
+
+            return await PublicationTag.bulkCreate(data)
+                .catch((e: unknown) => { throw e; });
+        }
+
+        return await PublicationTag.create({ publicationId: id, name: tagsNames })
+            .catch((e: unknown) => { throw e; });
+    }
+    static async addTags(id: number | string, tagsNames: string | string[]) {
+        let candidates = await PublicationTag.findAll({ where: { publicationId: id, name: tagsNames } });
+        if (candidates.length > 0) throw ApiError.badRequest('Теги вже додані');
+
+        await NewsController._checkPublication(id)
+            .catch((e: unknown) => { throw e; });
+
+        return await NewsController._createTags(id, tagsNames)
+            .catch((e: unknown) => { throw e; });
+    }
+    static async removeTags(id: number | string, tagsNames?: string | string[]) {
+        let where: { publicationId: number | string, name?: string | string[] } = { publicationId: id };
+        if (tagsNames) where.name = tagsNames;
+
+        return await PublicationTag.destroy({ where })
+            .catch((e: unknown) => { throw e; });
+    }
+    static async setTags(id: number | string, tagsNames: string | string[]) {
+        await NewsController._checkPublication(id)
+            .catch((e: unknown) => { throw e; });
+
+        await PublicationTag.destroy({ where: { publicationId: id } })
+            .catch((e: unknown) => { throw e; });
+
+        return await NewsController._createTags(id, tagsNames)
+            .catch((e: unknown) => { throw e; });
+    }
+
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { title, content, hide } = req.body;
+            const { title, content, hide, tags } = req.body;
 
             const hideParsed = super.parseBoolean(hide);
             const userId = req.user.id;
 
-            const company = await Publication
+            const publication = await Publication
                 .create({ title, content, hide: hideParsed, userId })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
 
-            if (!company) {
+            if (!publication) {
                 return next(ApiError.badRequest('Публікацію не створено'));
             }
 
-            res.json(company);
+            if (!tags) return res.json({message: "Публікацію створено", publication});
+
+            let err: unknown;
+            let tagsRes = tags ? await NewsController._createTags(publication.id, tags)
+                .catch((e: unknown) => {
+                    err = e;
+                }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
+
+            return res.json({message: "Публікацію створено", publication, tags: tagsRes});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -84,26 +140,38 @@ class NewsController extends Controller {
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { title, content, hide } = req.body;
+            const { title, content, hide, tags } = req.body;
 
             let hideParsed = super.parseBoolean(hide as string | undefined);
 
             let publication = await Publication.findByPk(id);
             if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
 
+            if (title) publication.title = title;
+            if (content) publication.content = content;
             if (publication.violation) hideParsed = true;
+            if (hide) publication.hide = hideParsed;
 
-            const result = await Publication.
-                update({ title, content, hide: hideParsed },
-                    { where: { id } })
+            let err: unknown;
+            const result = await publication.save()
                 .catch((e: unknown) => {
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 });
+            if (err) return next(super.exceptionHandle(err));
 
-            res.json(result);
+            if (!result) return next(ApiError.badRequest('Публікацію не оновлено'));
+
+            if (!tags) return res.json({message: "Публікацію оновлено", publication});
+
+            let tagsRes = tags ? await NewsController.setTags(id, tags)
+                .catch((e: unknown) => {
+                    err = e;
+                }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
+
+            res.json({message: "Публікацію оновлено", publication, tags: tagsRes});
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -145,6 +213,8 @@ class NewsController extends Controller {
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
+
+            await NewsController.removeTags(id);
 
             res.json(result);
         }

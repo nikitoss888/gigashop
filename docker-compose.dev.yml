@@ -14,7 +14,7 @@ services:
       - 5000:5000
     command: npm run dev
     environment:
-      DB_NAME: gigashop_db
+      DB_NAME: gigashop
       DB_USER: gigashop
       DB_PASSWORD: root
       DB_PORT: 5432
@@ -29,7 +29,7 @@ services:
     ports:
       - 5001:5432
     environment:
-      POSTGRES_DB: gigashop_db
+      POSTGRES_DB: gigashop
       POSTGRES_USER: gigashop
       POSTGRES_PASSWORD: root
     volumes:

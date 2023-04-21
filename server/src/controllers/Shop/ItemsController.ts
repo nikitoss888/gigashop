@@ -258,24 +258,20 @@ class ItemsController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         const files = req.files;
 
-        if (!files || files instanceof Array) {
+        if (files instanceof Array) {
             return next(ApiError.badRequest('Неправильна передача зображень'));
         }
 
-
-        const image = files.image[0];
-        if(!image) {
-            return next(ApiError.badRequest('Необхідно завантажити головне зображення товару'));
-        }
-        let imageName = image.filename;
-
-
-        const images = files.images;
+        let imageName : string | undefined;
         let imagesNames: string[] | undefined;
-        if(!images) {
-            imagesNames = [];
+        if (files) {
+            const image = files.image[0];
+            if (image) imageName = image.filename;
+
+            const images = files.images;
+            if (!images) imagesNames = [];
+            else imagesNames = images.map((file: Express.Multer.File) => file.filename);
         }
-        else imagesNames = images.map((file: Express.Multer.File) => file.filename);
 
 
         try {
@@ -285,7 +281,7 @@ class ItemsController extends Controller {
                 releaseDate, publisherId: company_publisherId,
                 discount, discountFrom, discountTo,
                 discountSize,
-                price, amount}= ItemsController.parseData(req.body);
+                price, amount} = ItemsController.parseData(req.body);
 
             let characteristicsParsed: Object | undefined = undefined;
             if (characteristics) {
@@ -297,9 +293,8 @@ class ItemsController extends Controller {
                     discount, discountFrom, discountTo, discountSize, mainImage: imageName,
                     images: imagesNames, characteristics: characteristicsParsed, company_publisherId})
                 .catch((e: unknown) => {
-                    console.log(e);
-                    super.deleteFile(ITEMS_DIR, imageName);
-                    if(imagesNames) {
+                    if (imageName) super.deleteFile(ITEMS_DIR, imageName);
+                    if (imagesNames) {
                         imagesNames.forEach((name: string) => {
                             super.deleteFile(ITEMS_DIR, name);
                         });
@@ -308,8 +303,8 @@ class ItemsController extends Controller {
                 });
 
             if (!item) {
-                super.deleteFile(ITEMS_DIR, imageName);
-                if(imagesNames) {
+                if (imageName) super.deleteFile(ITEMS_DIR, imageName);
+                if (imagesNames) {
                     imagesNames.forEach((name: string) => {
                         super.deleteFile(ITEMS_DIR, name);
                     });
@@ -321,23 +316,23 @@ class ItemsController extends Controller {
                 return res.json({message: "Товар успішно створено", item});
             }
 
+            let err: unknown;
             let developersRes = developersIds ? await ItemsController.addDevelopers(item.id, developersIds)
                 .catch((e: unknown) => {
-                    console.log(e);
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
 
             let genresRes = genresIds ? await ItemsController.addGenres(item.id, genresIds)
                 .catch((e: unknown) => {
-                    console.log(e);
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
 
             return res.json({message: "Товар успішно створено", item, developers: developersRes, genres: genresRes});
         }
         catch (e: unknown) {
-            console.log(e);
-            super.deleteFile(ITEMS_DIR, imageName);
+            if (imageName) super.deleteFile(ITEMS_DIR, imageName);
             if(imagesNames) {
                 imagesNames.forEach((name: string) => {
                     super.deleteFile(ITEMS_DIR, name);
@@ -411,13 +406,13 @@ class ItemsController extends Controller {
                 hide} = ItemsController.parseData(req.body);
             const files = req.files;
 
-            let characteristicsParsed: Object | undefined = undefined;
+            let characteristicsParsed: Object | undefined;
             if (characteristics) {
                 characteristicsParsed = JSON.parse(characteristics);
             }
 
-            let newImageName: string | undefined = undefined;
-            let newImagesNames: string[] | undefined = undefined;
+            let newImageName: string | undefined;
+            let newImagesNames: string[] | undefined;
             if (files instanceof Array) {
                 return next(ApiError.badRequest('Неправильна передача зображень'));
             }
@@ -463,9 +458,9 @@ class ItemsController extends Controller {
             if (hide) item.hide = hide;
             if (publisherId && await Company.findByPk(publisherId)) item.company_publisherId = publisherId;
 
+            let err: unknown;
             const result = await item.save()
                 .catch((e: unknown) => {
-                    console.log(e);
                     if(newImageName) {
                         super.deleteFile(ITEMS_DIR, newImageName);
                     }
@@ -474,14 +469,15 @@ class ItemsController extends Controller {
                             super.deleteFile(ITEMS_DIR, name);
                         });
                     }
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 });
+            if (err) return next(super.exceptionHandle(err));
 
             if (!result) {
-                if(newImageName) {
+                if (newImageName) {
                     super.deleteFile(ITEMS_DIR, newImageName);
                 }
-                if(newImagesNames) {
+                if (newImagesNames) {
                     newImagesNames.forEach((name: string) => {
                         super.deleteFile(ITEMS_DIR, name);
                     });
@@ -490,18 +486,20 @@ class ItemsController extends Controller {
             }
 
             if (!developersIds && !genresIds) {
-                return res.json(result);
+                return res.json({message: "Товар успішно відредаговано", result});
             }
 
             let developersRes = developersIds ? await ItemsController.setDevelopers(id, developersIds)
                 .catch((e: unknown) => {
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
 
             let genresRes = genresIds ? await ItemsController.setGenres(id, genresIds)
                 .catch((e: unknown) => {
-                    return next(super.exceptionHandle(e));
+                    err = e;
                 }) : undefined;
+            if (err) return next(super.exceptionHandle(err));
 
             if(oldImageName && newImageName) {
                 super.deleteFile(ITEMS_DIR, oldImageName);

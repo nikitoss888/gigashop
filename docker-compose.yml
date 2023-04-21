@@ -28,8 +28,8 @@ services:
     ports:
       - 5001:5432
     environment:
+      POSTGRES_DB: gigashop
       POSTGRES_USER: gigashop
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: gigashop
     volumes:
       - ./data:/var/lib/postgresql/data
