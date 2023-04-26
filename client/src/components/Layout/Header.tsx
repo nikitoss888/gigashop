@@ -1,71 +1,118 @@
-import styled from "@emotion/styled";
-import {Link as RouterLink} from "react-router-dom";
-import {type ReactNode} from "react";
+import styled from "@emotion/styled/macro";
+import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
-import {type Theme, useTheme} from "@emotion/react";
-
-const HeaderStyle = styled.header`
-  grid-area: header;
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  gap: 20px;
-  padding: 0 20px;
-  background-color: ${props => props.theme.colors.primary};
-  color: ${(props: {admin?: boolean}) => props.admin ? "#000" : "#fff"};
-`;
+import { Typography, AppBar, Link as MUILink, Menu, MenuItem } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+import LogInOut from "./LogInOut";
 
 const Logo = styled.img`
-  height: 40px;
-`;
-
-const Title = styled.h1`
-  font-size: 1.5rem;
-  font-weight: 400;
-  margin: 0;
+	width: 60px;
+	margin-block: 15px;
 `;
 
 const Nav = styled.nav`
-  display: flex;
-  height: 100%;
-  gap: 20px;
-  align-items: center;
-  > Link {
-    color: ${(props: {admin?: boolean}) => props.admin ? "#000" : "#fff"};
-  }
+	display: flex;
+	height: 100%;
+	gap: 25px;
+	align-items: center;
+	margin-left: 25px;
 `;
 
-const Link = styled(RouterLink)`
-  font-size: 1.2rem;
-  text-decoration: none;
+const Link = styled(MUILink)`
+	font-size: 1.2rem;
+	text-decoration: none;
+	color: ${(props) => props.theme.colors.secondary};
+` as typeof MUILink;
+
+const HeaderStyle = styled(AppBar)`
+	grid-area: header;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: start;
+	padding: 0 100px;
+	background-color: ${(props) => props.theme.colors.primary};
+	color: ${(props) => props.theme.colors.secondary};
 `;
 
 type HeaderComponentProps = {
-    children: ReactNode,
-    theme: Theme,
-}
-const HeaderComponent = ({ children, theme }: HeaderComponentProps) => (
-    <HeaderStyle theme={theme}>
-        {children}
-    </HeaderStyle>
-);
+	children: ReactNode;
+};
+const HeaderComponent = ({ children }: HeaderComponentProps) => <HeaderStyle>{children}</HeaderStyle>;
 
 type HeaderProps = {
-    admin?: boolean,
-}
+	admin?: boolean;
+};
 
-export default function Header({admin}: HeaderProps) {
-    const theme = useTheme();
-    const title = process.env.PROJECT_NAME || "Gigashop1" + admin ? " Admin" : "";
+export default function Header({ admin }: HeaderProps) {
+	const title = process.env.REACT_APP_PROJECT_NAME + (admin ? " Admin" : "");
 
-    return (
-        <HeaderComponent theme={theme}>
-            <Logo src={logo} alt="Logo" />
-            <Title>{title}</Title>
-            <Nav>
-                <Link to="/">Home</Link>
-                <Link to="/about">About</Link>
-            </Nav>
-        </HeaderComponent>
-    );
+	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+	const shopOpen = Boolean(anchorEl);
+
+	const handleShopMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+		setAnchorEl(event.currentTarget);
+	};
+
+	const handleShopMenuClose = () => {
+		setAnchorEl(null);
+	};
+
+	return (
+		<HeaderComponent>
+			<Logo src={logo} alt='Logo' />
+			<Typography
+				variant='h1'
+				component={RouterLink}
+				to={"/" + (admin ? "admin" : "")}
+				noWrap
+				color='secondary'
+				sx={{
+					fontSize: "1.5rem",
+					fontWeight: 400,
+					marginLeft: "25px",
+					textDecoration: "none",
+				}}
+			>
+				{title}
+			</Typography>
+			{admin ? undefined : (
+				<Nav>
+					<Link component={RouterLink} to='/'>
+						Home
+					</Link>
+					<Link
+						href='#'
+						id='shop-dropdown'
+						aria-controls={shopOpen ? "shop-menu" : undefined}
+						aria-haspopup='true'
+						aria-expanded={shopOpen ? "true" : undefined}
+						onMouseOver={handleShopMenuOpen}
+					>
+						Shop
+					</Link>
+					<Menu
+						id='shop-menu'
+						anchorEl={anchorEl}
+						open={shopOpen}
+						onClose={handleShopMenuClose}
+						MenuListProps={{
+							"aria-labelledby": "shop-dropdown",
+						}}
+					>
+						<MenuItem component={RouterLink} to='/shop/items'>
+							Items
+						</MenuItem>
+						<MenuItem component={RouterLink} to='/shop/genres'>
+							Genres
+						</MenuItem>
+						<MenuItem component={RouterLink} to='/shop/companies'>
+							Companies
+						</MenuItem>
+					</Menu>
+				</Nav>
+			)}
+			<LogInOut />
+		</HeaderComponent>
+	);
 }

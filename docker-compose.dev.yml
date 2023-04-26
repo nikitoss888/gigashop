@@ -1,6 +1,21 @@
 version: '1.1'
 name: gigashop_dev
 services:
+  client:
+    build:
+      context: ./client
+      target: development
+    container_name: client
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 3000:3000
+    depends_on:
+      - server
+    command:
+      - npm start
+
   server:
     build:
       context: ./server
@@ -23,6 +38,7 @@ services:
       CONNECT_RETRIES: 10
     depends_on:
       - database
+
   database:
     container_name: database
     image: postgres
