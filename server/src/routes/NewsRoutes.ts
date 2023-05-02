@@ -12,10 +12,10 @@ newsRouter.get('/', NewsController.getAll);
 newsRouter.get('/:id', NewsController.getOne);
 newsRouter.get('/test', NewsController.test);
 
-newsRouter.post('/comment', auth, NewsController.createComment);
-newsRouter.patch('/comment/:id', auth, NewsController.updateComment);
-newsRouter.delete('/comment/:id', auth, NewsController.deleteComment);
-newsRouter.get('/comments', NewsController.getComments);
+newsRouter.post('/comment/:id', auth, NewsController.createComment);
+newsRouter.get('/comments/:id', NewsController.getComments);
+newsRouter.patch('/comments/:id', auth, NewsController.updateComment);
+newsRouter.delete('/comments/:id', auth, NewsController.deleteComment);
 
 newsRouter.patch('/violations/:id', checkWorker, NewsController.violation);
 newsRouter.patch('/violations/comment/:id', checkWorker, NewsController.commentViolation);

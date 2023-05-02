@@ -1,6 +1,6 @@
 import type {NextFunction, Request, Response} from 'express';
 import Controller from './Controller';
-import Publication, { getPublications } from "../models/Publication";
+import Publication, { getPublication, getPublications } from "../models/Publication";
 import ApiError from "../errors/ApiError";
 import PublicationComment from "../models/PublicationComment";
 import User from "../models/User";
@@ -88,8 +88,10 @@ class NewsController extends Controller {
 
     async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const { title, content, createdAt, createdFrom, createdTo,
-                desc, descending, limit, page, sortBy } = req.query;
+            const { title, content,
+                createdAt, createdFrom, createdTo,
+                desc, descending, limit,
+                page, sortBy } = req.query;
 
             let createdAtParsed = super.parseDate(createdAt as string | undefined);
             let createdFromParsed = super.parseDate(createdFrom as string | undefined);
@@ -113,16 +115,21 @@ class NewsController extends Controller {
             res.json(publications);
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         try {
-            const { id } = req.params;
+            const id = super.parseNumber(req.params.id);
+            if (!id) return next(ApiError.badRequest('Неправильний id публікації'));
 
-            const publication = await Publication.findByPk(id)
+            const includeTags = super.parseBoolean(req.query.includeTags as string | undefined);
+            const includeComments = super.parseBoolean(req.query.includeComments as string | undefined);
+            const includeViolations = super.parseBoolean(req.query.includeViolations as string | undefined);
+            const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined);
+
+            const publication = await getPublication(id, includeTags, includeComments, includeViolations, includeHidden)
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
@@ -230,17 +237,22 @@ class NewsController extends Controller {
             const { content, rate } = req.body;
 
             let rateParsed = super.parseNumber(rate as string | undefined) || 0;
+            if (rateParsed < 0 || rateParsed > 5) return next(ApiError.badRequest('Невірна оцінка'));
 
-            const publication = await Publication.findByPk(id);
-            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+            await NewsController._checkPublication(id)
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
+
+            const comment = await PublicationComment.findOne({ where: { publicationId: id, userId: req.user.id } });
+            if (comment) return next(ApiError.badRequest('Ви вже залишили коментар'));
 
             const result = await PublicationComment
                 .create({ content, rate: rateParsed, publicationId: id, userId: req.user.id })
 
-            res.json(result);
+            res.json({ message: "Коментар успішно додано", comment: result });
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -249,11 +261,14 @@ class NewsController extends Controller {
         try {
             const { id } = req.params;
 
-            const publication = await Publication.findByPk(id);
-            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+            await NewsController._checkPublication(id)
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
 
             const comments = await PublicationComment.findAll({
                 where: { publicationId: id },
+                attributes: ['content', 'rate', 'createdAt', 'updatedAt'],
                 include: [
                     {
                         model: User,
@@ -263,10 +278,9 @@ class NewsController extends Controller {
                 ],
             });
 
-            res.json(comments);
+            res.json({ message: "Коментарі успішно отримано", comments });
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -275,24 +289,31 @@ class NewsController extends Controller {
         try {
             const { id } = req.params;
             const { content, rate } = req.body;
+            const userId = req.user.id;
 
             let rateParsed = super.parseNumber(rate as string | undefined) || 0;
+            if (rateParsed < 0 || rateParsed > 5) return next(ApiError.badRequest('Невірна оцінка'));
 
-            const publication = await Publication.findByPk(id);
-            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
+            await NewsController._checkPublication(id)
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
 
-            const comment = await PublicationComment.findByPk(id);
+            const comment = await PublicationComment.findOne({ where: { publicationId: id, userId } });
             if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
-            if (comment.userId !== req.user.id) return next(ApiError.forbidden('Немає доступу'));
+            if (comment.userId !== userId) return next(ApiError.forbidden('Немає доступу'));
 
-            publication.content = content;
-            publication.rate = rateParsed;
-            const result = await publication.save();
+            if (content) comment.content = content;
+            if (rate) comment.rate = rateParsed;
 
-            res.json(result);
+            const result = await comment.save()
+                .catch((e: unknown) => {
+                    return next(super.exceptionHandle(e));
+                });
+
+            res.json({ message: "Коментар успішно оновлено", comment: result });
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -301,23 +322,18 @@ class NewsController extends Controller {
         try {
             const { id } = req.params;
 
-            const publication = await Publication.findByPk(id);
-            if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
-
-            const comment = await PublicationComment.findByPk(id);
+            const comment = await PublicationComment.findOne({ where: { publicationId: id, userId: req.user.id } });
             if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
             if (comment.userId !== req.user.id) return next(ApiError.forbidden('Немає доступу'));
 
-            const result = await PublicationComment.
-                destroy({ where: { id } })
+            const result = await comment.destroy()
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json(result);
+            res.json({ message: "Коментар успішно видалено", result });
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -334,9 +350,9 @@ class NewsController extends Controller {
             const comment = await PublicationComment.findByPk(id);
             if (!comment) return next(ApiError.badRequest('Коментар не знайдено'));
 
-            comment.violation = violationParsed;
-            comment.violation_reason = violationParsed ? violation_reason : null;
-            comment.hide = hide;
+            if (violationParsed) comment.violation = violationParsed;
+            if (violation_reason) comment.violation_reason = violationParsed ? violation_reason : null;
+            if (hide) comment.hide = hide;
             const result = await comment.save();
 
             res.json(result);

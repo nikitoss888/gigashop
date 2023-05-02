@@ -1,7 +1,6 @@
 const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
-import {PublicationComment, PublicationTag} from "./index";
-import User from "./User";
+import {PublicationComment, User, PublicationTag} from "./index";
 
 const Publication = sequelize_db.define('publication', {
     id: {
@@ -76,16 +75,14 @@ const _whereHandler = (title?: string, content?: string,
     return where;
 }
 const _includeHandler = (includeTags: boolean, includeComments: boolean, includeViolations: boolean,
-                               includeHidden: boolean) => {
+                         includeHidden: boolean) => {
     let include: {}[] = [];
 
     if (includeTags) {
         include.push({
             model: PublicationTag,
             as: 'Tags',
-            through: {attributes: []},
-            attributes: ['name', [sequelize_db.fn('COUNT', sequelize_db.col('Tags.id')), 'count']],
-            group: ['Tags.name'],
+            attributes: ['name'],
         });
     }
 
@@ -107,12 +104,13 @@ const _includeHandler = (includeTags: boolean, includeComments: boolean, include
         include.push({
             model: PublicationComment,
             as: 'Comments',
-            attributes: ['id', 'content', 'rate', 'createdAt', 'updatedAt'],
+            attributes: ['content', 'rate', 'createdAt', 'updatedAt'],
             include: [{
                 model: User,
                 as: 'User',
-                attributes: ['id', 'firstName', 'lastName', 'login']
+                attributes: ['id', 'firstName', 'lastName', 'login', 'image']
             }],
+            required: false,
             where
         });
     }
@@ -122,20 +120,20 @@ const _includeHandler = (includeTags: boolean, includeComments: boolean, include
 
 const getPublications = async (title?: string, content?: string,
                                createdAt?: Date, createdFrom?: Date, createdTo?: Date,
-                               descending = false, limit = 10, page = 0, sortBy = 'id',
-                               includeTags = true, includeComments = true, includeViolations = false,
+                               descending = true, limit = 10, page = 0, sortBy = 'createdAt',
+                               includeTags = true, includeComments = false, includeViolations = false,
                                includeHidden = false, violation = false, violationReason?: string) => {
     const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, violation, violationReason);
     const include = _includeHandler(includeTags, includeComments, includeViolations, includeHidden);
 
-    return Publication.findAll({
+    return await Publication.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 }
 const getPublication = async (id: number, includeTags = true, includeComments = true,
                               includeViolations = false, includeHidden = false) => {
     const include = _includeHandler(includeTags, includeComments, includeViolations, includeHidden);
-    return Publication.findByPk(id, {include});
+    return await Publication.findByPk(id, {include});
 }
 
 const getPublicationsByTags = async (tagNames: string[] | string, includeComments = true,

@@ -76,42 +76,44 @@ export default function Header({ admin }: HeaderProps) {
 			>
 				{title}
 			</Typography>
-			{admin ? undefined : (
-				<Nav>
-					<Link component={RouterLink} to='/'>
-						Home
-					</Link>
-					<Link
-						href='#'
-						id='shop-dropdown'
-						aria-controls={shopOpen ? "shop-menu" : undefined}
-						aria-haspopup='true'
-						aria-expanded={shopOpen ? "true" : undefined}
-						onMouseOver={handleShopMenuOpen}
-					>
-						Shop
-					</Link>
-					<Menu
-						id='shop-menu'
-						anchorEl={anchorEl}
-						open={shopOpen}
-						onClose={handleShopMenuClose}
-						MenuListProps={{
-							"aria-labelledby": "shop-dropdown",
-						}}
-					>
-						<MenuItem component={RouterLink} to='/shop/items'>
-							Items
-						</MenuItem>
-						<MenuItem component={RouterLink} to='/shop/genres'>
-							Genres
-						</MenuItem>
-						<MenuItem component={RouterLink} to='/shop/companies'>
-							Companies
-						</MenuItem>
-					</Menu>
-				</Nav>
-			)}
+			<Nav>
+				<Link component={RouterLink} to='/'>
+					Домашня сторінка
+				</Link>
+				{admin ? undefined :
+					<>
+						<Link
+							href='#'
+							id='shop-dropdown'
+							aria-controls={shopOpen ? "shop-menu" : undefined}
+							aria-haspopup='true'
+							aria-expanded={shopOpen ? "true" : undefined}
+							onMouseOver={handleShopMenuOpen}
+						>
+							Магазин
+						</Link>
+						<Menu
+							id='shop-menu'
+							anchorEl={anchorEl}
+							open={shopOpen}
+							onClose={handleShopMenuClose}
+							MenuListProps={{
+								"aria-labelledby": "shop-dropdown",
+							}}
+						>
+							<MenuItem component={RouterLink} to='/shop/items'>
+								Товари
+							</MenuItem>
+							<MenuItem component={RouterLink} to='/shop/genres'>
+								Жанри
+							</MenuItem>
+							<MenuItem component={RouterLink} to='/shop/companies'>
+								Компанії
+							</MenuItem>
+						</Menu>
+					</>
+				}
+			</Nav>
 			<LogInOut />
 		</HeaderComponent>
 	);

@@ -1,4 +1,4 @@
-import {ValidationError as SequelizeValidationError} from "sequelize";
+import { ValidationError as SequelizeValidationError } from "sequelize";
 import ApiError from "../errors/ApiError";
 import path from "path";
 
@@ -39,12 +39,10 @@ export default class Controller {
         return Number(number);
     }
 
-    protected parseBoolean(boolean: boolean | string | number | undefined): boolean | undefined {
+    protected parseBoolean(boolean?: boolean | string | number): boolean | undefined {
         if (boolean === undefined) return undefined;
         if (!boolean) return false;
-        let res = [true, 'true', 'True', 'on', 'yes', '1', 1].includes(boolean);
-        console.log(res);
-        return res;
+        return [true, 'true', 'True', 'on', 'yes', '1', 1].includes(boolean);
     }
 
     protected parsePagination(desc: string | boolean | number | undefined,
