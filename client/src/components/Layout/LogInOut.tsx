@@ -44,10 +44,9 @@ export default function LogInOut() {
 
 	const handleLogIn = async () => {
 		let errorMessage: string | undefined;
-		const response = await LogInRequest(credentials, password)
-			.catch((err) => {
-				errorMessage = err.response.data.message;
-			});
+		const response = await LogInRequest(credentials, password).catch((err) => {
+			errorMessage = err.response.data.message;
+		});
 
 		if (errorMessage) {
 			setError(errorMessage);

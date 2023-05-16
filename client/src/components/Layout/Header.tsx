@@ -1,13 +1,14 @@
 import styled from "@emotion/styled/macro";
 import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
-import { Typography, AppBar, Link as MUILink, Menu, MenuItem } from "@mui/material";
+import { Typography, AppBar, Link as MUILink, Menu, MenuItem, Container } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import LogInOut from "./LogInOut";
 
 const Logo = styled.img`
-	width: 60px;
-	margin-block: 15px;
+	height: 45px;
+	margin-top: 15px;
+	margin-bottom: 15px;
 `;
 
 const Nav = styled.nav`
@@ -26,19 +27,25 @@ const Link = styled(MUILink)`
 
 const HeaderStyle = styled(AppBar)`
 	grid-area: header;
+	background-color: ${(props) => props.theme.colors.primary};
+	color: ${(props) => props.theme.colors.secondary};
+`;
+
+const HeaderContainer = styled(Container)`
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: start;
-	padding: 0 100px;
-	background-color: ${(props) => props.theme.colors.primary};
-	color: ${(props) => props.theme.colors.secondary};
 `;
 
 type HeaderComponentProps = {
 	children: ReactNode;
 };
-const HeaderComponent = ({ children }: HeaderComponentProps) => <HeaderStyle>{children}</HeaderStyle>;
+const HeaderComponent = ({ children }: HeaderComponentProps) => (
+	<HeaderStyle>
+		<HeaderContainer maxWidth='lg'>{children}</HeaderContainer>
+	</HeaderStyle>
+);
 
 type HeaderProps = {
 	admin?: boolean;

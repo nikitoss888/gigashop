@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { useLocation } from "react-router-dom";
 import ThemeProvider from "@mui/material/styles/ThemeProvider";
 import { AdminTheme, RegularTheme } from "../../styles";
+import { Container } from "@mui/material";
 
 const LayoutStyle = styled.div`
 	display: grid;
@@ -16,6 +17,7 @@ const LayoutStyle = styled.div`
 		"main"
 		"footer";
 	height: 100vh;
+	position: relative;
 `;
 
 type LayoutProps = {
@@ -31,7 +33,11 @@ export default function Layout({ children }: LayoutProps) {
 		<ThemeProvider theme={theme}>
 			<LayoutStyle>
 				<Header admin={admin} />
-				<Main>{children}</Main>
+				<Main>
+					<Container maxWidth='lg' sx={{ height: "100%" }}>
+						{children}
+					</Container>
+				</Main>
 				<Footer />
 			</LayoutStyle>
 		</ThemeProvider>
