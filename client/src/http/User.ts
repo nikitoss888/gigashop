@@ -1,19 +1,18 @@
-import axios from "axios";
+// import axiosInstance from "./AxiosInstance";
+import axios, { type AxiosError } from "axios";
 
 export type LoginResults = {
 	message?: string;
 	token: string;
 };
 
-export const LogInRequest = async (password: string, credentials: string) => {
-	const api = process.env.REACT_APP_SERVER_URL || "http://localhost:5000/api";
-
+export const LogInRequest = async (credentials: string, password: string) => {
 	return await axios
-		.post<LoginResults>(`${api}/user/login`, {
+		.post<LoginResults>(`/api/user/login`, {
 			credentials,
 			password,
 		})
-		.catch((err) => {
-			throw new Error(err.response.data);
+		.catch((err: AxiosError) => {
+			throw new Error(err.message);
 		});
 };

@@ -5,16 +5,18 @@ services:
     build:
       context: ./client
       target: development
+    command: npm start
     container_name: client
     volumes:
       - ./client:/usr/src/app
       - /usr/src/app/node_modules
+      - ./static:/usr/src/app/static
     ports:
       - 3000:3000
     depends_on:
       - server
-    command:
-      - npm start
+    environment:
+      - WATCHPACK_POLLING=true
 
   server:
     build:

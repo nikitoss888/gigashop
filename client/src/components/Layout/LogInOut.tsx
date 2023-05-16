@@ -26,6 +26,7 @@ const SendButton = styled(MUIButton)`
 
 export default function LogInOut() {
 	const [open, setOpen] = useState(false);
+	const [error, setError] = useState<string | undefined>(undefined);
 	const [user, setUser] = useRecoilState(userState);
 
 	const handleOpen = () => setOpen(true);
@@ -42,8 +43,18 @@ export default function LogInOut() {
 	};
 
 	const handleLogIn = async () => {
-		const response = await LogInRequest(password, credentials);
-		const result = LogIn(setUser, response.data.token);
+		let errorMessage: string | undefined;
+		const response = await LogInRequest(credentials, password)
+			.catch((err) => {
+				errorMessage = err.response.data.message;
+			});
+
+		if (errorMessage) {
+			setError(errorMessage);
+			return;
+		}
+		let result: unknown;
+		if (response) result = LogIn(setUser, response.data.token);
 		if (result) handleClose();
 	};
 
@@ -103,6 +114,12 @@ export default function LogInOut() {
 									type='password'
 									onChange={(e) => setPassword(e.target.value)}
 								/>
+
+								{error && (
+									<Typography variant='body1' color='error'>
+										{error}
+									</Typography>
+								)}
 
 								<SendButton variant='contained' onClick={handleLogIn}>
 									Увійти

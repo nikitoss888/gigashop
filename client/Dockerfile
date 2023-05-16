@@ -5,12 +5,12 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+CMD ["npm", "run", "build"]
 
-FROM nginx:stable-alpine as production
+FROM nginx:latest as production
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
-COPY --from=build /usr/src/app/dist /usr/share/nginx/html
+COPY --from=development /usr/src/app/build /usr/share/nginx/html
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 WORKDIR /usr/src/app
 CMD ["nginx", "-g", "daemon off;"]

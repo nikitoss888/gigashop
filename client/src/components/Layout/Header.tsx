@@ -80,7 +80,7 @@ export default function Header({ admin }: HeaderProps) {
 				<Link component={RouterLink} to='/'>
 					Домашня сторінка
 				</Link>
-				{admin ? undefined :
+				{admin ? undefined : (
 					<>
 						<Link
 							href='#'
@@ -112,7 +112,7 @@ export default function Header({ admin }: HeaderProps) {
 							</MenuItem>
 						</Menu>
 					</>
-				}
+				)}
 			</Nav>
 			<LogInOut />
 		</HeaderComponent>
