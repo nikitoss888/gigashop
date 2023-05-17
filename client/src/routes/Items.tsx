@@ -6,48 +6,39 @@ import styled from "@emotion/styled";
 import SearchBar from "../components/Form/SearchBar";
 import FormGroup from "../components/Items/FormGroup";
 
+const Object = yup.object().shape({
+	id: yup.number(),
+	name: yup.string(),
+});
+
 const schema = yup.object().shape({
-	name: yup.string().label("Назва"),
-	priceFrom: yup.number().min(0).default(0).label("Ціна від"),
-	priceTo: yup.number().min(0).default(0).label("Ціна до"),
-	dateFrom: yup.date().label("Дата від"),
-	dateTo: yup.date().label("Дата до"),
-	genres: yup
-		.array()
-		.of(
-			yup.object().shape({
-				id: yup.number(),
-				name: yup.string(),
-			})
-		)
-		.label("Жанри"),
-	publisher: yup
-		.object()
-		.shape({
-			id: yup.number(),
-			name: yup.string(),
-		})
-		.label("Видавництво"),
-	developers: yup
-		.array()
-		.of(
-			yup.object().shape({
-				id: yup.number(),
-				name: yup.string(),
-			})
-		)
-		.label("Розробники"),
-	discount: yup.boolean().label("Зі знижкою"),
-	discountFrom: yup.number().when("discount", {
-		is: true,
-		then: yup.number().min(0).max(100).default(0).label("Зі знижкою від"),
-		otherwise: yup.number().default(0),
-	}),
-	discountTo: yup.number().when("discount", {
-		is: true,
-		then: yup.number().min(0).max(100).default(0).label("Зі знижкою до"),
-		otherwise: yup.number().default(0),
-	}),
+	name: yup.string().nullable().label("Назва"),
+	priceFrom: yup
+		.number()
+		.nullable()
+		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.min(0)
+		.label("Ціна від"),
+	priceTo: yup
+		.number()
+		.nullable()
+		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.min(0)
+		.label("Ціна до"),
+	dateFrom: yup
+		.date()
+		.nullable()
+		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.label("Дата від"),
+	dateTo: yup
+		.date()
+		.nullable()
+		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.label("Дата до"),
+	genres: yup.array().of(Object).notRequired().label("Жанри"),
+	publisher: Object.notRequired().label("Видавництво"),
+	developers: yup.array().of(Object).notRequired().label("Розробники"),
+	discount: yup.boolean().notRequired().label("Зі знижкою"),
 });
 
 const Form = styled.form`

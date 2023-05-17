@@ -10,12 +10,12 @@
     {
       "src": "gigashop_logo_192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x140"
     },
     {
       "src": "gigashop_logo_512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x374"
     }
   ],
   "start_url": ".",

@@ -1,6 +1,7 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Box, TextField, Autocomplete, Checkbox, FormControlLabel } from "@mui/material";
 import styled from "@emotion/styled/macro";
+import Typography from "@mui/material/Typography";
 
 const BoxStyle = styled(Box)`
 	background-color: ${(props) => props.theme.colors.primary};
@@ -56,6 +57,7 @@ export default function FormGroup() {
 			<Controller
 				name='priceFrom'
 				control={control}
+				defaultValue={""}
 				render={({ field }) => (
 					<TextField
 						{...field}
@@ -72,6 +74,7 @@ export default function FormGroup() {
 			<Controller
 				name='priceTo'
 				control={control}
+				defaultValue={""}
 				render={({ field }) => (
 					<TextField
 						{...field}
@@ -88,6 +91,7 @@ export default function FormGroup() {
 			<Controller
 				name='dateFrom'
 				control={control}
+				defaultValue={""}
 				render={({ field }) => (
 					<TextField
 						{...field}
@@ -96,6 +100,7 @@ export default function FormGroup() {
 						size='small'
 						fullWidth
 						type='date'
+						error={!!errors.dateFrom}
 						helperText={errors.dateFrom?.message?.toString()}
 					/>
 				)}
@@ -104,6 +109,7 @@ export default function FormGroup() {
 			<Controller
 				name='dateTo'
 				control={control}
+				defaultValue={""}
 				render={({ field }) => (
 					<TextField
 						{...field}
@@ -120,13 +126,13 @@ export default function FormGroup() {
 			<Controller
 				name='genres'
 				control={control}
+				defaultValue={[]}
 				render={({ field }) => (
 					<Autocomplete
 						{...field}
 						options={Genres}
 						getOptionLabel={(option) => option.name}
 						multiple
-						value={field.value || []}
 						isOptionEqualToValue={(option, value) => option.id === value.id}
 						onChange={(_, data: typeof Genres) => {
 							const genres = data.map((item) => {
@@ -145,12 +151,12 @@ export default function FormGroup() {
 			<Controller
 				name='publisher'
 				control={control}
+				defaultValue={null}
 				render={({ field }) => (
 					<Autocomplete
 						{...field}
 						options={Companies}
 						getOptionLabel={(option) => option.name}
-						value={field.value || null}
 						isOptionEqualToValue={(option, value) => option.id === value.id}
 						onChange={(_, data: Company) => {
 							const company = { id: data.id, name: data.name };
@@ -167,13 +173,13 @@ export default function FormGroup() {
 			<Controller
 				name='developers'
 				control={control}
+				defaultValue={[]}
 				render={({ field }) => (
 					<Autocomplete
 						{...field}
 						options={Companies}
 						getOptionLabel={(option) => option.name}
 						multiple
-						value={field.value || []}
 						isOptionEqualToValue={(option, value) => option.id === value.id}
 						onChange={(_, data: typeof Companies) => {
 							const developers = data.map((item) => {
@@ -192,6 +198,7 @@ export default function FormGroup() {
 			<Controller
 				name='discount'
 				control={control}
+				defaultValue={false}
 				render={({ field }) => (
 					<FormControlLabel
 						control={
@@ -201,10 +208,15 @@ export default function FormGroup() {
 								onChange={(e) => {
 									setValue("discount", e.target.checked, { shouldValidate: true, shouldDirty: true });
 								}}
-								color='primary'
+								color='secondary'
 							/>
 						}
-						label='Знижка'
+						label={
+							<Typography variant='body1' color='secondary'>
+								Знижка
+							</Typography>
+						}
+						color='secondary'
 					/>
 				)}
 			/>
