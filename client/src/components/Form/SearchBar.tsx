@@ -1,5 +1,6 @@
 import { useFormContext, Controller } from "react-hook-form";
-import { Box, TextField } from "@mui/material";
+import { Box, IconButton, TextField } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import styled from "@emotion/styled/macro";
 
 const BoxStyle = styled(Box)`
@@ -11,6 +12,16 @@ const BoxStyle = styled(Box)`
 		color: ${(props) => props.theme.colors.primary};
 	}
 	grid-area: search;
+	display: flex;
+`;
+
+const IconButtonStyle = styled(IconButton)`
+	background-color: ${(props) => props.theme.colors.accent};
+	color: ${(props) => props.theme.colors.secondary};
+	border-radius: 10px;
+	&:hover {
+		background-color: ${(props) => props.theme.colors.accentLight};
+	}
 `;
 
 type Props = {
@@ -19,7 +30,7 @@ type Props = {
 	defValue: string;
 };
 
-export default function SearchBar({ name, label, defValue }: Props) {
+export default function SearchBar({ name, label, defValue = "" }: Props) {
 	const {
 		control,
 		formState: { errors },
@@ -39,11 +50,15 @@ export default function SearchBar({ name, label, defValue }: Props) {
 							variant='outlined'
 							size='small'
 							fullWidth
+							error={!!errors.name}
 							helperText={errors.name?.message?.toString()}
 						/>
 					);
 				}}
 			/>
+			<IconButtonStyle type='submit' sx={{ ml: 1 }}>
+				<SearchIcon />
+			</IconButtonStyle>
 		</BoxStyle>
 	);
 }

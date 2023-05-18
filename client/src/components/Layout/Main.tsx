@@ -7,6 +7,7 @@ const Main = styled.main`
 	align-items: center;
 	justify-content: center;
 	margin-top: 40px;
+	margin-bottom: 20px;
 `;
 
 export default Main;

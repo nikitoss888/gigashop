@@ -4,7 +4,8 @@ import * as yup from "yup";
 import { Box } from "@mui/material";
 import styled from "@emotion/styled";
 import SearchBar from "../components/Form/SearchBar";
-import FormGroup from "../components/Items/FormGroup";
+import Filters from "../components/Items/Filters";
+import ItemsGrid from "../components/Items/ItemsGrid";
 
 const Object = yup.object().shape({
 	id: yup.number(),
@@ -47,7 +48,7 @@ const Form = styled.form`
 	grid-template-rows: 1fr auto;
 	grid-template-areas:
 		"search search"
-		"sidesearch content";
+		"sidesearch items";
 	grid-column-gap: 20px;
 	grid-row-gap: 20px;
 `;
@@ -74,18 +75,8 @@ export default function Items() {
 			<FormProvider {...methods}>
 				<Form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
 					<SearchBar name={"name"} label={"Назва"} defValue={""} />
-					<FormGroup />
-					<input type='submit' />
-					<input type='reset' />
-					<button
-						type='button'
-						onClick={(e) => {
-							e.preventDefault();
-							console.log(methods.getValues());
-						}}
-					>
-						GET VALUES
-					</button>
+					<Filters />
+					<ItemsGrid />
 				</Form>
 			</FormProvider>
 		</Box>
