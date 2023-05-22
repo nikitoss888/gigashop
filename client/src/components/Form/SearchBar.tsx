@@ -11,7 +11,6 @@ const BoxStyle = styled(Box)`
 		background-color: ${(props) => props.theme.colors.inputBackground};
 		color: ${(props) => props.theme.colors.primary};
 	}
-	grid-area: search;
 	display: flex;
 `;
 
@@ -37,7 +36,7 @@ export default function SearchBar({ name, label, defValue = "" }: Props) {
 	} = useFormContext();
 
 	return (
-		<BoxStyle>
+		<BoxStyle sx={{ gridColumn: { sm: "1", md: "1/3" } }}>
 			<Controller
 				name={name}
 				control={control}

@@ -1,7 +1,7 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Box } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import styled from "@emotion/styled";
 import SearchBar from "../components/Form/SearchBar";
 import Filters from "../components/Items/Filters";
@@ -42,15 +42,10 @@ const schema = yup.object().shape({
 	discount: yup.boolean().notRequired().label("Зі знижкою"),
 });
 
-const Form = styled.form`
+const FormBox = styled(Box)`
 	display: grid;
-	grid-template-columns: 1fr 3fr;
-	grid-template-rows: 1fr auto;
-	grid-template-areas:
-		"search search"
-		"sidesearch items";
-	grid-column-gap: 20px;
-	grid-row-gap: 20px;
+	grid-template-rows: repeat(auto-fill, auto);
+	gap: 15px;
 `;
 
 export default function Items() {
@@ -71,14 +66,20 @@ export default function Items() {
 	};
 
 	return (
-		<Box>
+		<Container>
 			<FormProvider {...methods}>
-				<Form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
-					<SearchBar name={"name"} label={"Назва"} defValue={""} />
-					<Filters />
-					<ItemsGrid />
-				</Form>
+				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
+					<FormBox
+						sx={{
+							gridTemplateColumns: { sm: "1fr", md: "1fr 3fr" },
+						}}
+					>
+						<SearchBar name={"name"} label={"Назва"} defValue={""} />
+						<Filters />
+						<ItemsGrid />
+					</FormBox>
+				</form>
 			</FormProvider>
-		</Box>
+		</Container>
 	);
 }
