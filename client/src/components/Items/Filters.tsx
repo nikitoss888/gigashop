@@ -12,7 +12,7 @@ import {
 	AccordionSummary,
 	AccordionDetails,
 } from "@mui/material";
-import styled from "@emotion/styled/macro";
+import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import SearchIcon from "@mui/icons-material/Search";
@@ -43,7 +43,7 @@ const AccordionStyle = styled(Accordion)`
 
 const ChipStyle = styled(Chip)`
 	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.primary};
+	color: ${(props) => props.theme.colors.secondary};
 `;
 
 const CheckboxStyle = styled(Checkbox)`
@@ -231,7 +231,11 @@ const FiltersContent = ({ control, errors, reset, setValue }: FiltersContentProp
 					)}
 					renderTags={(value, getTagProps) => {
 						return value.map((option, index) => (
-							<ChipStyle {...getTagProps({ index })} key={index} label={option.name} />
+							<ChipStyle
+								{...getTagProps({ index })}
+								key={index}
+								label={<Typography variant='body2'>{option.name}</Typography>}
+							/>
 						));
 					}}
 				/>
@@ -284,7 +288,11 @@ const FiltersContent = ({ control, errors, reset, setValue }: FiltersContentProp
 					)}
 					renderTags={(value, getTagProps) => {
 						return value.map((option, index) => (
-							<ChipStyle {...getTagProps({ index })} key={index} label={option.name} />
+							<ChipStyle
+								{...getTagProps({ index })}
+								key={index}
+								label={<Typography variant='body2'>{option.name}</Typography>}
+							/>
 						));
 					}}
 				/>

@@ -4,6 +4,7 @@ export type Item = {
 	price: number;
 	date: Date;
 	image: string;
+	coverImage?: string;
 	description?: string;
 	genres?: string[];
 	developers?: string[];
@@ -17,6 +18,7 @@ const Items: Item[] = [
 		price: 1000,
 		date: new Date(),
 		image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
+		coverImage: "https://images5.alphacoders.com/927/thumb-1920-927025.png",
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 		genres: ["Action", "RPG"],

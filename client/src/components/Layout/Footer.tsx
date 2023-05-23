@@ -1,21 +1,37 @@
-import styled from "@emotion/styled";
-import { useTheme } from "@emotion/react";
+import styled from "@mui/material/styles/styled";
+import { Box, Container } from "@mui/material";
+import { ReactNode } from "react";
 
-const FooterStyle = styled.footer`
+const FooterStyle = styled(Box)`
 	grid-area: footer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 0 20px;
 	background-color: ${(props) => props.theme.colors.primary};
+	color: ${(props) => props.theme.colors.secondary};
+	position: relative;
 `;
 
-export default function Footer() {
-	const theme = useTheme();
+const FooterContainer = styled(Container)`
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+`;
 
+type FooterComponentProps = {
+	children: ReactNode;
+};
+const FooterComponent = ({ children }: FooterComponentProps) => (
+	<FooterStyle component='footer'>
+		<FooterContainer maxWidth='lg'>{children}</FooterContainer>
+	</FooterStyle>
+);
+
+export default function Footer() {
 	return (
-		<FooterStyle theme={theme}>
+		<FooterComponent>
 			<p>Footer</p>
-		</FooterStyle>
+		</FooterComponent>
 	);
 }

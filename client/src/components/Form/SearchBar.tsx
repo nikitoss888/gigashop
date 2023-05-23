@@ -1,7 +1,7 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Box, IconButton, TextField } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import styled from "@emotion/styled/macro";
+import styled from "@mui/material/styles/styled";
 
 const BoxStyle = styled(Box)`
 	background-color: ${(props) => props.theme.colors.primary};

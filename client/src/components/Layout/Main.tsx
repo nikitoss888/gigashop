@@ -6,8 +6,9 @@ const Main = styled.main`
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	margin-top: 40px;
+	margin-top: 25px;
 	margin-bottom: 20px;
+	position: relative;
 `;
 
 export default Main;

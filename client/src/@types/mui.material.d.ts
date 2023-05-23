@@ -5,13 +5,14 @@ import {
 	PaletteOptions as BasePaletteOptions,
 	SimplePaletteColorOptions as BaseSimplePaletteColorOptions,
 	PropTypes as BasePropTypes,
+	Theme as BaseTheme,
 } from "@mui/material";
 
 declare module "@mui/material/styles" {
 	export namespace PropTypes {
 		type Color = BasePropTypes.Color | "accent" | "transparent";
 	}
-	interface Theme {
+	interface Theme extends BaseTheme {
 		fonts: {
 			body?: string;
 			heading?: string;

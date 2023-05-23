@@ -1,17 +1,17 @@
-import styled from "@emotion/styled/macro";
+import styled from "@mui/material/styles/styled";
 import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
 import { Typography, AppBar, Link as MUILink, Menu, MenuItem, Container } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import LogInOut from "./LogInOut";
 
-const Logo = styled.img`
+const Logo = styled("img")`
 	height: 45px;
 	margin-top: 15px;
 	margin-bottom: 15px;
 `;
 
-const Nav = styled.nav`
+const Nav = styled("nav")`
 	display: flex;
 	height: 100%;
 	gap: 25px;
@@ -29,6 +29,7 @@ const HeaderStyle = styled(AppBar)`
 	grid-area: header;
 	background-color: ${(props) => props.theme.colors.primary};
 	color: ${(props) => props.theme.colors.secondary};
+	box-shadow: none;
 `;
 
 const HeaderContainer = styled(Container)`
@@ -76,7 +77,7 @@ export default function Header({ admin }: HeaderProps) {
 				color='secondary'
 				sx={{
 					fontSize: "1.5rem",
-					fontWeight: 400,
+					fontWeight: "bold",
 					marginLeft: "25px",
 					textDecoration: "none",
 				}}
@@ -84,7 +85,7 @@ export default function Header({ admin }: HeaderProps) {
 				{title}
 			</Typography>
 			<Nav>
-				<Link component={RouterLink} to='/'>
+				<Link component={RouterLink} to='/' variant='h2'>
 					Домашня сторінка
 				</Link>
 				{admin ? undefined : (
@@ -96,6 +97,7 @@ export default function Header({ admin }: HeaderProps) {
 							aria-haspopup='true'
 							aria-expanded={shopOpen ? "true" : undefined}
 							onMouseOver={handleShopMenuOpen}
+							variant='h2'
 						>
 							Магазин
 						</Link>
@@ -109,13 +111,13 @@ export default function Header({ admin }: HeaderProps) {
 							}}
 						>
 							<MenuItem component={RouterLink} to='/shop/items'>
-								Товари
+								<Typography variant='h6'>Товари</Typography>
 							</MenuItem>
 							<MenuItem component={RouterLink} to='/shop/genres'>
-								Жанри
+								<Typography variant='h6'>Жанри</Typography>
 							</MenuItem>
 							<MenuItem component={RouterLink} to='/shop/companies'>
-								Компанії
+								<Typography variant='h6'>Компанії</Typography>
 							</MenuItem>
 						</Menu>
 					</>

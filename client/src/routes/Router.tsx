@@ -5,6 +5,7 @@ import { useRecoilState } from "recoil";
 import { userState } from "../store/User";
 import Items from "./Items";
 import Item from "./Item";
+import Genres from "./Genres";
 
 export default function Router() {
 	const [user, _] = useRecoilState(userState);
@@ -19,6 +20,7 @@ export default function Router() {
 				{
 					path: "/",
 					element: <Outlet />,
+					errorElement: <ErrorPage />,
 					children: [
 						{
 							path: "/",
@@ -45,7 +47,7 @@ export default function Router() {
 								},
 								{
 									path: "/shop/genres",
-									element: <p>Shop genres page</p>,
+									element: <Genres />,
 								},
 								{
 									path: "/shop/companies",

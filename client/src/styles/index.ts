@@ -12,14 +12,58 @@ const InputBackground = "#D9D9D9";
 // const Info = "#00bfff";
 // const Success = "#00ff00";
 
+const BodyFont = "Merriweather, sans-serif";
+const HeadingFont = "Montserrat Alternates, serif";
+
 const BaseTheme = {
 	fonts: {
-		body: "Roboto, sans-serif",
-		heading: "Roboto, sans-serif",
+		body: BodyFont,
+		heading: HeadingFont,
 	},
 	colors: {
 		inputPlaceholder: InputPlaceholder,
 		inputBackground: InputBackground,
+	},
+	typography: {
+		h1: {
+			fontFamily: HeadingFont,
+		},
+		h2: {
+			fontFamily: HeadingFont,
+		},
+		h3: {
+			fontFamily: HeadingFont,
+		},
+		h4: {
+			fontFamily: HeadingFont,
+		},
+		h5: {
+			fontFamily: HeadingFont,
+		},
+		h6: {
+			fontFamily: HeadingFont,
+		},
+		subtitle1: {
+			fontFamily: BodyFont,
+		},
+		subtitle2: {
+			fontFamily: BodyFont,
+		},
+		body1: {
+			fontFamily: BodyFont,
+		},
+		body2: {
+			fontFamily: BodyFont,
+		},
+		caption: {
+			fontFamily: BodyFont,
+		},
+		button: {
+			fontFamily: BodyFont,
+		},
+		overline: {
+			fontFamily: BodyFont,
+		},
 	},
 };
 export const RegularTheme = createTheme({

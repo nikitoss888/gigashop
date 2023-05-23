@@ -66,7 +66,7 @@ export default function Items() {
 	};
 
 	return (
-		<Container>
+		<Container sx={{ marginTop: "15px" }}>
 			<FormProvider {...methods}>
 				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
 					<FormBox
@@ -74,7 +74,7 @@ export default function Items() {
 							gridTemplateColumns: { sm: "1fr", md: "1fr 3fr" },
 						}}
 					>
-						<SearchBar name={"name"} label={"Назва"} defValue={""} />
+						<SearchBar name='name' label='Назва' defValue='' />
 						<Filters />
 						<ItemsGrid />
 					</FormBox>
