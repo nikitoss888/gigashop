@@ -9,12 +9,12 @@ import { useTheme } from "@mui/material/styles";
 
 const CoverImage = styled("img")`
 	width: 100%;
-	height: 240px;
+	height: 200px;
 	object-fit: cover;
 	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0));
 `;
 
-const ContentContainer = styled(Container)`
+const Content = styled(Container)`
 	display: grid;
 	grid-template-rows: repeat(auto-fill, 1fr);
 	grid-gap: 5px 20px;
@@ -41,7 +41,13 @@ const ChipStyle = styled(Chip)`
 export default function Item() {
 	const theme = useTheme();
 	const { id } = useParams();
-	const item = Items.find((item) => item.id.toString() === (id as string));
+	const item = Items.find((item) => item.id.toString() === id);
+
+	if (!item) {
+		const error = new Error("Товар за даним ID не знайдено");
+		error.name = "404";
+		throw error;
+	}
 
 	return (
 		<Container maxWidth={false} disableGutters>
@@ -50,7 +56,7 @@ export default function Item() {
 					<CoverImage src={item.coverImage} alt={item?.name} />
 				</Box>
 			)}
-			<ContentContainer
+			<Content
 				sx={{
 					gridTemplateColumns: {
 						xs: "1fr",
@@ -61,8 +67,9 @@ export default function Item() {
 				<Typography
 					component='h1'
 					variant='h3'
-					my={2}
-					sx={{ textAlign: "center", gridColumn: { xs: "1 / 2", sm: "1 / 3" } }}
+					my={3}
+					textAlign='center'
+					sx={{ gridColumn: { xs: "1 / 2", sm: "1 / 3" } }}
 				>
 					{item?.name}
 				</Typography>
@@ -116,7 +123,7 @@ export default function Item() {
 						{item?.description || "Не вказано"}
 					</Typography>
 				</DataGroup>
-			</ContentContainer>
+			</Content>
 		</Container>
 	);
 }

@@ -1,7 +1,8 @@
 import styled from "@emotion/styled";
 import ItemCard from "./ItemCard";
-import Items from "../../mock/Items";
-import { Box } from "@mui/material";
+import { Item } from "../../mock/Items";
+import { Box, SxProps } from "@mui/material";
+import Typography from "@mui/material/Typography";
 
 const Grid = styled(Box)`
 	display: grid;
@@ -11,13 +12,23 @@ const Grid = styled(Box)`
 	grid-gap: 20px;
 `;
 
-export default function ItemsGrid() {
-	const items = Items;
+type GridProps = {
+	items: Item[];
+	sx?: SxProps;
+};
+export default function ItemsGrid({ items, sx }: GridProps) {
 	return (
-		<Grid sx={{ gridRow: { sm: "3", md: "2" } }}>
+		<Grid sx={sx}>
 			{items.map((item) => (
 				<ItemCard key={item.id.toString(16)} item={item} />
 			))}
+			{items.length === 0 && (
+				<Box sx={{ gridColumn: "1 / -1" }}>
+					<Typography variant='h5' textAlign='center'>
+						Товари не знайдено
+					</Typography>
+				</Box>
+			)}
 		</Grid>
 	);
 }

@@ -6,6 +6,7 @@ import styled from "@emotion/styled";
 import SearchBar from "../components/Form/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
+import { default as ItemsList } from "../mock/Items";
 
 const Object = yup.object().shape({
 	id: yup.number(),
@@ -53,6 +54,8 @@ export default function Items() {
 		resolver: yupResolver(schema),
 	});
 
+	const items = ItemsList;
+
 	const onSubmit = (data: any) => {
 		try {
 			console.log(data);
@@ -76,7 +79,7 @@ export default function Items() {
 					>
 						<SearchBar name='name' label='Назва' defValue='' />
 						<Filters />
-						<ItemsGrid />
+						<ItemsGrid items={items} sx={{ gridRow: { sm: "3", md: "2" } }} />
 					</FormBox>
 				</form>
 			</FormProvider>

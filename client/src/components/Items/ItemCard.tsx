@@ -45,7 +45,7 @@ export default function ItemCard({ item: { id, name, price, date, image, descrip
 					component='img'
 					image={image}
 					alt={name}
-					sx={{ aspectRatio: "16/9", objectPosition: "center top", height: { xs: 200, md: 140 } }}
+					sx={{ aspectRatio: "16/9", objectPosition: "center top", height: { xs: 200, md: 155 } }}
 				/>
 				<ContentStyle sx={{ gap: { xs: 0, sm: "15px" } }}>
 					<Typography gutterBottom variant='h6' component='div'>

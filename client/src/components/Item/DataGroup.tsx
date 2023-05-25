@@ -34,7 +34,7 @@ export default function DataGroup({ title, column, children }: DataGroupProps) {
 				component='h6'
 				variant='h6'
 				pr={3}
-				sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary" }}
+				sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
 			>
 				{title}:
 			</Typography>

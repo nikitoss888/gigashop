@@ -1,9 +1,22 @@
 import { useForm, FormProvider } from "react-hook-form";
-import { Container } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import SearchBar from "../components/Form/SearchBar";
+import styled from "@mui/material/styles/styled";
+import AlphabetGrid from "../components/Genres/AlphabetGrid";
+import { default as GenresList } from "../mock/Genres";
+
+const BoxStyle = styled(Box)`
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: start;
+	gap: 15px;
+`;
 
 export default function Genres() {
 	const methods = useForm();
+
+	const genres = GenresList.sort((a, b) => a.name.localeCompare(b.name));
 
 	const onSubmit = (data: any) => {
 		try {
@@ -18,10 +31,13 @@ export default function Genres() {
 	};
 
 	return (
-		<Container sx={{ mt: "15px" }}>
+		<Container sx={{ marginTop: "15px", height: "100%" }}>
 			<FormProvider {...methods}>
 				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
-					<SearchBar name='name' label='Назва' defValue='' />
+					<BoxStyle>
+						<SearchBar name='name' label='Назва' defValue='' />
+						<AlphabetGrid genres={genres} />
+					</BoxStyle>
 				</form>
 			</FormProvider>
 		</Container>

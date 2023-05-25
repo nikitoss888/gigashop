@@ -1,15 +1,15 @@
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
-import ErrorPage from "./ErrorPage";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootPage from "./RootPage";
 import { useRecoilState } from "recoil";
 import { userState } from "../store/User";
 import Items from "./Items";
 import Item from "./Item";
 import Genres from "./Genres";
+import Genre from "./Genre";
+import ErrorPage from "./ErrorPage";
 
 export default function Router() {
 	const [user, _] = useRecoilState(userState);
-	const admin = user?.role === "admin";
 
 	const router = createBrowserRouter([
 		{
@@ -19,8 +19,6 @@ export default function Router() {
 			children: [
 				{
 					path: "/",
-					element: <Outlet />,
-					errorElement: <ErrorPage />,
 					children: [
 						{
 							path: "/",
@@ -31,35 +29,38 @@ export default function Router() {
 							element: <p>About page</p>,
 						},
 						{
-							path: "/shop",
-							children: [
-								{
-									path: "/shop/",
-									element: <p>Shop page</p>,
-								},
-								{
-									path: "/shop/items",
-									element: <Items />,
-								},
-								{
-									path: "/shop/items/:id",
-									element: <Item />,
-								},
-								{
-									path: "/shop/genres",
-									element: <Genres />,
-								},
-								{
-									path: "/shop/companies",
-									element: <p>Shop companies page</p>,
-								},
-							],
+							path: "/shop/",
+							element: <p>Shop page</p>,
+						},
+						{
+							path: "/shop/items",
+							element: <Items />,
+						},
+						{
+							path: "/shop/items/:id",
+							element: <Item />,
+						},
+						{
+							path: "/shop/genres",
+							element: <Genres />,
+						},
+						{
+							path: "/shop/genres/:id",
+							element: <Genre />,
+						},
+						{
+							path: "/shop/companies",
+							element: <p>Shop companies page</p>,
 						},
 					],
 				},
 				{
 					path: "/admin",
-					element: admin ? <p>Admin site</p> : <p>Access denied</p>,
+					element: <p>Admin site</p>,
+					loader: () => {
+						if (!user) throw new Response("Unauthorized", { status: 401 });
+						if (user.role !== "admin") throw new Response("Forbidden", { status: 403 });
+					},
 				},
 			],
 		},
