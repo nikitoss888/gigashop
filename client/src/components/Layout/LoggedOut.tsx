@@ -1,0 +1,28 @@
+import styled from "@mui/material/styles/styled";
+import { Link as RouterLink } from "react-router-dom";
+import { Box } from "@mui/material";
+import Typography from "@mui/material/Typography";
+
+const Link = styled(Typography)`
+	text-decoration: none;
+	color: ${(props) => props.theme.colors.secondary};
+` as typeof Typography;
+
+export default function LoggedOut() {
+	return (
+		<Box
+			sx={{
+				display: "flex",
+				flexDirection: "row",
+				gap: "10px",
+			}}
+		>
+			<Link variant='h6' component={RouterLink} to='/login'>
+				Login
+			</Link>
+			<Link variant='h6' component={RouterLink} to='/register'>
+				Register
+			</Link>
+		</Box>
+	);
+}

@@ -1,9 +1,12 @@
 import styled from "@mui/material/styles/styled";
 import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
-import { Typography, AppBar, Link as MUILink, Menu, MenuItem, Container } from "@mui/material";
+import { Typography, AppBar, Menu, MenuItem, Container, Box } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import LogInOut from "./LogInOut";
+import LoggedIn from "./LoggedIn";
+import { userState } from "../../store/User";
+import { useRecoilState } from "recoil";
+import LoggedOut from "./LoggedOut";
 
 const Logo = styled("img")`
 	height: 45px;
@@ -13,17 +16,15 @@ const Logo = styled("img")`
 
 const Nav = styled("nav")`
 	display: flex;
-	height: 100%;
 	gap: 25px;
 	align-items: center;
 	margin-left: 25px;
 `;
 
-const Link = styled(MUILink)`
-	font-size: 1.2rem;
+const Link = styled(Typography)`
 	text-decoration: none;
 	color: ${(props) => props.theme.colors.secondary};
-` as typeof MUILink;
+` as typeof Typography;
 
 const HeaderStyle = styled(AppBar)`
 	grid-area: header;
@@ -53,6 +54,7 @@ type HeaderProps = {
 };
 
 export default function Header({ admin }: HeaderProps) {
+	const [user, _] = useRecoilState(userState);
 	const title = process.env.REACT_APP_PROJECT_NAME + (admin ? " Admin" : "");
 
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -69,35 +71,31 @@ export default function Header({ admin }: HeaderProps) {
 	return (
 		<HeaderComponent>
 			<Logo src={logo} alt='Logo' />
-			<Typography
-				variant='h1'
+			<Link
+				variant='h5'
 				component={RouterLink}
 				to={"/" + (admin ? "admin" : "")}
 				noWrap
-				color='secondary'
 				sx={{
-					fontSize: "1.5rem",
 					fontWeight: "bold",
 					marginLeft: "25px",
-					textDecoration: "none",
 				}}
 			>
 				{title}
-			</Typography>
+			</Link>
 			<Nav>
-				<Link component={RouterLink} to='/' variant='h2'>
+				<Link component={RouterLink} to='/' variant='h6'>
 					Домашня сторінка
 				</Link>
 				{admin ? undefined : (
 					<>
 						<Link
-							href='#'
 							id='shop-dropdown'
 							aria-controls={shopOpen ? "shop-menu" : undefined}
 							aria-haspopup='true'
 							aria-expanded={shopOpen ? "true" : undefined}
 							onMouseOver={handleShopMenuOpen}
-							variant='h2'
+							variant='h6'
 						>
 							Магазин
 						</Link>
@@ -123,7 +121,7 @@ export default function Header({ admin }: HeaderProps) {
 					</>
 				)}
 			</Nav>
-			<LogInOut />
+			<Box sx={{ marginLeft: "auto" }}>{user ? <LoggedIn /> : <LoggedOut />}</Box>
 		</HeaderComponent>
 	);
 }

@@ -1,5 +1,5 @@
 import { useRecoilState } from "recoil";
-import Router from "./routes/Router";
+import Router from "./routes";
 import Cookies from "js-cookie";
 import jwt_decode, { JwtPayload } from "jwt-decode";
 import { LogIn, LogOut, User, userState } from "./store/User";

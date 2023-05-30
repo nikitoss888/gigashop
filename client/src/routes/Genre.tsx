@@ -25,6 +25,7 @@ export default function Genre() {
 		error.name = "404";
 		throw error;
 	}
+	document.title = `gigashop — Жанр "${genre.name}"`;
 
 	const items = Items.filter((item) => genre.items.includes(item.id));
 

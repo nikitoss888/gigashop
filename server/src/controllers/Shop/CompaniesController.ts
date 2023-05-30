@@ -3,30 +3,21 @@ import ApiError from "../../errors/ApiError";
 import Controller from "../Controller";
 import {Company, getCompanies, getCompany} from "../../models/Company";
 
-const COMPANIES_DIR = 'companies';
-
 class CompaniesController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const {name, description, director, founded} = req.body;
-            const image = req.file;
-
-            if (!image) {
-                return next(ApiError.badRequest('Зображення не завантажено'));
-            }
-
-            let imageName = image.filename;
+            const {name, description, director, founded, image} = req.body;
             let foundedParsed = super.parseDate(founded);
 
             const company = await Company
-                .create({name, description, director, image: imageName, founded: foundedParsed})
+                .create({name, description, director, image, founded: foundedParsed})
                 .catch((e: unknown) => {
-                    super.deleteFile(COMPANIES_DIR, imageName);
+                    // super.deleteFile(COMPANIES_DIR, imageName);
                     return next(super.exceptionHandle(e));
                 });
 
             if (!company) {
-                super.deleteFile(COMPANIES_DIR, imageName);
+                // super.deleteFile(COMPANIES_DIR, imageName);
                 return next(ApiError.badRequest('Компанію не створено'));
             }
 
@@ -72,8 +63,7 @@ class CompaniesController extends Controller {
 
     async update(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
-        const { name, description, director, founded, hide } = req.body;
-        const image = req.file;
+        const { name, description, director, founded, hide, image } = req.body;
 
         const company = await Company.findByPk(id)
             .catch((e: unknown) => {
@@ -81,11 +71,7 @@ class CompaniesController extends Controller {
             });
         if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
 
-        let imageName: string | undefined;
-        let oldImageName = company.image;
-        if (image) {
-            imageName = image.filename;
-        }
+        // let oldImage = company.image;
 
         let hideParsed = super.parseBoolean(hide as string | undefined);
         let foundedParsed = super.parseDate(founded);
@@ -95,20 +81,22 @@ class CompaniesController extends Controller {
         if (director) company.director = director;
         if (founded) company.founded = foundedParsed;
         if (hide) company.hide = hideParsed;
-        if (imageName) company.image = imageName;
+        if (image) company.image = image;
 
         let result = await company.save()
             .catch((e: unknown) => {
-                if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
+                // if (image) super.deleteFile(COMPANIES_DIR, image);
                 return next(super.exceptionHandle(e));
             });
 
         if (!result) {
-            if (imageName) super.deleteFile(COMPANIES_DIR, imageName);
+            // if (image) super.deleteFile(COMPANIES_DIR, image);
             return next(ApiError.badRequest('Компанію не оновлено'));
         }
 
-        if (imageName) super.deleteFile(COMPANIES_DIR, oldImageName);
+        // ToDo: delete files
+        //
+        // if (image) super.deleteFile(COMPANIES_DIR, oldImage);
         res.json(company);
     }
 
@@ -120,7 +108,7 @@ class CompaniesController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
-        const { image } = company;
+        // const { image } = company;
 
         const result = await company.destroy()
             .catch((e: unknown) => {
@@ -129,7 +117,9 @@ class CompaniesController extends Controller {
 
         if (!result) return next(ApiError.badRequest('Компанію не видалено'));
 
-        super.deleteFile(COMPANIES_DIR, image);
+        // ToDo: delete files
+        //
+        // super.deleteFile(COMPANIES_DIR, image);
         res.json(result);
     }
 

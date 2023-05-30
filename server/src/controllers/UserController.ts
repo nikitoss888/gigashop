@@ -10,7 +10,6 @@ const USER = 'USER'
 const MODERATOR = 'MODERATOR';
 const ADMIN = 'ADMIN';
 
-const USERS_DIR = 'users';
 const SALT_ROUNDS = 5;
 
 class UserController extends Controller {
@@ -76,52 +75,50 @@ class UserController extends Controller {
     }
 
     async register(req: Request, res: Response, next: NextFunction) {
-        const image = req.file;
-        let imageName: string | undefined;
-        if (image) {
-            imageName = image.filename;
-        }
+        const { image } = req.body;
         try {
+            const { email, login, firstName, lastName, password } = req.body;
+
             let role = req.body.role?.toUpperCase() || USER;
 
             const admin = await User.findOne({where: {role: ADMIN}});
             if (!admin) role = ADMIN;
             else if ([ADMIN, MODERATOR].includes(role)) {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDO: delete image
+                //
+                // if (image) super.deleteFile(USERS_DIR, image);
                 return next(ApiError.badRequest('Тільки адміністратор може створювати ' +
                     'адміністраторів та модераторів'));
             }
 
-            const { email, login, firstName, lastName, password } = req.body;
-
             let token = await UserController._createUser(email, login, firstName, lastName,
-                password, imageName, role)
+                password, image, role)
                 .catch((e: ApiError | Error | unknown) => {
-                    if (imageName) super.deleteFile(USERS_DIR, imageName);
+                    // ToDO: delete image
+                    //
+                    // if (image) super.deleteFile(USERS_DIR, image);
                     return next(super.exceptionHandle(e));
                 });
 
             return res.json({message: "Реєстрацію пройдено успішно", token});
         }
         catch (e: unknown) {
-            if (imageName) super.deleteFile(USERS_DIR, imageName);
+            // ToDo: delete image
+            // if (image) super.deleteFile(USERS_DIR, image);
             return next(super.exceptionHandle(e));
         }
     }
 
     async createModerator(req: Request, res: Response, next: NextFunction) {
-        const image = req.file;
-        let imageName: string | undefined = undefined;
-        if (image) {
-            imageName = image.filename;
-        }
+        const { image } = req.body;
         try {
             const { email, login, firstName, lastName, password } = req.body;
 
             const token = await UserController._createUser(email, login, firstName, lastName,
-                password, imageName, MODERATOR)
+                password, image, MODERATOR)
                 .catch((e: ApiError | Error | unknown) => {
-                    if (imageName) super.deleteFile(USERS_DIR, imageName);
+                    // ToDo: delete image
+                    // if (image) super.deleteFile(USERS_DIR, image);
                     if (e instanceof ApiError) return next(e);
                     return next(super.exceptionHandle(e));
                 });
@@ -129,7 +126,8 @@ class UserController extends Controller {
             return res.json({message: "Успішно створено модератора", token});
         }
         catch (e: unknown) {
-            if (imageName) super.deleteFile(USERS_DIR, imageName);
+            // ToDo: delete image
+            // if (image) super.deleteFile(USERS_DIR, image);
             return next(super.exceptionHandle(e));
         }
     }
@@ -166,35 +164,35 @@ class UserController extends Controller {
     }
 
     async update(req: Request, res: Response, next: NextFunction) {
-        const image = req.file;
-        let imageName: string | undefined = undefined;
-        if (image) {
-            imageName = image.filename;
-        }
+        const { image } = req.body;
         let error: unknown;
         try {
             const user = await User.findByPk(req.user.id);
             if (!user) {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDo: delete image
+                // if (image) super.deleteFile(USERS_DIR, image);
                 return next(ApiError.internal('Користувача не знайдено'));
             }
 
             const { email, login, firstName, lastName, password, newPassword } = req.body;
 
             if (!password) {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDo: delete image
+                // if (image) super.deleteFile(USERS_DIR, image);
                 return next(ApiError.badRequest('Введіть пароль'));
             }
 
             await UserController._checkCandidate(email, login).catch((e: unknown ) => {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDo: delete image
+                // if (image) super.deleteFile(USERS_DIR, image);
                 error = e;
             });
             if (error) return next(super.exceptionHandle(error));
 
             if (newPassword) {
                 await UserController._checkPassword(newPassword).catch((e: unknown) => {
-                    if (imageName) super.deleteFile(USERS_DIR, imageName);
+                    // ToDo: delete image
+                    // if (image) super.deleteFile(USERS_DIR, image);
                     error = e;
                 });
                 if (error) return next(super.exceptionHandle(error));
@@ -202,7 +200,8 @@ class UserController extends Controller {
 
             let comparePassword = bcrypt.compareSync(password, user.password);
             if (!comparePassword) {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDo: delete image
+                // if (image) super.deleteFile(USERS_DIR, image);
                 return next(ApiError.badRequest('Невірний пароль'));
             }
 
@@ -214,22 +213,25 @@ class UserController extends Controller {
             if (firstName) user.firstName = firstName;
             if (lastName) user.lastName = lastName;
             if (newPassword) user.password = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-            if (imageName) user.image = imageName;
+            if (image) user.image = image;
 
             await user.save().catch((e: unknown) => {
-                if (imageName) super.deleteFile(USERS_DIR, imageName);
+                // ToDo: delete image
+                // if (image) super.deleteFile(USERS_DIR, image);
                 error = e;
             });
             if (error) return next(super.exceptionHandle(error));
 
-            if (imageName && oldImageName) super.deleteFile(USERS_DIR, oldImageName);
+            // ToDo: delete image
+            // if (image && oldImageName) super.deleteFile(USERS_DIR, oldImageName);
 
             const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
 
             return res.json({message: "Користувача відредаговано успішно", token});
         }
         catch (e: unknown) {
-            if (imageName) super.deleteFile(USERS_DIR, imageName);
+            // ToDo: delete image
+            // if (image) super.deleteFile(USERS_DIR, image);
             return next(super.exceptionHandle(e));
         }
     }

@@ -1,25 +1,10 @@
-import { Card, CardMedia, CardContent, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import styled from "@mui/material/styles/styled";
-import { Link as RouterLink } from "react-router-dom";
-
-const Link = styled(RouterLink)`
-	text-decoration: none;
-	color: inherit;
-`;
-
-const CardStyle = styled(Card)`
-	background-color: ${(props) => props.theme.colors.primary};
-	color: ${(props) => props.theme.colors.secondary};
-	display: flex;
-	flex-direction: column;
-	justify-content: start;
-`;
-
-const ContentStyle = styled(CardContent)`
-	display: flex;
-	flex-direction: column;
-	flex-grow: 1;
-`;
+import { Item } from "../../mock/Items";
+import Link from "../CardsGrid/Link";
+import Card from "../CardsGrid/Card";
+import Media from "../CardsGrid/Media";
+import Content from "../CardsGrid/Content";
 
 const ContentBottom = styled(Box)`
 	margin-top: auto;
@@ -28,26 +13,14 @@ const ContentBottom = styled(Box)`
 `;
 
 type CardProps = {
-	item: {
-		id: string | number;
-		name: string;
-		price: number;
-		date: Date;
-		image: string;
-		description?: string;
-	};
+	item: Item;
 };
-export default function ItemCard({ item: { id, name, price, date, image, description } }: CardProps) {
+export default function ItemCard({ item: { id, name, price, date, mainImage, description } }: CardProps) {
 	return (
-		<CardStyle>
+		<Card>
 			<Link to={`/shop/items/${id}`} onClick={(e) => e.stopPropagation()}>
-				<CardMedia
-					component='img'
-					image={image}
-					alt={name}
-					sx={{ aspectRatio: "16/9", objectPosition: "center top", height: { xs: 200, md: 155 } }}
-				/>
-				<ContentStyle sx={{ gap: { xs: 0, sm: "15px" } }}>
+				<Media image={mainImage} alt={name} />
+				<Content sx={{ gap: { xs: 0, sm: "15px" } }}>
 					<Typography gutterBottom variant='h6' component='div'>
 						{name}
 					</Typography>
@@ -75,8 +48,8 @@ export default function ItemCard({ item: { id, name, price, date, image, descrip
 							{date.toLocaleDateString()}
 						</Typography>
 					</ContentBottom>
-				</ContentStyle>
+				</Content>
 			</Link>
-		</CardStyle>
+		</Card>
 	);
 }

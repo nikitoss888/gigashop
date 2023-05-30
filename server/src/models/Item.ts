@@ -59,6 +59,10 @@ const Item = sequelize_db.define('item', {
         allowNull: false,
         defaultValue: []
     },
+    coverImage: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     characteristics: {
         type: DataTypes.JSON,
         allowNull: false,

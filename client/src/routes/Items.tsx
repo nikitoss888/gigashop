@@ -50,6 +50,7 @@ const FormBox = styled(Box)`
 `;
 
 export default function Items() {
+	document.title = "gigashop — Товари";
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});

@@ -7,6 +7,8 @@ import Item from "./Item";
 import Genres from "./Genres";
 import Genre from "./Genre";
 import ErrorPage from "./ErrorPage";
+import Companies from "./Companies";
+import Company from "./Company";
 
 export default function Router() {
 	const [user, _] = useRecoilState(userState);
@@ -29,8 +31,17 @@ export default function Router() {
 							element: <p>About page</p>,
 						},
 						{
-							path: "/shop/",
-							element: <p>Shop page</p>,
+							path: "/profile",
+							element: <p>Profile page</p>,
+						},
+						// ToDo: Implement login and register pages
+						{
+							path: "/login",
+							element: <p>Login page</p>,
+						},
+						{
+							path: "/register",
+							element: <p>Register page</p>,
 						},
 						{
 							path: "/shop/items",
@@ -50,7 +61,11 @@ export default function Router() {
 						},
 						{
 							path: "/shop/companies",
-							element: <p>Shop companies page</p>,
+							element: <Companies />,
+						},
+						{
+							path: "/shop/companies/:id",
+							element: <Company />,
 						},
 					],
 				},

@@ -1,41 +1,22 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Items from "../mock/Items";
-import { Box, Chip, Container } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
-import DataGroup from "../components/Item/DataGroup";
-import Carousel from "react-material-ui-carousel";
+import DataGroup from "../components/DataGroup";
 import { useTheme } from "@mui/material/styles";
+import Genres from "../mock/Genres";
+import Companies from "../mock/Companies";
+import Carousel from "../components/Item/Carousel";
+import CarouselImage from "../components/Item/CarouselImage";
+import Chip from "../components/Item/Chip";
+import Content from "../components/Item/Content";
 
 const CoverImage = styled("img")`
 	width: 100%;
-	height: 200px;
+	aspect-ratio: 32/5;
 	object-fit: cover;
 	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0));
-`;
-
-const Content = styled(Container)`
-	display: grid;
-	grid-template-rows: repeat(auto-fill, 1fr);
-	grid-gap: 5px 20px;
-`;
-
-const CarouselStyle = styled(Carousel)`
-	width: 100%;
-	background-color: ${(props) => props.theme.colors.primary};
-	border-radius: 5px;
-	padding-bottom: 20px;
-`;
-
-const CarouselImage = styled("img")`
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-`;
-
-const ChipStyle = styled(Chip)`
-	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.secondary};
 `;
 
 export default function Item() {
@@ -48,12 +29,16 @@ export default function Item() {
 		error.name = "404";
 		throw error;
 	}
+	document.title = `gigashop — ${item.name}`;
+	const genres = Genres.filter((genre) => item.genres?.includes(genre.id));
+	const publisher = Companies.find((company) => company.id === item.publisher);
+	const developers = Companies.filter((company) => item.developers?.includes(company.id));
 
 	return (
 		<Container maxWidth={false} disableGutters>
-			{item?.coverImage && (
+			{item.coverImage && (
 				<Box>
-					<CoverImage src={item.coverImage} alt={item?.name} />
+					<CoverImage src={item.coverImage} alt={item.name} />
 				</Box>
 			)}
 			<Content
@@ -65,13 +50,13 @@ export default function Item() {
 				}}
 			>
 				<Typography
-					component='h1'
+					component='h2'
 					variant='h3'
 					my={3}
 					textAlign='center'
 					sx={{ gridColumn: { xs: "1 / 2", sm: "1 / 3" } }}
 				>
-					{item?.name}
+					{item.name}
 				</Typography>
 				<Box
 					sx={{
@@ -79,7 +64,7 @@ export default function Item() {
 						gridRow: "2 / 7",
 					}}
 				>
-					<CarouselStyle
+					<Carousel
 						animation='slide'
 						indicatorIconButtonProps={{
 							style: {
@@ -92,35 +77,71 @@ export default function Item() {
 							},
 						}}
 					>
-						<CarouselImage src={item?.image} alt={item?.name} />
-						<CarouselImage src={item?.image} alt={item?.name} />
-						<CarouselImage src={item?.image} alt={item?.name} />
-					</CarouselStyle>
+						<CarouselImage src={item.mainImage} alt={item.name} />
+						<CarouselImage src={item.mainImage} alt={item.name} />
+						<CarouselImage src={item.mainImage} alt={item.name} />
+					</Carousel>
 				</Box>
 				<DataGroup title='Видавець'>
-					<Typography variant='body1'>{item?.publisher || "Не вказано"}</Typography>
+					<Typography variant='body1'>{publisher?.name || "Не вказано"}</Typography>
 				</DataGroup>
 				<DataGroup title='Розробники'>
-					{item?.developers?.map((developer, index) => (
-						<ChipStyle key={index} label={<Typography variant='body2'>{developer}</Typography>} />
+					{developers?.map((developer) => (
+						<Chip
+							key={developer.id.toString(16)}
+							label={
+								<Typography
+									variant='body2'
+									component={Link}
+									to={`/shop/companies/${developer.id}`}
+									sx={{
+										color: theme.colors.secondary,
+										textDecoration: "none",
+										"&:hover": {
+											color: theme.colors.secondary,
+										},
+									}}
+								>
+									{developer.name}
+								</Typography>
+							}
+						/>
 					)) || <Typography variant='body1'>Не вказано</Typography>}
 				</DataGroup>
 				<DataGroup title='Жанри'>
-					{item?.genres?.map((genre, index) => (
-						<ChipStyle key={index} label={<Typography variant='body2'>{genre}</Typography>} />
+					{genres?.map((genre, index) => (
+						<Chip
+							key={index}
+							label={
+								<Typography
+									variant='body2'
+									component={Link}
+									to={`/shop/genres/${genre.id}`}
+									sx={{
+										color: theme.colors.secondary,
+										textDecoration: "none",
+										"&:hover": {
+											color: theme.colors.secondary,
+										},
+									}}
+								>
+									{genre.name}
+								</Typography>
+							}
+						/>
 					)) || <Typography variant='body1'>Не вказано</Typography>}
 				</DataGroup>
 				<DataGroup title='Дата випуску'>
-					<Typography variant='body1'>{item?.date.toLocaleDateString() || "Не вказано"}</Typography>
+					<Typography variant='body1'>{item.date.toLocaleDateString() || "Не вказано"}</Typography>
 				</DataGroup>
 				<DataGroup title='Ціна'>
 					<Typography component='p' variant='body1'>
-						{item?.price ? item.price.toString() + " грн" : "Не вказано"}
+						{item.price ? item.price.toString() + " грн" : "Не вказано"}
 					</Typography>
 				</DataGroup>
 				<DataGroup title='Опис' column='1/3'>
 					<Typography component='p' variant='body1'>
-						{item?.description || "Не вказано"}
+						{item.description || "Не вказано"}
 					</Typography>
 				</DataGroup>
 			</Content>

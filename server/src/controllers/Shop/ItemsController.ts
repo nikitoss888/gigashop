@@ -4,8 +4,6 @@ import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
 import {User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company} from "../../models";
 
-const ITEMS_DIR = 'items';
-
 type parseOutput = {
     name: string | undefined, description: string | undefined, sortBy: string | undefined,
     price: number | undefined, priceFrom: number | undefined, priceTo: number | undefined,
@@ -256,26 +254,10 @@ class ItemsController extends Controller {
 
 
     async create(req: Request, res: Response, next: NextFunction) {
-        const files = req.files;
-
-        if (files instanceof Array) {
-            return next(ApiError.badRequest('Неправильна передача зображень'));
-        }
-
-        let imageName : string | undefined;
-        let imagesNames: string[] | undefined;
-        if (files) {
-            const image = files.image[0];
-            if (image) imageName = image.filename;
-
-            const images = files.images;
-            if (!images) imagesNames = [];
-            else imagesNames = images.map((file: Express.Multer.File) => file.filename);
-        }
-
-
         try {
-            const { characteristics, developersIds, genresIds } = req.body;
+            const { characteristics, developersIds, genresIds, mainImage, coverImage } = req.body;
+            let { images } = req.body;
+            if (images && !Array.isArray(images)) images = [images];
 
             let {name, description,
                 releaseDate, publisherId: company_publisherId,
@@ -290,25 +272,31 @@ class ItemsController extends Controller {
 
             const item = await Item
                 .create({name, description, price, releaseDate, amount,
-                    discount, discountFrom, discountTo, discountSize, mainImage: imageName,
-                    images: imagesNames, characteristics: characteristicsParsed, company_publisherId})
+                    discount, discountFrom, discountTo, discountSize, mainImage, coverImage,
+                    images, characteristics: characteristicsParsed, company_publisherId})
                 .catch((e: unknown) => {
-                    if (imageName) super.deleteFile(ITEMS_DIR, imageName);
-                    if (imagesNames) {
-                        imagesNames.forEach((name: string) => {
-                            super.deleteFile(ITEMS_DIR, name);
-                        });
-                    }
+                    // ToDo: delete files
+                    //
+                    // if (mainImage) super.deleteFile(ITEMS_DIR, mainImage);
+                    // if (coverImage) super.deleteFile(ITEMS_DIR, coverImage);
+                    // if (images) {
+                    //     images.forEach((name: string) => {
+                    //         super.deleteFile(ITEMS_DIR, name);
+                    //     });
+                    // }
                     return next(super.exceptionHandle(e));
                 });
 
             if (!item) {
-                if (imageName) super.deleteFile(ITEMS_DIR, imageName);
-                if (imagesNames) {
-                    imagesNames.forEach((name: string) => {
-                        super.deleteFile(ITEMS_DIR, name);
-                    });
-                }
+                // ToDo: delete files
+                //
+                // if (mainImage) super.deleteFile(ITEMS_DIR, mainImage);
+                // if (coverImage) super.deleteFile(ITEMS_DIR, coverImage);
+                // if (images) {
+                //     images.forEach((name: string) => {
+                //         super.deleteFile(ITEMS_DIR, name);
+                //     });
+                // }
                 return next(ApiError.badRequest('Не вдалося створити товар'));
             }
 
@@ -332,12 +320,14 @@ class ItemsController extends Controller {
             return res.json({message: "Товар успішно створено", item, developers: developersRes, genres: genresRes});
         }
         catch (e: unknown) {
-            if (imageName) super.deleteFile(ITEMS_DIR, imageName);
-            if(imagesNames) {
-                imagesNames.forEach((name: string) => {
-                    super.deleteFile(ITEMS_DIR, name);
-                });
-            }
+            // ToDo: delete files
+            //
+            // if (mainImage) super.deleteFile(ITEMS_DIR, mainImage);
+            // if(images) {
+            //     images.forEach((name: string) => {
+            //         super.deleteFile(ITEMS_DIR, name);
+            //     });
+            // }
             return next(super.exceptionHandle(e));
         }
     }
@@ -399,50 +389,38 @@ class ItemsController extends Controller {
         try {
             const { id } = req.params;
 
-            const { name, description, characteristics, developersIds, genresIds } = req.body;
+            const { name, description, characteristics, developersIds, genresIds, mainImage, coverImage } = req.body;
             const { releaseDate, price,
                 discount, discountFrom, discountTo,
                 discountSize, publisherId, amount,
                 hide} = ItemsController.parseData(req.body);
-            const files = req.files;
+
+            let { images } = req.body;
+            if (images && !Array.isArray(images)) images = [images];
 
             let characteristicsParsed: Object | undefined;
             if (characteristics) {
                 characteristicsParsed = JSON.parse(characteristics);
             }
 
-            let newImageName: string | undefined;
-            let newImagesNames: string[] | undefined;
-            if (files instanceof Array) {
-                return next(ApiError.badRequest('Неправильна передача зображень'));
-            }
-            if (files) {
-                const image = files.image?.[0];
-                if (image) {
-                    newImageName = image.filename;
-                }
-
-                const images = files.images;
-                if (images) {
-                    newImagesNames = images.map((file: Express.Multer.File) => file.filename);
-                }
-            }
-
             const item = await Item.findByPk(id)
                 .catch((e: unknown) => {
-                    console.log(e);
                     return next(super.exceptionHandle(e));
                 });
             if (!item) return next(ApiError.notFound('Товар не знайдено'));
 
-            let oldImageName: string | undefined = item.mainImage;
-            let oldImagesNames: string[] | undefined = item.images;
+            // let oldMainName: string | undefined = item.mainImage;
+            // let oldImages: string[] | undefined = item.images;
+            // let oldCoverImage: string | undefined = item.coverImage;
 
             if (name) item.name = name;
             if (description) item.description = description;
             if (releaseDate) item.releaseDate = releaseDate;
             if (price) item.price = price;
             if (amount) item.amount = amount;
+            if (mainImage) item.mainImage = mainImage;
+            if (images) item.images = images;
+            if (coverImage) item.coverImage = coverImage;
 
             if (discount !== undefined) {
                 item.discount = discount;
@@ -452,8 +430,6 @@ class ItemsController extends Controller {
                 if (discountSize) item.discountSize = discount ? discountSize : null;
             }
 
-            if (newImageName) item.mainImage = newImageName;
-            if (newImagesNames) item.images = newImagesNames;
             if (characteristicsParsed) item.characteristics = characteristicsParsed;
             if (hide) item.hide = hide;
             if (publisherId && await Company.findByPk(publisherId)) item.company_publisherId = publisherId;
@@ -461,27 +437,29 @@ class ItemsController extends Controller {
             let err: unknown;
             const result = await item.save()
                 .catch((e: unknown) => {
-                    if(newImageName) {
-                        super.deleteFile(ITEMS_DIR, newImageName);
-                    }
-                    if(newImagesNames) {
-                        newImagesNames.forEach((name: string) => {
-                            super.deleteFile(ITEMS_DIR, name);
-                        });
-                    }
+                    // ToDo: delete files
+                    //
+                    // if(mainImage) super.deleteFile(ITEMS_DIR, mainImage);
+                    // if(coverImage) super.deleteFile(ITEMS_DIR, coverImage);
+                    // if(images) {
+                    //     images.forEach((name: string) => {
+                    //         super.deleteFile(ITEMS_DIR, name);
+                    //     });
+                    // }
                     err = e;
                 });
             if (err) return next(super.exceptionHandle(err));
 
             if (!result) {
-                if (newImageName) {
-                    super.deleteFile(ITEMS_DIR, newImageName);
-                }
-                if (newImagesNames) {
-                    newImagesNames.forEach((name: string) => {
-                        super.deleteFile(ITEMS_DIR, name);
-                    });
-                }
+                // ToDo: delete files
+                //
+                // if (mainImage) super.deleteFile(ITEMS_DIR, mainImage);
+                // if (coverImage) super.deleteFile(ITEMS_DIR, coverImage);
+                // if (images) {
+                //     images.forEach((name: string) => {
+                //         super.deleteFile(ITEMS_DIR, name);
+                //     });
+                // }
                 return next(ApiError.badRequest('Не вдалося оновити товар'));
             }
 
@@ -501,14 +479,15 @@ class ItemsController extends Controller {
                 }) : undefined;
             if (err) return next(super.exceptionHandle(err));
 
-            if(oldImageName && newImageName) {
-                super.deleteFile(ITEMS_DIR, oldImageName);
-            }
-            if(oldImagesNames && newImagesNames) {
-                oldImagesNames.forEach((name: string) => {
-                    super.deleteFile(ITEMS_DIR, name);
-                });
-            }
+            // ToDo: delete files
+            //
+            // if(oldMainName && mainImage) super.deleteFile(ITEMS_DIR, oldMainName);
+            // if(oldCoverImage && coverImage) super.deleteFile(ITEMS_DIR, oldCoverImage);
+            // if(oldImages && images) {
+            //     oldImages.forEach((name: string) => {
+            //         super.deleteFile(ITEMS_DIR, name);
+            //     });
+            // }
 
             return res.json({message: "Товар успішно відредаговано", result,
                 developers: developersRes, genres: genresRes});
@@ -524,23 +503,26 @@ class ItemsController extends Controller {
             const {id} = req.params;
 
             const oldItem = await Item.findByPk(id);
-            let oldImageName: string | undefined = oldItem?.mainImage;
-            let oldImagesNames: string[] | undefined = oldItem?.images;
+            // let oldImageName: string | undefined = oldItem?.mainImage;
+            // let oldImagesNames: string[] | undefined = oldItem?.images;
+            // let oldCoverImage: string | undefined = oldItem?.coverImage;
 
-            const result = await Item
-                .destroy({where: {id}})
+            const result = await oldItem?.destroy()
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
 
             if (!result) return next(ApiError.badRequest('Не вдалося видалити товар'));
 
-            if(oldImageName) super.deleteFile(ITEMS_DIR, oldImageName);
-            if(oldImagesNames) {
-                oldImagesNames.forEach((name: string) => {
-                    super.deleteFile(ITEMS_DIR, name);
-                });
-            }
+            // ToDo: delete files
+            //
+            // if(oldImageName) super.deleteFile(ITEMS_DIR, oldImageName);
+            // if(oldCoverImage) super.deleteFile(ITEMS_DIR, oldCoverImage);
+            // if(oldImagesNames) {
+            //     oldImagesNames.forEach((name: string) => {
+            //         super.deleteFile(ITEMS_DIR, name);
+            //     });
+            // }
 
             await ItemsController.removeDevelopers(id)
                 .catch((e: unknown) => {
@@ -555,7 +537,6 @@ class ItemsController extends Controller {
             return res.json({"message": "Товар успішно видалено"});
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }

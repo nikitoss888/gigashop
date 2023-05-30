@@ -21,20 +21,7 @@ import { UseFormReset, UseFormSetValue } from "react-hook-form/dist/types/form";
 import { FieldValues } from "react-hook-form/dist/types/fields";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { default as MockGenres } from "../../mock/Genres";
-
-const BoxStyle = styled(Box)`
-	background-color: ${(props) => props.theme.colors.primary};
-	color: ${(props) => props.theme.colors.secondary};
-	padding: 15px;
-	border-radius: 5px;
-	.MuiOutlinedInput-root {
-		background-color: ${(props) => props.theme.colors.inputBackground};
-	}
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	gap: 15px;
-`;
+import MainBox from "./MainBox";
 
 const AccordionStyle = styled(Accordion)`
 	background-color: ${(props) => props.theme.colors.primary};
@@ -88,7 +75,7 @@ type FiltersContentProps = {
 };
 
 const FiltersContent = ({ control, errors, reset, setValue }: FiltersContentProps) => (
-	<BoxStyle>
+	<MainBox>
 		<Typography variant='h6' component='h2' color='secondary' sx={{ display: { sm: "none", md: "block" } }}>
 			Фільтри
 		</Typography>
@@ -344,7 +331,7 @@ const FiltersContent = ({ control, errors, reset, setValue }: FiltersContentProp
 				Очистити
 			</Button>
 		</ButtonGroup>
-	</BoxStyle>
+	</MainBox>
 );
 
 export default function Filters() {

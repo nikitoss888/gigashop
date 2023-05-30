@@ -1,9 +1,9 @@
-import { useForm, FormProvider } from "react-hook-form";
 import { Box, Container } from "@mui/material";
-import SearchBar from "../components/Form/SearchBar";
+import { FormProvider, useForm } from "react-hook-form";
+import { default as CompaniesList } from "../mock/Companies";
 import styled from "@mui/material/styles/styled";
-import AlphabetGrid from "../components/Genres/AlphabetGrid";
-import { default as GenresList } from "../mock/Genres";
+import SearchBar from "../components/Form/SearchBar";
+import CompaniesGrid from "../components/Companies/CompaniesGrid";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -13,11 +13,11 @@ const BoxStyle = styled(Box)`
 	gap: 15px;
 `;
 
-export default function Genres() {
-	document.title = `gigashop — Жанри`;
+export default function Companies() {
+	document.title = `gigashop — Компанії`;
 	const methods = useForm();
 
-	const genres = GenresList.sort((a, b) => a.name.localeCompare(b.name));
+	const companies = CompaniesList.sort((a, b) => a.name.localeCompare(b.name));
 
 	const onSubmit = (data: any) => {
 		try {
@@ -37,7 +37,7 @@ export default function Genres() {
 				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
 					<BoxStyle>
 						<SearchBar name='name' label='Назва' defValue='' />
-						<AlphabetGrid genres={genres} />
+						<CompaniesGrid companies={companies} />
 					</BoxStyle>
 				</form>
 			</FormProvider>
