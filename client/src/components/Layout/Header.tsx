@@ -118,6 +118,9 @@ export default function Header({ admin }: HeaderProps) {
 								<Typography variant='h6'>Компанії</Typography>
 							</MenuItem>
 						</Menu>
+						<Link component={RouterLink} to='/news' variant='h6'>
+							Новини
+						</Link>
 					</>
 				)}
 			</Nav>

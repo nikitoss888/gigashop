@@ -2,7 +2,7 @@ import { Box, Container } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import { default as CompaniesList } from "../mock/Companies";
 import styled from "@mui/material/styles/styled";
-import SearchBar from "../components/Form/SearchBar";
+import SearchBar from "../components/SearchPages/SearchBar";
 import CompaniesGrid from "../components/Companies/CompaniesGrid";
 
 const BoxStyle = styled(Box)`

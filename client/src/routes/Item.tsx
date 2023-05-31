@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import Items from "../mock/Items";
 import { Box, Container } from "@mui/material";
+import { StarRate } from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
 import DataGroup from "../components/DataGroup";
@@ -11,6 +12,9 @@ import Carousel from "../components/Item/Carousel";
 import CarouselImage from "../components/Item/CarouselImage";
 import Chip from "../components/Item/Chip";
 import Content from "../components/Item/Content";
+import ItemsComments from "../mock/ItemsComments";
+import Users from "../mock/Users";
+import Comments from "../components/Item/Comments";
 
 const CoverImage = styled("img")`
 	width: 100%;
@@ -33,6 +37,13 @@ export default function Item() {
 	const genres = Genres.filter((genre) => item.genres?.includes(genre.id));
 	const publisher = Companies.find((company) => company.id === item.publisher);
 	const developers = Companies.filter((company) => item.developers?.includes(company.id));
+	const comments = ItemsComments.filter((comment) => comment.itemId === item.id);
+	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length;
+	avgRate = Math.round(avgRate * 10) / 10;
+	// add users to comments
+	comments.forEach((comment) => {
+		comment.user = Users.find((user) => user.id === comment.userId);
+	});
 
 	return (
 		<Container maxWidth={false} disableGutters>
@@ -61,7 +72,7 @@ export default function Item() {
 				<Box
 					sx={{
 						gridColumn: 1,
-						gridRow: "2 / 7",
+						gridRow: "2 / 8",
 					}}
 				>
 					<Carousel
@@ -83,28 +94,41 @@ export default function Item() {
 					</Carousel>
 				</Box>
 				<DataGroup title='Видавець'>
-					<Typography variant='body1'>{publisher?.name || "Не вказано"}</Typography>
+					{publisher ? (
+						<Typography
+							variant='body1'
+							component={Link}
+							to={`/shop/companies/${publisher.id}`}
+							sx={{
+								color: theme.colors.primary,
+								textDecoration: "none",
+								"&:hover": {
+									color: theme.colors.primary,
+									textDecoration: "underline",
+								},
+							}}
+						>
+							{publisher.name}
+						</Typography>
+					) : (
+						<Typography variant='body1'>Не вказано</Typography>
+					)}
 				</DataGroup>
 				<DataGroup title='Розробники'>
 					{developers?.map((developer) => (
 						<Chip
 							key={developer.id.toString(16)}
-							label={
-								<Typography
-									variant='body2'
-									component={Link}
-									to={`/shop/companies/${developer.id}`}
-									sx={{
-										color: theme.colors.secondary,
-										textDecoration: "none",
-										"&:hover": {
-											color: theme.colors.secondary,
-										},
-									}}
-								>
-									{developer.name}
-								</Typography>
-							}
+							component={Link}
+							to={`/shop/companies/${developer.id}`}
+							sx={{
+								color: theme.colors.secondary,
+								textDecoration: "none",
+								"&:hover": {
+									color: theme.colors.secondary,
+									cursor: "pointer",
+								},
+							}}
+							label={<Typography variant='body2'>{developer.name}</Typography>}
 						/>
 					)) || <Typography variant='body1'>Не вказано</Typography>}
 				</DataGroup>
@@ -112,27 +136,32 @@ export default function Item() {
 					{genres?.map((genre, index) => (
 						<Chip
 							key={index}
-							label={
-								<Typography
-									variant='body2'
-									component={Link}
-									to={`/shop/genres/${genre.id}`}
-									sx={{
-										color: theme.colors.secondary,
-										textDecoration: "none",
-										"&:hover": {
-											color: theme.colors.secondary,
-										},
-									}}
-								>
-									{genre.name}
-								</Typography>
-							}
+							component={Link}
+							to={`/shop/genres/${genre.id}`}
+							sx={{
+								color: theme.colors.secondary,
+								textDecoration: "none",
+								"&:hover": {
+									color: theme.colors.secondary,
+									cursor: "pointer",
+								},
+							}}
+							label={<Typography variant='body2'>{genre.name}</Typography>}
 						/>
 					)) || <Typography variant='body1'>Не вказано</Typography>}
 				</DataGroup>
 				<DataGroup title='Дата випуску'>
 					<Typography variant='body1'>{item.date.toLocaleDateString() || "Не вказано"}</Typography>
+				</DataGroup>
+				<DataGroup title='Рейтинг'>
+					{avgRate === 0 ? (
+						<Typography variant='body1'>Не вказано</Typography>
+					) : (
+						<>
+							<Typography variant='body1'>{avgRate}/5</Typography>
+							<StarRate sx={{ color: "accent.main" }} />
+						</>
+					)}
 				</DataGroup>
 				<DataGroup title='Ціна'>
 					<Typography component='p' variant='body1'>
@@ -144,6 +173,7 @@ export default function Item() {
 						{item.description || "Не вказано"}
 					</Typography>
 				</DataGroup>
+				{comments.length > 0 && <Comments comments={comments} />}
 			</Content>
 		</Container>
 	);

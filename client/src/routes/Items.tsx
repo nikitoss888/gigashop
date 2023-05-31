@@ -3,7 +3,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Box, Container } from "@mui/material";
 import styled from "@emotion/styled";
-import SearchBar from "../components/Form/SearchBar";
+import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import { default as ItemsList } from "../mock/Items";

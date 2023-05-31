@@ -1,6 +1,6 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { Box, Container } from "@mui/material";
-import SearchBar from "../components/Form/SearchBar";
+import SearchBar from "../components/SearchPages/SearchBar";
 import styled from "@mui/material/styles/styled";
 import AlphabetGrid from "../components/Genres/AlphabetGrid";
 import { default as GenresList } from "../mock/Genres";
