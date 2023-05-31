@@ -84,9 +84,6 @@ export default function Header({ admin }: HeaderProps) {
 				{title}
 			</Link>
 			<Nav>
-				<Link component={RouterLink} to='/' variant='h6'>
-					Домашня сторінка
-				</Link>
 				{admin ? undefined : (
 					<>
 						<Link
