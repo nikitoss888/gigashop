@@ -20,12 +20,27 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 	const navigate = useNavigate();
 	if (process.env.NODE_ENV !== "production") console.error(error);
 
-	const name = error ? error.name : 500;
+	const name = error ? error.name : "500";
 	const message = error ? error.message : "Невідома помилка";
+	let title;
+	switch (name) {
+		case "400":
+			title = "Невірний запит!";
+			break;
+		case "404":
+			title = "Сторінку не знайдено!";
+			break;
+		case "403":
+			title = "Доступ заборонено!";
+			break;
+		case "500":
+		default:
+			title = "Щось пішло не так...";
+	}
 
 	return (
 		<ErrorWrapper>
-			<Typography variant='h2'>Щось пішло не так...</Typography>
+			<Typography variant='h2'>{title}</Typography>
 			<Typography variant='h3'>Помилка {name}</Typography>
 			<Typography variant='h4'>{message}</Typography>
 			<Button
@@ -42,7 +57,7 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 					navigate(-1);
 				}}
 			>
-				На головну
+				{location.pathname === "/" ? "На головну" : "Назад"}
 			</Button>
 		</ErrorWrapper>
 	);

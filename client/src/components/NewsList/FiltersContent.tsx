@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import Publications from "../../mock/Publications";
+import Users, { User } from "../../mock/Users";
 
 const FormHelperTextStyle = styled(FormHelperText)`
 	color: ${(props) => props.theme.colors.secondary};
@@ -39,6 +40,8 @@ export default function FiltersContent() {
 		});
 		return acc;
 	}, []);
+
+	const Authors = Users.filter((user) => Publications.some((publication) => publication.userId === user.id));
 
 	return (
 		<MainBox>
@@ -132,7 +135,7 @@ export default function FiltersContent() {
 							setValue("tags", data, { shouldValidate: true, shouldDirty: true });
 						}}
 						renderInput={(params) => (
-							<TextField {...params} variant='outlined' size='small' placeholder='Жанри' fullWidth />
+							<TextField {...params} variant='outlined' size='small' placeholder='Теги' fullWidth />
 						)}
 						renderTags={(value, getTagProps) => {
 							return value.map((option, index) => (
@@ -146,7 +149,57 @@ export default function FiltersContent() {
 					/>
 				)}
 			/>
-			{errors.genres?.message ? <span>{errors.genres?.message.toString()}</span> : undefined}
+			{errors.tags?.message ? <Typography color='secondary'>{errors.tags.message.toString()}</Typography> : ""}
+
+			<Controller
+				name='authors'
+				control={control}
+				defaultValue={[]}
+				render={({ field }) => (
+					<Autocomplete
+						{...field}
+						options={Authors}
+						getOptionLabel={(option) => {
+							return `${option.firstName} ${option.lastName} (${option.login})`;
+						}}
+						multiple
+						filterSelectedOptions
+						isOptionEqualToValue={(option, value) => option.id === value.id}
+						onChange={(_, data: User[]) => {
+							const users = data.map((user) => {
+								return {
+									id: user.id,
+									login: user.login,
+									firstName: user.firstName,
+									lastName: user.lastName,
+								};
+							});
+							setValue("authors", users, { shouldValidate: true, shouldDirty: true });
+						}}
+						renderInput={(params) => (
+							<TextField {...params} variant='outlined' size='small' placeholder='Автори' fullWidth />
+						)}
+						renderTags={(value, getTagProps) => {
+							return value.map((option, index) => (
+								<ChipStyle
+									{...getTagProps({ index })}
+									key={index}
+									label={
+										<Typography variant='body2'>
+											{`${option.firstName} ${option.lastName} (${option.login})`}
+										</Typography>
+									}
+								/>
+							));
+						}}
+					/>
+				)}
+			/>
+			{errors.authors?.message ? (
+				<Typography color='secondary'>{errors.authors.message.toString()}</Typography>
+			) : (
+				""
+			)}
 
 			<ButtonGroup fullWidth>
 				<SubmitButtonStyle variant='contained' type='submit' startIcon={<SearchIcon />}>

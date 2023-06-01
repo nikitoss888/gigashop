@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { useLocation } from "react-router-dom";
 import ThemeProvider from "@mui/material/styles/ThemeProvider";
 import { AdminTheme, RegularTheme } from "../../styles";
+import ScrollToTop from "./ScrollToTop";
 
 const LayoutStyle = styled.div`
 	display: grid;
@@ -34,6 +35,7 @@ export default function Layout({ children }: LayoutProps) {
 				<Header admin={admin} />
 				<Main>{children}</Main>
 				<Footer />
+				<ScrollToTop />
 			</LayoutStyle>
 		</ThemeProvider>
 	);

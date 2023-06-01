@@ -5,33 +5,35 @@ import Typography from "@mui/material/Typography";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import Items from "../mock/Items";
 import styled from "@mui/material/styles/styled";
+import HTTPError from "../HTTPError";
 
 const ContainerStyle = styled(Container)`
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
 	justify-content: start;
-	gap: 15px;
-	margin-bottom: 15px;
+	gap: 5px 20px;
+	margin-top: 15px;
 	height: 100%;
 `;
 
 export default function Genre() {
 	const { id } = useParams();
-	const genre = Genres.find((genre) => genre.id.toString() === id);
+	if (!id) throw new HTTPError(400, "Не вказано ID жанру");
 
-	if (!genre) {
-		const error = new Error("Жанр за даним ID не знайдено");
-		error.name = "404";
-		throw error;
-	}
+	const parsed = parseInt(id);
+	if (isNaN(parsed)) throw new HTTPError(400, "ID жанру не є числом");
+
+	const genre = Genres.find((genre) => genre.id === parsed);
+	if (!genre) throw new HTTPError(404, "Жанр за даним ID не знайдено");
+
 	document.title = `gigashop — Жанр "${genre.name}"`;
 
 	const items = Items.filter((item) => genre.items.includes(item.id));
 
 	return (
 		<ContainerStyle>
-			<Typography variant='h2' textAlign='center' mt={4}>
+			<Typography variant='h3' textAlign='center' mt={3}>
 				Жанр {genre.name}
 			</Typography>
 			{genre.description && (

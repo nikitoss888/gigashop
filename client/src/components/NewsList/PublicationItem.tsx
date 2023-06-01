@@ -2,6 +2,7 @@ import { Publication } from "../../mock/Publications";
 import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
+import { Link } from "react-router-dom";
 
 const MiniAvatarStyle = styled("img")`
 	width: 30px;
@@ -13,19 +14,39 @@ type PublicationProps = {
 	item: Publication;
 };
 export default function PublicationItem({ item }: PublicationProps) {
+	const element = document.createElement("div");
+	element.innerHTML = item.content;
+	const cleanContent = element.textContent || element.innerText || "";
+
 	return (
 		<Box
+			component={Link}
+			to={`/news/${item.id}`}
 			sx={{
 				backgroundColor: "secondary.main",
 				padding: "10px",
 				borderRadius: "5px",
+				textDecoration: "none",
+				"&:hover": {
+					textDecoration: "none",
+				},
 			}}
 		>
 			<Typography variant='h6' component='h2' color='primary'>
 				{item.title}
 			</Typography>
-			<Typography variant='body1' component='p' color='primary'>
-				{item.content}
+			<Typography
+				variant='body1'
+				color='primary'
+				sx={{
+					display: "-webkit-box",
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					WebkitLineClamp: 3,
+					WebkitBoxOrient: "vertical",
+				}}
+			>
+				{cleanContent}
 			</Typography>
 			<Box
 				sx={{

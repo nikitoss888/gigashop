@@ -18,7 +18,9 @@ export default function PublicationsList({ items }: ListProps) {
 			{items.map((item, index) => (
 				<>
 					<PublicationItem key={item.id.toString(16)} item={item} />
-					{index !== items.length - 1 && <Divider sx={{ borderColor: "primary.main" }} />}
+					{index !== items.length - 1 && (
+						<Divider key={`divider-${item.id}`} sx={{ borderColor: "primary.main" }} />
+					)}
 				</>
 			))}
 		</BoxStyle>

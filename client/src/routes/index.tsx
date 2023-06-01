@@ -9,7 +9,8 @@ import Genre from "./Genre";
 import ErrorPage from "./ErrorPage";
 import Companies from "./Companies";
 import Company from "./Company";
-import News from "./News";
+import NewsList from "./NewsList";
+import NewsItem from "./NewsItem";
 
 export default function Router() {
 	const [user, _] = useRecoilState(userState);
@@ -70,11 +71,11 @@ export default function Router() {
 						},
 						{
 							path: "/news",
-							element: <News />,
+							element: <NewsList />,
 						},
 						{
 							path: "/news/:id",
-							element: <p>News page</p>,
+							element: <NewsItem />,
 						},
 					],
 				},

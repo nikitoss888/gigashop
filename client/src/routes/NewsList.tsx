@@ -4,10 +4,17 @@ import { FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
-import Filters from "../components/News/Filters";
+import Filters from "../components/NewsList/Filters";
 import Publications from "../mock/Publications";
-import PublicationsList from "../components/News/PublicationsList";
+import PublicationsList from "../components/NewsList/PublicationsList";
 import Users from "../mock/Users";
+
+const User = yup.object().shape({
+	id: yup.number().required(),
+	login: yup.string().required(),
+	firstName: yup.string().required(),
+	lastName: yup.string().required(),
+});
 
 const schema = yup.object().shape({
 	title: yup.string().nullable().label("Заголовок"),
@@ -22,6 +29,7 @@ const schema = yup.object().shape({
 		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
 		.label("Дата до"),
 	tags: yup.array().of(yup.string()).notRequired().label("Теги"),
+	authors: yup.array().of(User).notRequired().label("Автори"),
 });
 
 const FormBox = styled(Box)`
@@ -30,7 +38,7 @@ const FormBox = styled(Box)`
 	gap: 15px;
 `;
 
-export default function News() {
+export default function NewsList() {
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
@@ -42,6 +50,8 @@ export default function News() {
 			item.user = user;
 		}
 	});
+
+	document.title = "gigashop - Новини";
 
 	const onSubmit = (data: any) => {
 		try {

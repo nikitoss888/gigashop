@@ -5,6 +5,7 @@ export type User = {
 	firstName: string;
 	lastName: string;
 	avatar: string;
+	role?: string;
 };
 
 const Users: User[] = [
@@ -15,6 +16,7 @@ const Users: User[] = [
 		firstName: "John",
 		lastName: "Doe",
 		avatar: "https://i.pravatar.cc/300?img=1",
+		role: "admin",
 	},
 	{
 		id: 2,
@@ -23,6 +25,7 @@ const Users: User[] = [
 		firstName: "Jane",
 		lastName: "Doe",
 		avatar: "https://i.pravatar.cc/300?img=2",
+		role: "moderator",
 	},
 	{
 		id: 3,
@@ -31,6 +34,7 @@ const Users: User[] = [
 		firstName: "Jack",
 		lastName: "Doe",
 		avatar: "https://i.pravatar.cc/300?img=3",
+		role: "user",
 	},
 ];
 export default Users;

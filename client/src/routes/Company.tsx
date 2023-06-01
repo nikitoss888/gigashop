@@ -8,6 +8,7 @@ import Grid from "../components/Company/Grid";
 import DataGroup from "../components/DataGroup";
 import { SyntheticEvent, useState } from "react";
 import ItemsGrid from "../components/Items/ItemsGrid";
+import HTTPError from "../HTTPError";
 
 function a11yProps(index: string) {
 	return {
@@ -18,13 +19,14 @@ function a11yProps(index: string) {
 
 export default function Company() {
 	const { id } = useParams();
-	const company = Companies.find((company) => company.id.toString() === id);
+	if (!id) throw new HTTPError(400, "Не вказано ID компанії");
 
-	if (!company) {
-		const error = new Error("Компанію за даним ID не знайдено");
-		error.name = "404";
-		throw error;
-	}
+	const parsed = parseInt(id);
+	if (isNaN(parsed)) throw new HTTPError(400, "ID компанії не є числом");
+
+	const company = Companies.find((company) => company.id === parsed);
+	if (!company) throw new HTTPError(404, "Компанію за даним ID не знайдено");
+
 	document.title = `gigashop — ${company.name}`;
 	const developedItems = Items.filter((item) => company.developed?.includes(item.id));
 	const publishedItems = Items.filter((item) => company.published?.includes(item.id));
@@ -33,7 +35,6 @@ export default function Company() {
 	const [tabItems, setTabItems] = useState<Item[]>(developedItems);
 
 	const onTabChange = (_: SyntheticEvent, newValue: 0 | 1) => {
-		console.log(newValue);
 		setTab(newValue);
 		setTabItems(newValue === 0 ? developedItems : publishedItems);
 	};

@@ -15,6 +15,7 @@ import Content from "../components/Item/Content";
 import ItemsComments from "../mock/ItemsComments";
 import Users from "../mock/Users";
 import Comments from "../components/Item/Comments";
+import HTTPError from "../HTTPError";
 
 const CoverImage = styled("img")`
 	width: 100%;
@@ -26,13 +27,14 @@ const CoverImage = styled("img")`
 export default function Item() {
 	const theme = useTheme();
 	const { id } = useParams();
-	const item = Items.find((item) => item.id.toString() === id);
+	if (!id) throw new HTTPError(400, "Не вказано ID товару");
 
-	if (!item) {
-		const error = new Error("Товар за даним ID не знайдено");
-		error.name = "404";
-		throw error;
-	}
+	const parsed = parseInt(id);
+	if (isNaN(parsed)) throw new HTTPError(400, "ID товару не є числом");
+
+	const item = Items.find((item) => item.id === parsed);
+	if (!item) throw new HTTPError(404, "Товар за даним ID не знайдено");
+
 	document.title = `gigashop — ${item.name}`;
 	const genres = Genres.filter((genre) => item.genres?.includes(genre.id));
 	const publisher = Companies.find((company) => company.id === item.publisher);
