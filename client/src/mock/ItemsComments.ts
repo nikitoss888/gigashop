@@ -1,13 +1,7 @@
-import { User } from "./Users";
+import Comment from "./Comment";
 
-export type ItemComment = {
-	id: number;
+export type ItemComment = Comment & {
 	itemId: number;
-	userId: number;
-	text: string;
-	date: string;
-	rate: number;
-	user?: User;
 };
 
 const ItemsComments: ItemComment[] = [
@@ -16,7 +10,7 @@ const ItemsComments: ItemComment[] = [
 		itemId: 1,
 		userId: 1,
 		text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl eu ultricies ultricies, nunc nunc ultricies nunc, vitae luctu",
-		date: "2021-01-01",
+		date: new Date(),
 		rate: 5,
 	},
 	{
@@ -24,7 +18,7 @@ const ItemsComments: ItemComment[] = [
 		itemId: 1,
 		userId: 2,
 		text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl eu ultricies ultricies, nunc nunc ultricies nunc, vitae luctu",
-		date: "2021-01-02",
+		date: new Date(),
 		rate: 4,
 	},
 	{
@@ -32,7 +26,7 @@ const ItemsComments: ItemComment[] = [
 		itemId: 1,
 		userId: 3,
 		text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl eu ultricies ultricies, nunc nunc ultricies nunc, vitae luctu",
-		date: "2021-01-03",
+		date: new Date(),
 		rate: 2,
 	},
 ];

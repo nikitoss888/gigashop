@@ -20,22 +20,25 @@ const schema = yup.object().shape({
 		.nullable()
 		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
 		.min(0)
+		.max(yup.ref("priceTo"), "Початкова ціна пошуку не може бути більше кінцевої")
 		.label("Ціна від"),
 	priceTo: yup
 		.number()
 		.nullable()
 		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.min(0)
+		.min(yup.ref("priceFrom"), "Кінцева ціна пошуку не може бути менше початкової")
 		.label("Ціна до"),
 	dateFrom: yup
 		.date()
 		.nullable()
 		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.max(yup.ref("dateTo"), "Початкова дата пошуку не може бути пізніше кінцевої")
 		.label("Дата від"),
 	dateTo: yup
 		.date()
 		.nullable()
 		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+		.min(yup.ref("dateFrom"), "Кінцева дата пошуку не може бути раніше початкової")
 		.label("Дата до"),
 	genres: yup.array().of(Object).notRequired().label("Жанри"),
 	publisher: Object.notRequired().label("Видавництво"),
@@ -50,12 +53,12 @@ const FormBox = styled(Box)`
 `;
 
 export default function Items() {
-	document.title = "gigashop — Товари";
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
 
 	const items = ItemsList;
+	document.title = "Товари — gigashop";
 
 	const onSubmit = (data: any) => {
 		try {

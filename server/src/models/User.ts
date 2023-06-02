@@ -150,7 +150,7 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
     if (includePublicationComments) {
         include.push({
             model: PublicationComment,
-            as: 'Comments',
+            as: 'CommentsList',
             attributes: ['id', 'content', 'rate', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide']
         });
     }

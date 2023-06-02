@@ -50,8 +50,7 @@ export default function NewsList() {
 			item.user = user;
 		}
 	});
-
-	document.title = "gigashop - Новини";
+	document.title = "Новини - gigashop";
 
 	const onSubmit = (data: any) => {
 		try {

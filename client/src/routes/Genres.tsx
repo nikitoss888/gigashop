@@ -14,10 +14,10 @@ const BoxStyle = styled(Box)`
 `;
 
 export default function Genres() {
-	document.title = `gigashop — Жанри`;
 	const methods = useForm();
 
 	const genres = GenresList.sort((a, b) => a.name.localeCompare(b.name));
+	document.title = `Жанри — gigashop`;
 
 	const onSubmit = (data: any) => {
 		try {

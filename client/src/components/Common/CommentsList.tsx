@@ -1,12 +1,13 @@
 import { ItemComment } from "../../mock/ItemsComments";
+import { PublicationComment } from "../../mock/PublicationsComments";
 import Typography from "@mui/material/Typography";
 import { Box } from "@mui/material";
 import Comment from "./Comment";
 
 type CommentsProps = {
-	comments: ItemComment[];
+	comments: (ItemComment | PublicationComment)[];
 };
-export default function Comments({ comments }: CommentsProps) {
+export default function CommentsList({ comments }: CommentsProps) {
 	return (
 		<Box
 			sx={{

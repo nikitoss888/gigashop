@@ -1,10 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import Items from "../mock/Items";
 import { Box, Container } from "@mui/material";
-import { StarRate } from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
-import DataGroup from "../components/DataGroup";
+import DataGroup from "../components/Common/DataGroup";
 import { useTheme } from "@mui/material/styles";
 import Genres from "../mock/Genres";
 import Companies from "../mock/Companies";
@@ -14,8 +13,9 @@ import Chip from "../components/Item/Chip";
 import Content from "../components/Item/Content";
 import ItemsComments from "../mock/ItemsComments";
 import Users from "../mock/Users";
-import Comments from "../components/Item/Comments";
+import CommentsList from "../components/Common/CommentsList";
 import HTTPError from "../HTTPError";
+import ItemRating from "../components/Common/ItemRating";
 
 const CoverImage = styled("img")`
 	width: 100%;
@@ -35,14 +35,13 @@ export default function Item() {
 	const item = Items.find((item) => item.id === parsed);
 	if (!item) throw new HTTPError(404, "Товар за даним ID не знайдено");
 
-	document.title = `gigashop — ${item.name}`;
+	document.title = `${item.name} — gigashop`;
+
 	const genres = Genres.filter((genre) => item.genres?.includes(genre.id));
 	const publisher = Companies.find((company) => company.id === item.publisher);
 	const developers = Companies.filter((company) => item.developers?.includes(company.id));
 	const comments = ItemsComments.filter((comment) => comment.itemId === item.id);
-	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length;
-	avgRate = Math.round(avgRate * 10) / 10;
-	// add users to comments
+
 	comments.forEach((comment) => {
 		comment.user = Users.find((user) => user.id === comment.userId);
 	});
@@ -155,16 +154,7 @@ export default function Item() {
 				<DataGroup title='Дата випуску'>
 					<Typography variant='body1'>{item.date.toLocaleDateString() || "Не вказано"}</Typography>
 				</DataGroup>
-				<DataGroup title='Рейтинг'>
-					{avgRate === 0 ? (
-						<Typography variant='body1'>Не вказано</Typography>
-					) : (
-						<>
-							<Typography variant='body1'>{avgRate}/5</Typography>
-							<StarRate sx={{ color: "accent.main" }} />
-						</>
-					)}
-				</DataGroup>
+				<ItemRating comments={comments} />
 				<DataGroup title='Ціна'>
 					<Typography component='p' variant='body1'>
 						{item.price ? item.price.toString() + " грн" : "Не вказано"}
@@ -175,7 +165,7 @@ export default function Item() {
 						{item.description || "Не вказано"}
 					</Typography>
 				</DataGroup>
-				{comments.length > 0 && <Comments comments={comments} />}
+				{comments.length > 0 && <CommentsList comments={comments} />}
 			</Content>
 		</Container>
 	);

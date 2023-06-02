@@ -1,14 +1,15 @@
 import { ItemComment } from "../../mock/ItemsComments";
-import { Box } from "@mui/material";
+import { Box, Rating } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { StarRate } from "@mui/icons-material";
+import { PublicationComment } from "../../mock/PublicationsComments";
 
 const CommentBox = styled(Box)`
 	display: flex;
 	flex-direction: row;
 	justify-content: start;
-	align-items: center;
+	align-items: stretch;
 	gap: 10px;
 `;
 
@@ -19,18 +20,15 @@ const Avatar = styled("img")`
 `;
 
 type CommentProps = {
-	comment: ItemComment;
+	comment: ItemComment | PublicationComment;
 };
 export default function Comment({ comment }: CommentProps) {
 	return (
 		<CommentBox>
 			<Box
 				sx={{
-					width: {
-						xs: "150px",
-						md: "100px",
-					},
-					height: "100%",
+					width: "70px",
+					minWidth: "70px",
 					display: "flex",
 					flexDirection: "column",
 					alignItems: "start",
@@ -62,8 +60,13 @@ export default function Comment({ comment }: CommentProps) {
 				</Typography>
 				<Typography variant='body1'>{comment.text}</Typography>
 				<Box sx={{ display: "flex" }}>
-					<Typography variant='body1'>{comment.rate}/5</Typography>
-					<StarRate sx={{ color: "accent.main" }} />
+					<Rating
+						name='comment-rating'
+						value={comment.rate}
+						readOnly
+						emptyIcon={<StarRate color='disabled' />}
+						icon={<StarRate sx={{ color: "accent.main" }} />}
+					/>
 				</Box>
 			</Box>
 		</CommentBox>

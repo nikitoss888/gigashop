@@ -103,7 +103,7 @@ const _includeHandler = (includeTags: boolean, includeComments: boolean, include
 
         include.push({
             model: PublicationComment,
-            as: 'Comments',
+            as: 'CommentsList',
             attributes: ['content', 'rate', 'createdAt', 'updatedAt'],
             include: [{
                 model: User,

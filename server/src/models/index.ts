@@ -37,9 +37,9 @@ function initModels() {
     Item.hasMany(ItemRate, {foreignKey: 'itemId', as: 'Rates', onDelete: 'CASCADE'});
 
     PublicationComment.belongsTo(User, {foreignKey: 'userId', as: 'User', onDelete: 'CASCADE'});
-    User.hasMany(PublicationComment, {foreignKey: 'userId', as: 'Comments', onDelete: 'CASCADE'});
+    User.hasMany(PublicationComment, {foreignKey: 'userId', as: 'CommentsList', onDelete: 'CASCADE'});
     PublicationComment.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});
-    Publication.hasMany(PublicationComment, {foreignKey: 'publicationId', as: 'Comments', onDelete: 'CASCADE'});
+    Publication.hasMany(PublicationComment, {foreignKey: 'publicationId', as: 'CommentsList', onDelete: 'CASCADE'});
 
     Publication.hasMany(PublicationTag, {foreignKey: 'publicationId', as: 'Tags', onDelete: 'CASCADE'});
     PublicationTag.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});

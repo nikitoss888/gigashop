@@ -14,10 +14,10 @@ const BoxStyle = styled(Box)`
 `;
 
 export default function Companies() {
-	document.title = `gigashop — Компанії`;
 	const methods = useForm();
 
 	const companies = CompaniesList.sort((a, b) => a.name.localeCompare(b.name));
+	document.title = `Компанії — gigashop`;
 
 	const onSubmit = (data: any) => {
 		try {

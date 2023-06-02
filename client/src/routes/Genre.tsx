@@ -27,7 +27,7 @@ export default function Genre() {
 	const genre = Genres.find((genre) => genre.id === parsed);
 	if (!genre) throw new HTTPError(404, "Жанр за даним ID не знайдено");
 
-	document.title = `gigashop — Жанр "${genre.name}"`;
+	document.title = `Жанр "${genre.name}" — gigashop`;
 
 	const items = Items.filter((item) => genre.items.includes(item.id));
 

@@ -71,7 +71,7 @@ export default function FiltersContent() {
 						render={({ field }) => (
 							<TextField
 								{...field}
-								placeholder={"Ціна від"}
+								placeholder='Ціна від'
 								variant='outlined'
 								size='small'
 								fullWidth

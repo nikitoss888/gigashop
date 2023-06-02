@@ -5,7 +5,7 @@ import { Box, Container, Tab, Tabs } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import LogoImage from "../components/Company/LogoImage";
 import Grid from "../components/Company/Grid";
-import DataGroup from "../components/DataGroup";
+import DataGroup from "../components/Common/DataGroup";
 import { SyntheticEvent, useState } from "react";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import HTTPError from "../HTTPError";
@@ -27,7 +27,8 @@ export default function Company() {
 	const company = Companies.find((company) => company.id === parsed);
 	if (!company) throw new HTTPError(404, "Компанію за даним ID не знайдено");
 
-	document.title = `gigashop — ${company.name}`;
+	document.title = `${company.name} — gigashop`;
+
 	const developedItems = Items.filter((item) => company.developed?.includes(item.id));
 	const publishedItems = Items.filter((item) => company.published?.includes(item.id));
 
