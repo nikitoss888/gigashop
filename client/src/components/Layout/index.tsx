@@ -26,13 +26,13 @@ type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
 	const location = useLocation();
-	const admin = location.pathname.startsWith("/admin");
-	const theme = admin ? AdminTheme : RegularTheme;
+	const adminRoute = location.pathname.startsWith("/admin");
+	const theme = adminRoute ? AdminTheme : RegularTheme;
 
 	return (
 		<ThemeProvider theme={theme}>
 			<LayoutStyle>
-				<Header admin={admin} />
+				<Header isAdminRoute={adminRoute} />
 				<Main>{children}</Main>
 				<Footer />
 				<ScrollToTop />

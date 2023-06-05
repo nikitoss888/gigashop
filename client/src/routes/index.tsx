@@ -12,6 +12,7 @@ import Company from "./Company";
 import NewsList from "./NewsList";
 import NewsItem from "./NewsItem";
 import Login from "./Login";
+import Register from "./Register";
 
 export default function Router() {
 	const [user, _] = useRecoilState(userState);
@@ -41,10 +42,9 @@ export default function Router() {
 							path: "/login",
 							element: <Login />,
 						},
-						// ToDo: Implement register page
 						{
 							path: "/register",
-							element: <p>Register page</p>,
+							element: <Register />,
 						},
 						{
 							path: "/shop/items",
@@ -77,6 +77,14 @@ export default function Router() {
 						{
 							path: "/news/:id",
 							element: <NewsItem />,
+						},
+						{
+							path: "/news/create",
+							element: <p>Create news item</p>,
+						},
+						{
+							path: "/news/:id/edit",
+							element: <p>Edit news item</p>,
 						},
 					],
 				},

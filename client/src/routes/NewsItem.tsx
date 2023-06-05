@@ -11,6 +11,8 @@ import * as DOMPurify from "dompurify";
 import parse from "html-react-parser";
 import ItemRating from "../components/Common/ItemRating";
 import CommentsList from "../components/Common/CommentsList";
+import { useLayoutEffect, useRef, useState } from "react";
+import { BodyFont, HeadingFont } from "../styles";
 
 const Content = styled(Typography)`
 	white-space: pre-wrap;
@@ -21,11 +23,13 @@ const Content = styled(Typography)`
 	h5,
 	h6 {
 		color: inherit;
-		font: inherit;
+		font: ${HeadingFont};
+		text-align: center;
 	}
 	p {
 		color: inherit;
-		font: inherit;
+		font: ${BodyFont};
+		text-indent: 1em;
 	}
 ` as typeof Typography;
 
@@ -45,6 +49,16 @@ export default function NewsItem() {
 		comment.user = Users.find((user) => user.id === comment.userId);
 	});
 
+	const [contentHeight, setContentHeight] = useState<number>(0);
+	const ref = useRef<any>(null);
+
+	useLayoutEffect(() => {
+		if (ref.current) {
+			const height = ref.current.getBoundingClientRect().height;
+			setContentHeight(height);
+		}
+	}, []);
+
 	document.title = `${publication.user?.firstName} ${publication.user?.lastName} / ${publication.title} — gigashop`;
 
 	const cleanContent = DOMPurify.sanitize(publication.content, {
@@ -61,10 +75,25 @@ export default function NewsItem() {
 				}}
 			>
 				{publication.user && <Author user={publication.user} />}
-				<Typography variant='h3' textAlign='center'>
-					{publication.title}
-				</Typography>
-				<Content variant='body1'>{parse(cleanContent)}</Content>
+				<Box>
+					<Typography variant='h3' textAlign='center'>
+						{publication.title}
+					</Typography>
+					{publication.createdAt && (
+						<Typography variant='subtitle1' textAlign='center'>
+							{publication.createdAt.toLocaleDateString()}
+						</Typography>
+					)}
+				</Box>
+				{publication.tags && (
+					<Typography variant='h6'>Теги: {publication.tags.map((tag) => tag).join(", ")}</Typography>
+				)}
+				<Content variant='body1' component='article' ref={ref}>
+					{parse(cleanContent)}
+				</Content>
+				{publication.tags && contentHeight > 600 && (
+					<Typography variant='h6'>Теги: {publication.tags.map((tag) => tag).join(", ")}</Typography>
+				)}
 				<ItemRating comments={comments} />
 				{comments.length > 0 && <CommentsList comments={comments} />}
 			</Box>

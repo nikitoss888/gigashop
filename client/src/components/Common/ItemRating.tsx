@@ -8,7 +8,7 @@ type RateProps = {
 	comments: (ItemComment | PublicationComment)[];
 };
 export default function ItemRating({ comments }: RateProps) {
-	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length;
+	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;
 	avgRate = Math.round(avgRate * 10) / 10;
 
 	return (

@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
 import { Link } from "react-router-dom";
+import Chip from "../Common/Chip";
 
 const MiniAvatarStyle = styled("img")`
 	width: 30px;
@@ -48,6 +49,21 @@ export default function PublicationItem({ item }: PublicationProps) {
 			>
 				{cleanContent}
 			</Typography>
+			{item.tags && item.tags.length > 0 && (
+				<Box
+					sx={{
+						display: "flex",
+						justifyContent: "start",
+						alignItems: "center",
+						gap: "5px",
+						marginTop: "10px",
+					}}
+				>
+					{item.tags?.map((tag) => (
+						<Chip key={`${item.id.toString(16)}-${tag}}`} label={tag} />
+					))}
+				</Box>
+			)}
 			<Box
 				sx={{
 					display: "flex",

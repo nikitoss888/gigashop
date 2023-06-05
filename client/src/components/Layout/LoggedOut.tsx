@@ -15,6 +15,10 @@ export default function LoggedOut() {
 				display: "flex",
 				flexDirection: "row",
 				gap: "10px",
+				justifyContent: {
+					xs: "space-between",
+					md: "flex-end",
+				},
 			}}
 		>
 			<Link variant='h6' component={RouterLink} to='/login'>

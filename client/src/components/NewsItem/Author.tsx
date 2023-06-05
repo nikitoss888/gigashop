@@ -42,7 +42,11 @@ export default function Author({ user }: AuthorProps) {
 				<Typography variant='h4' component='h3' color='primary'>
 					{`${user.firstName} ${user.lastName}`}
 				</Typography>
-				<Typography variant='subtitle2' component='h4' color='primary'>
+				<Typography
+					variant='subtitle2'
+					component='h4'
+					color={user.role.toLowerCase() === "user" ? "primary" : "accent.main"}
+				>
 					{user.role}
 				</Typography>
 			</InfoBox>

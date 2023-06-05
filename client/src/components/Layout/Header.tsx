@@ -1,24 +1,21 @@
 import styled from "@mui/material/styles/styled";
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
 import logo from "../../static/logo.png";
-import { Typography, AppBar, Menu, MenuItem, Container, Box } from "@mui/material";
+import { Typography, AppBar, Container, Box, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import LoggedIn from "./LoggedIn";
 import { userState } from "../../store/User";
 import { useRecoilState } from "recoil";
 import LoggedOut from "./LoggedOut";
+import MenuIcon from "@mui/icons-material/Menu";
+import HeaderMdNav from "./HeaderMdNav";
+import HeaderXsNav from "./HeaderXsNav";
 
 const Logo = styled("img")`
+	import HeaderXsNav from "./HeaderXsNav";
 	height: 45px;
 	margin-top: 15px;
 	margin-bottom: 15px;
-`;
-
-const Nav = styled("nav")`
-	display: flex;
-	gap: 25px;
-	align-items: center;
-	margin-left: 25px;
 `;
 
 const Link = styled(Typography)`
@@ -31,97 +28,103 @@ const HeaderStyle = styled(AppBar)`
 	background-color: ${(props) => props.theme.colors.primary};
 	color: ${(props) => props.theme.colors.secondary};
 	box-shadow: none;
-`;
+` as typeof AppBar;
 
-const HeaderContainer = styled(Container)`
+const HeaderBox = styled(Box)`
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: start;
-`;
+` as typeof Box;
 
 type HeaderComponentProps = {
 	children: ReactNode;
 };
 const HeaderComponent = ({ children }: HeaderComponentProps) => (
 	<HeaderStyle>
-		<HeaderContainer maxWidth='lg'>{children}</HeaderContainer>
+		<Container maxWidth='lg'>{children}</Container>
 	</HeaderStyle>
 );
 
 type HeaderProps = {
-	admin?: boolean;
+	isAdminRoute?: boolean;
 };
 
-export default function Header({ admin }: HeaderProps) {
+export default function Header({ isAdminRoute }: HeaderProps) {
 	const [user, _] = useRecoilState(userState);
-	const title = process.env.REACT_APP_PROJECT_NAME + (admin ? " Admin" : "");
-
-	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-	const shopOpen = Boolean(anchorEl);
-
-	const handleShopMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-		setAnchorEl(event.currentTarget);
-	};
-
-	const handleShopMenuClose = () => {
-		setAnchorEl(null);
-	};
+	const title = process.env.REACT_APP_PROJECT_NAME + (isAdminRoute ? " Admin" : "");
 
 	return (
 		<HeaderComponent>
-			<Logo src={logo} alt='Logo' />
-			<Link
-				variant='h5'
-				component={RouterLink}
-				to={"/" + (admin ? "admin" : "")}
-				noWrap
+			<HeaderBox
 				sx={{
-					fontWeight: "bold",
-					marginLeft: "25px",
+					display: {
+						xs: "none",
+						md: "flex",
+					},
 				}}
 			>
-				{title}
-			</Link>
-			<Nav>
-				{admin ? undefined : (
-					<>
+				<Logo src={logo} alt='Logo' />
+				<Link
+					variant='h5'
+					component={RouterLink}
+					to={"/" + (isAdminRoute ? "admin" : "")}
+					noWrap
+					sx={{
+						fontWeight: "bold",
+						marginLeft: "25px",
+					}}
+				>
+					{title}
+				</Link>
+				<HeaderMdNav isAdminRoute={isAdminRoute} />
+				<Box sx={{ marginLeft: "auto" }}>{user ? <LoggedIn /> : <LoggedOut />}</Box>
+			</HeaderBox>
+			<Accordion
+				sx={{
+					boxShadow: "none",
+					display: {
+						xs: "block",
+						md: "none",
+					},
+				}}
+				disableGutters
+			>
+				<AccordionSummary
+					expandIcon={<MenuIcon color='secondary' fontSize='large' />}
+					sx={{
+						padding: 0,
+						width: "100%",
+						backgroundColor: (theme) => theme.palette.primary.main,
+						"& > *": {
+							margin: "0 !important",
+						},
+					}}
+				>
+					<HeaderBox>
+						<Logo src={logo} alt='Logo' />
 						<Link
-							id='shop-dropdown'
-							aria-controls={shopOpen ? "shop-menu" : undefined}
-							aria-haspopup='true'
-							aria-expanded={shopOpen ? "true" : undefined}
-							onMouseOver={handleShopMenuOpen}
-							variant='h6'
-						>
-							Магазин
-						</Link>
-						<Menu
-							id='shop-menu'
-							anchorEl={anchorEl}
-							open={shopOpen}
-							onClose={handleShopMenuClose}
-							MenuListProps={{
-								"aria-labelledby": "shop-dropdown",
+							variant='h5'
+							component={RouterLink}
+							to={"/" + (isAdminRoute ? "admin" : "")}
+							noWrap
+							sx={{
+								fontWeight: "bold",
+								marginLeft: "25px",
 							}}
 						>
-							<MenuItem component={RouterLink} to='/shop/items'>
-								<Typography variant='h6'>Товари</Typography>
-							</MenuItem>
-							<MenuItem component={RouterLink} to='/shop/genres'>
-								<Typography variant='h6'>Жанри</Typography>
-							</MenuItem>
-							<MenuItem component={RouterLink} to='/shop/companies'>
-								<Typography variant='h6'>Компанії</Typography>
-							</MenuItem>
-						</Menu>
-						<Link component={RouterLink} to='/news' variant='h6'>
-							Новини
+							{title}
 						</Link>
-					</>
-				)}
-			</Nav>
-			<Box sx={{ marginLeft: "auto" }}>{user ? <LoggedIn /> : <LoggedOut />}</Box>
+					</HeaderBox>
+				</AccordionSummary>
+				<AccordionDetails
+					sx={{
+						backgroundColor: (theme) => theme.palette.primary.main,
+					}}
+				>
+					<HeaderXsNav isAdminRoute={isAdminRoute} user={user} />
+				</AccordionDetails>
+			</Accordion>
 		</HeaderComponent>
 	);
 }

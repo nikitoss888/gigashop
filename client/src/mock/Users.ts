@@ -5,7 +5,7 @@ export type User = {
 	firstName: string;
 	lastName: string;
 	avatar: string;
-	role?: string;
+	role: string;
 };
 
 const Users: User[] = [

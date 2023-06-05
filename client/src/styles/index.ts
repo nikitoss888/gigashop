@@ -12,8 +12,8 @@ const InputBackground = "#D9D9D9";
 // const Info = "#00bfff";
 // const Success = "#00ff00";
 
-const BodyFont = "Merriweather, sans-serif";
-const HeadingFont = "Montserrat Alternates, serif";
+export const BodyFont = "Merriweather, sans-serif";
+export const HeadingFont = "Montserrat Alternates, serif";
 
 const BaseTheme = {
 	fonts: {

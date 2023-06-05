@@ -9,7 +9,7 @@ import Genres from "../mock/Genres";
 import Companies from "../mock/Companies";
 import Carousel from "../components/Item/Carousel";
 import CarouselImage from "../components/Item/CarouselImage";
-import Chip from "../components/Item/Chip";
+import Chip from "../components/Common/Chip";
 import Content from "../components/Item/Content";
 import ItemsComments from "../mock/ItemsComments";
 import Users from "../mock/Users";
