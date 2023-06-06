@@ -1,5 +1,5 @@
 import styled from "@mui/material/styles/styled";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
 import { Typography, AppBar, Container, Box, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
@@ -12,7 +12,6 @@ import HeaderMdNav from "./HeaderMdNav";
 import HeaderXsNav from "./HeaderXsNav";
 
 const Logo = styled("img")`
-	import HeaderXsNav from "./HeaderXsNav";
 	height: 45px;
 	margin-top: 15px;
 	margin-bottom: 15px;
@@ -52,6 +51,7 @@ type HeaderProps = {
 
 export default function Header({ isAdminRoute }: HeaderProps) {
 	const [user, _] = useRecoilState(userState);
+	const [expanded, setExpanded] = useState<boolean>(false);
 	const title = process.env.REACT_APP_PROJECT_NAME + (isAdminRoute ? " Admin" : "");
 
 	return (
@@ -88,10 +88,11 @@ export default function Header({ isAdminRoute }: HeaderProps) {
 						md: "none",
 					},
 				}}
+				expanded={expanded}
 				disableGutters
 			>
 				<AccordionSummary
-					expandIcon={<MenuIcon color='secondary' fontSize='large' />}
+					expandIcon={<MenuIcon color='secondary' fontSize='large' onClick={() => setExpanded(!expanded)} />}
 					sx={{
 						padding: 0,
 						width: "100%",

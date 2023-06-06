@@ -6,6 +6,7 @@ import ItemsGrid from "../components/Items/ItemsGrid";
 import Items from "../mock/Items";
 import styled from "@mui/material/styles/styled";
 import HTTPError from "../HTTPError";
+import { useState } from "react";
 
 const ContainerStyle = styled(Container)`
 	display: flex;
@@ -27,9 +28,26 @@ export default function Genre() {
 	const genre = Genres.find((genre) => genre.id === parsed);
 	if (!genre) throw new HTTPError(404, "Жанр за даним ID не знайдено");
 
+	const [sortBy, setSortBy] = useState("releaseDate");
+	const [limit, setLimit] = useState(12);
+	const [page, setPage] = useState(1);
+
 	document.title = `Жанр "${genre.name}" — gigashop`;
 
-	const items = Items.filter((item) => genre.items.includes(item.id));
+	const items = Items.filter((item) => genre.items.includes(item.id))
+		.sort((a, b) => {
+			switch (sortBy) {
+				case "name":
+					return a.name.localeCompare(b.name);
+				case "price":
+					return a.price - b.price;
+				case "releaseDate":
+				default:
+					return a.releaseDate.getTime() - b.releaseDate.getTime();
+			}
+		})
+		.slice((page - 1) * limit, page * limit);
+	const maxPage = Math.ceil(items.length / limit) || 1;
 
 	return (
 		<ContainerStyle>
@@ -49,7 +67,22 @@ export default function Genre() {
 			<Typography variant='h4' textAlign='center'>
 				Товари, пов&apos;язані з жанром:
 			</Typography>
-			<ItemsGrid items={items} />
+			<ItemsGrid
+				items={items}
+				sorting={{
+					value: sortBy,
+					setValue: setSortBy,
+				}}
+				limitation={{
+					value: limit,
+					setValue: setLimit,
+				}}
+				pagination={{
+					value: page,
+					setValue: setPage,
+					maxValue: maxPage,
+				}}
+			/>
 		</ContainerStyle>
 	);
 }

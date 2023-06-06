@@ -15,7 +15,7 @@ const ContentBottom = styled(Box)`
 type CardProps = {
 	item: Item;
 };
-export default function ItemCard({ item: { id, name, price, date, mainImage, description } }: CardProps) {
+export default function ItemCard({ item: { id, name, price, releaseDate, mainImage, description } }: CardProps) {
 	return (
 		<Card>
 			<Link to={`/shop/items/${id}`} onClick={(e) => e.stopPropagation()}>
@@ -45,7 +45,7 @@ export default function ItemCard({ item: { id, name, price, date, mainImage, des
 							{price} грн
 						</Typography>
 						<Typography variant='body1' color='secondary'>
-							{date.toLocaleDateString()}
+							{releaseDate.toLocaleDateString()}
 						</Typography>
 					</ContentBottom>
 				</Content>

@@ -7,6 +7,7 @@ import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import { default as ItemsList } from "../mock/Items";
+import { useEffect, useState } from "react";
 
 const Object = yup.object().shape({
 	id: yup.number(),
@@ -53,12 +54,55 @@ const FormBox = styled(Box)`
 `;
 
 export default function Items() {
+	document.title = "Товари — gigashop";
+
+	const [sortBy, setSortBy] = useState("releaseDate");
+	const [limit, setLimit] = useState(12);
+	const [page, setPage] = useState(1);
+
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
 
-	const items = ItemsList;
-	document.title = "Товари — gigashop";
+	const [items, setItems] = useState(
+		ItemsList.sort((a, b) => {
+			switch (sortBy) {
+				case "name":
+					return a.name.localeCompare(b.name);
+				case "price":
+					return a.price - b.price;
+				case "releaseDate":
+				default:
+					return a.releaseDate.getTime() - b.releaseDate.getTime();
+			}
+		}).slice((page - 1) * limit, page * limit)
+	);
+	const [maxPage, setMaxPage] = useState(Math.ceil(ItemsList.length / limit) || 1);
+
+	const getItems = (refresh?: boolean) => {
+		const localPage = refresh ? 1 : page;
+		const items = ItemsList.sort((a, b) => {
+			switch (sortBy) {
+				case "name":
+					return a.name.localeCompare(b.name);
+				case "price":
+					return a.price - b.price;
+				default:
+					return a.releaseDate.getTime() - b.releaseDate.getTime();
+			}
+		}).slice((localPage - 1) * limit, localPage * limit);
+		setItems(items);
+		refresh && setMaxPage(Math.ceil(ItemsList.length / limit) || 1);
+	};
+
+	useEffect(() => {
+		setPage(1);
+		getItems(true);
+	}, [sortBy, limit]);
+
+	useEffect(() => {
+		getItems();
+	}, [page]);
 
 	const onSubmit = (data: any) => {
 		try {
@@ -83,7 +127,28 @@ export default function Items() {
 					>
 						<SearchBar name='name' label='Назва' defValue='' />
 						<Filters />
-						<ItemsGrid items={items} sx={{ gridRow: { sm: "3", md: "2" } }} />
+						<ItemsGrid
+							items={items}
+							sorting={{
+								value: sortBy,
+								setValue: setSortBy,
+							}}
+							limitation={{
+								value: limit,
+								setValue: setLimit,
+							}}
+							pagination={{
+								value: page,
+								setValue: setPage,
+								maxValue: maxPage,
+							}}
+							sx={{
+								gridRow: {
+									sm: "3",
+									md: "2",
+								},
+							}}
+						/>
 					</FormBox>
 				</form>
 			</FormProvider>

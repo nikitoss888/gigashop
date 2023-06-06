@@ -1,4 +1,4 @@
-import Widget from "../Cloudinary/Widget";
+import WidgetSingle from "../Cloudinary/WidgetSingle";
 import { useState } from "react";
 import { Box, Button, ButtonGroup, Container, TextField } from "@mui/material";
 import styled from "@mui/material/styles/styled";
@@ -70,7 +70,7 @@ const SubmitButtonStyle = styled(Button)`
 
 export default function Register() {
 	const [image, setImage] = useState({ publicId: "", secureUrl: "" });
-	const { widgetRef } = Widget("dnqlgypji", "gigashop_general", setImage);
+	const { widgetRef } = WidgetSingle("dnqlgypji", "gigashop_general", setImage);
 
 	const methods = useForm({
 		resolver: yupResolver(schema),
@@ -85,7 +85,7 @@ export default function Register() {
 	};
 
 	const onSubmit = (data: any) => {
-		console.log({ ...data, ...image });
+		console.log({ ...data, image });
 	};
 
 	const onReset = () => {

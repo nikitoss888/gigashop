@@ -59,6 +59,7 @@ export default function Item() {
 						xs: "1fr",
 						md: "3fr 2fr",
 					},
+					gap: "10px",
 				}}
 			>
 				<Typography
@@ -152,7 +153,7 @@ export default function Item() {
 					)) || <Typography variant='body1'>Не вказано</Typography>}
 				</DataGroup>
 				<DataGroup title='Дата випуску'>
-					<Typography variant='body1'>{item.date.toLocaleDateString() || "Не вказано"}</Typography>
+					<Typography variant='body1'>{item.releaseDate.toLocaleDateString() || "Не вказано"}</Typography>
 				</DataGroup>
 				<ItemRating comments={comments} />
 				<DataGroup title='Ціна'>
@@ -160,10 +161,32 @@ export default function Item() {
 						{item.price ? item.price.toString() + " грн" : "Не вказано"}
 					</Typography>
 				</DataGroup>
+				<DataGroup title='Кількість' column='1/3'>
+					<Typography component='p' variant='body1'>
+						{item.amount
+							? item.amount > 0
+								? `${item.amount.toString()} шт`
+								: "Немає в наявності"
+							: "Не вказано"}
+					</Typography>
+				</DataGroup>
 				<DataGroup title='Опис' column='1/3'>
 					<Typography component='p' variant='body1'>
 						{item.description || "Не вказано"}
 					</Typography>
+				</DataGroup>
+				<DataGroup title='Додаткові характеристики' column='1/3'>
+					{item.characteristics ? (
+						<Box>
+							{Object.entries(item.characteristics).map(([key, value]) => (
+								<Typography key={key} variant='body1'>
+									{key}: {value}
+								</Typography>
+							))}
+						</Box>
+					) : (
+						<Typography variant='body1'>Не вказано</Typography>
+					)}
 				</DataGroup>
 				{comments.length > 0 && <CommentsList comments={comments} />}
 			</Content>

@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Typography } from "@mui/material";
+import { Accordion, AccordionSummary, Box, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import Link from "./Link";
 import styled from "@mui/material/styles/styled";
@@ -6,6 +6,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { User } from "../../store/User";
 import LoggedIn from "./LoggedIn";
 import LoggedOut from "./LoggedOut";
+import AccordionDetailsStyle from "../Common/AccordionDetailsStyle";
 
 const Nav = styled("nav")`
 	display: flex;
@@ -21,7 +22,11 @@ type HeaderXsNavProps = {
 export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 	return (
 		<Nav>
-			{isAdminRoute ? undefined : (
+			{isAdminRoute ? (
+				<Link component={RouterLink} to='/' variant='h6'>
+					Назад до користувацького інтерфейсу
+				</Link>
+			) : (
 				<>
 					<Accordion
 						disableGutters
@@ -43,13 +48,7 @@ export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 						>
 							<Typography variant='h6'>Магазин</Typography>
 						</AccordionSummary>
-						<AccordionDetails
-							sx={{
-								display: "flex",
-								flexDirection: "column",
-								gap: "5px",
-							}}
-						>
+						<AccordionDetailsStyle>
 							<Typography
 								variant='h6'
 								component={RouterLink}
@@ -83,7 +82,7 @@ export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 							>
 								Компанії
 							</Typography>
-						</AccordionDetails>
+						</AccordionDetailsStyle>
 					</Accordion>
 					<Link component={RouterLink} to='/news' variant='h6'>
 						Публікації

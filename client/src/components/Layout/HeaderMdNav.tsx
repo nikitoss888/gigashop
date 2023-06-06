@@ -28,7 +28,11 @@ export default function HeaderMdNav({ isAdminRoute }: HeaderMdNavProps) {
 
 	return (
 		<Nav>
-			{isAdminRoute ? undefined : (
+			{isAdminRoute ? (
+				<Link component={RouterLink} to='/' variant='h6'>
+					Назад до користувацького інтерфейсу
+				</Link>
+			) : (
 				<>
 					<Link
 						id='shop-dropdown'

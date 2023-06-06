@@ -114,6 +114,9 @@ export default function FiltersContent() {
 					sx={{ flexDirection: "column" }}
 				>
 					<Box width='100%'>
+						<Typography variant='subtitle2' component='h4' color='secondary'>
+							Дата від
+						</Typography>
 						<Controller
 							name='dateFrom'
 							control={control}
@@ -130,20 +133,17 @@ export default function FiltersContent() {
 								/>
 							)}
 						/>
-						<FormHelperTextStyle color='secondary' error={!!errors.dateFrom}>
-							Дата від
-							{errors.dateFrom ? (
-								<>
-									<br />
-									{errors.dateFrom.message?.toString()}
-								</>
-							) : (
-								""
-							)}
-						</FormHelperTextStyle>
+						{errors.dateFrom && (
+							<FormHelperTextStyle color='secondary' error={!!errors.dateFrom}>
+								{errors.dateFrom.message?.toString()}
+							</FormHelperTextStyle>
+						)}
 					</Box>
 
 					<Box width='100%'>
+						<Typography variant='subtitle2' component='h4' color='secondary'>
+							Дата до
+						</Typography>
 						<Controller
 							name='dateTo'
 							control={control}
@@ -159,17 +159,11 @@ export default function FiltersContent() {
 								/>
 							)}
 						/>
-						<FormHelperTextStyle color='secondary' error={!!errors.dateTo}>
-							Дата до
-							{errors.dateTo ? (
-								<>
-									<br />
-									{errors.dateTo.message?.toString()}
-								</>
-							) : (
-								""
-							)}
-						</FormHelperTextStyle>
+						{errors.dateTo && (
+							<FormHelperTextStyle color='secondary' error={!!errors.dateTo}>
+								{errors.dateTo.message?.toString()}
+							</FormHelperTextStyle>
+						)}
 					</Box>
 				</Box>
 			</Box>

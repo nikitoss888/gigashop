@@ -27,17 +27,50 @@ export default function Company() {
 	const company = Companies.find((company) => company.id === parsed);
 	if (!company) throw new HTTPError(404, "Компанію за даним ID не знайдено");
 
+	const [sortBy, setSortBy] = useState("releaseDate");
+	const [limit, setLimit] = useState(12);
+	const [page, setPage] = useState(1);
+
 	document.title = `${company.name} — gigashop`;
 
-	const developedItems = Items.filter((item) => company.developed?.includes(item.id));
-	const publishedItems = Items.filter((item) => company.published?.includes(item.id));
+	const developedItems = Items.filter((item) => company.developed?.includes(item.id))
+		.sort((a, b) => {
+			switch (sortBy) {
+				case "name":
+					return a.name.localeCompare(b.name);
+				case "price":
+					return a.price - b.price;
+				case "releaseDate":
+				default:
+					return a.releaseDate.getTime() - b.releaseDate.getTime();
+			}
+		})
+		.slice((page - 1) * limit, page * limit);
+
+	const publishedItems = Items.filter((item) => company.published?.includes(item.id))
+		.sort((a, b) => {
+			switch (sortBy) {
+				case "name":
+					return a.name.localeCompare(b.name);
+				case "price":
+					return a.price - b.price;
+				case "releaseDate":
+				default:
+					return a.releaseDate.getTime() - b.releaseDate.getTime();
+			}
+		})
+		.slice((page - 1) * limit, page * limit);
 
 	const [tab, setTab] = useState<0 | 1>(0);
 	const [tabItems, setTabItems] = useState<Item[]>(developedItems);
+	const [maxPage, setMaxPage] = useState(Math.ceil(developedItems.length / limit) || 1);
 
 	const onTabChange = (_: SyntheticEvent, newValue: 0 | 1) => {
 		setTab(newValue);
-		setTabItems(newValue === 0 ? developedItems : publishedItems);
+		const items = newValue === 0 ? developedItems : publishedItems;
+		setTabItems(items);
+		setPage(1);
+		setMaxPage(Math.ceil(items.length / limit));
 	};
 
 	return (
@@ -101,7 +134,22 @@ export default function Company() {
 						}}
 					/>
 				</Tabs>
-				<ItemsGrid items={tabItems} />
+				<ItemsGrid
+					items={tabItems}
+					sorting={{
+						value: sortBy,
+						setValue: setSortBy,
+					}}
+					limitation={{
+						value: limit,
+						setValue: setLimit,
+					}}
+					pagination={{
+						value: page,
+						setValue: setPage,
+						maxValue: maxPage,
+					}}
+				/>
 			</Box>
 		</Container>
 	);

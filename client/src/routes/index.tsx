@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootPage from "./RootPage";
-import { useRecoilState } from "recoil";
-import { userState } from "../store/User";
+// import { useRecoilState } from "recoil";
+// import { userState } from "../store/User";
 import Items from "./Items";
 import Item from "./Item";
 import Genres from "./Genres";
@@ -13,10 +13,12 @@ import NewsList from "./NewsList";
 import NewsItem from "./NewsItem";
 import Login from "./Login";
 import Register from "./Register";
+import AdminBase from "./Admin/AdminBase";
+import AdminHome from "./Admin/AdminHome";
+import AdminItems from "./Admin/AdminItems";
 
 export default function Router() {
-	const [user, _] = useRecoilState(userState);
-
+	// const [user, _] = useRecoilState(userState);
 	const router = createBrowserRouter([
 		{
 			path: "",
@@ -90,11 +92,61 @@ export default function Router() {
 				},
 				{
 					path: "/admin",
-					element: <p>Admin site</p>,
-					loader: () => {
-						if (!user) throw new Response("Unauthorized", { status: 401 });
-						if (user.role !== "admin") throw new Response("Forbidden", { status: 403 });
-					},
+					element: <AdminBase />,
+					children: [
+						{
+							path: "/admin",
+							element: <AdminHome />,
+						},
+						{
+							path: "/admin/items",
+							element: <AdminItems />,
+						},
+						{
+							path: "/admin/items/create",
+							element: <p>Admin create item page</p>,
+						},
+						{
+							path: "/admin/items/:id/edit",
+							element: <p>Admin edit item page</p>,
+						},
+						{
+							path: "/admin/genres",
+							element: <p>Admin genres page</p>,
+						},
+						{
+							path: "/admin/genres/create",
+							element: <p>Admin create genre page</p>,
+						},
+						{
+							path: "/admin/genres/:id/edit",
+							element: <p>Admin edit genre page</p>,
+						},
+						{
+							path: "/admin/companies",
+							element: <p>Admin companies page</p>,
+						},
+						{
+							path: "/admin/companies/create",
+							element: <p>Admin create company page</p>,
+						},
+						{
+							path: "/admin/companies/:id/edit",
+							element: <p>Admin edit company page</p>,
+						},
+						{
+							path: "/admin/news",
+							element: <p>Admin news page</p>,
+						},
+						{
+							path: "/admin/news/create",
+							element: <p>Admin create news page</p>,
+						},
+						{
+							path: "/admin/news/:id/edit",
+							element: <p>Admin edit news page</p>,
+						},
+					],
 				},
 			],
 		},
