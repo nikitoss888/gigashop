@@ -12,6 +12,7 @@ const AccordionLink = styled(Typography)`
 ` as typeof Typography;
 
 export default function AdminBase() {
+	document.title = "Адміністративна панель - gigashop";
 	return (
 		<Container sx={{ mt: "15px", height: "100%" }}>
 			<Box
@@ -19,7 +20,7 @@ export default function AdminBase() {
 					display: "grid",
 					gridTemplateColumns: {
 						xs: "1fr",
-						md: "2fr 7fr",
+						md: "1fr 4fr",
 					},
 					gap: "15px",
 				}}

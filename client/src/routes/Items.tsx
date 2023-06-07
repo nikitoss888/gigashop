@@ -6,7 +6,7 @@ import styled from "@emotion/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
-import { default as ItemsList } from "../mock/Items";
+import { default as ItemsList, Item } from "../mock/Items";
 import { useEffect, useState } from "react";
 
 const Object = yup.object().shape({
@@ -47,6 +47,24 @@ const schema = yup.object().shape({
 	discount: yup.boolean().notRequired().label("Зі знижкою"),
 });
 
+const SortSwitch = (sortBy: string, a: Item, b: Item) => {
+	switch (sortBy) {
+		case "nameDesc":
+			return b.name.localeCompare(a.name);
+		case "nameAsc":
+			return a.name.localeCompare(b.name);
+		case "priceDesc":
+			return b.price - a.price;
+		case "priceAsc":
+			return a.price - b.price;
+		case "releaseDateDesc":
+			return b.releaseDate.getTime() - a.releaseDate.getTime();
+		case "releaseDateAsc":
+		default:
+			return a.releaseDate.getTime() - b.releaseDate.getTime();
+	}
+};
+
 const FormBox = styled(Box)`
 	display: grid;
 	grid-template-rows: repeat(auto-fill, auto);
@@ -56,7 +74,7 @@ const FormBox = styled(Box)`
 export default function Items() {
 	document.title = "Товари — gigashop";
 
-	const [sortBy, setSortBy] = useState("releaseDate");
+	const [sortBy, setSortBy] = useState("releaseDateAsc");
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
@@ -65,32 +83,17 @@ export default function Items() {
 	});
 
 	const [items, setItems] = useState(
-		ItemsList.sort((a, b) => {
-			switch (sortBy) {
-				case "name":
-					return a.name.localeCompare(b.name);
-				case "price":
-					return a.price - b.price;
-				case "releaseDate":
-				default:
-					return a.releaseDate.getTime() - b.releaseDate.getTime();
-			}
-		}).slice((page - 1) * limit, page * limit)
+		ItemsList.sort((a, b) => SortSwitch(sortBy, a, b))
+			.slice((page - 1) * limit, page * limit)
+			.filter((item) => !item.hide)
 	);
 	const [maxPage, setMaxPage] = useState(Math.ceil(ItemsList.length / limit) || 1);
 
 	const getItems = (refresh?: boolean) => {
 		const localPage = refresh ? 1 : page;
-		const items = ItemsList.sort((a, b) => {
-			switch (sortBy) {
-				case "name":
-					return a.name.localeCompare(b.name);
-				case "price":
-					return a.price - b.price;
-				default:
-					return a.releaseDate.getTime() - b.releaseDate.getTime();
-			}
-		}).slice((localPage - 1) * limit, localPage * limit);
+		const items = ItemsList.sort((a, b) => SortSwitch(sortBy, a, b))
+			.slice((localPage - 1) * limit, localPage * limit)
+			.filter((item) => !item.hide);
 		setItems(items);
 		refresh && setMaxPage(Math.ceil(ItemsList.length / limit) || 1);
 	};

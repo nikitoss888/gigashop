@@ -1,12 +1,12 @@
 import { List as MuiList, Box } from "@mui/material";
 import ListItem from "./ListItem";
-import { Item } from "../../../mock/Items";
-import ItemsTopBox from "../../Items/ItemsTopBox";
+import { Publication } from "../../../mock/Publications";
+import NewsTopBox from "../../NewsList/NewsTopBox";
 import Pagination from "../../Common/Pagination";
 import { ReactNode } from "react";
 
 type ListProps = {
-	items?: Item[];
+	news?: Publication[];
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -22,7 +22,7 @@ type ListProps = {
 	};
 	children?: ReactNode;
 };
-export default function List({ items, sorting, limitation, pagination }: ListProps) {
+export default function List({ news, sorting, limitation, pagination }: ListProps) {
 	return (
 		<Box
 			sx={{
@@ -31,11 +31,11 @@ export default function List({ items, sorting, limitation, pagination }: ListPro
 				gap: "10px",
 			}}
 		>
-			<ItemsTopBox sorting={sorting} limitation={limitation} />
+			<NewsTopBox sorting={sorting} limitation={limitation} />
 			<Pagination data={pagination} />
 			<MuiList>
-				{items?.map((item) => (
-					<ListItem key={item.id.toString(16)} item={item} />
+				{news?.map((item) => (
+					<ListItem key={item.id.toString(16)} publication={item} />
 				))}
 			</MuiList>
 			<Pagination data={pagination} />

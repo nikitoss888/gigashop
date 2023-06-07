@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import LogoImage from "../components/Company/LogoImage";
 import Grid from "../components/Company/Grid";
 import DataGroup from "../components/Common/DataGroup";
-import { SyntheticEvent, useState } from "react";
+import { SyntheticEvent, useEffect, useState } from "react";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import HTTPError from "../HTTPError";
 
@@ -33,45 +33,63 @@ export default function Company() {
 
 	document.title = `${company.name} — gigashop`;
 
-	const developedItems = Items.filter((item) => company.developed?.includes(item.id))
-		.sort((a, b) => {
-			switch (sortBy) {
-				case "name":
-					return a.name.localeCompare(b.name);
-				case "price":
-					return a.price - b.price;
-				case "releaseDate":
-				default:
-					return a.releaseDate.getTime() - b.releaseDate.getTime();
-			}
-		})
-		.slice((page - 1) * limit, page * limit);
-
-	const publishedItems = Items.filter((item) => company.published?.includes(item.id))
-		.sort((a, b) => {
-			switch (sortBy) {
-				case "name":
-					return a.name.localeCompare(b.name);
-				case "price":
-					return a.price - b.price;
-				case "releaseDate":
-				default:
-					return a.releaseDate.getTime() - b.releaseDate.getTime();
-			}
-		})
-		.slice((page - 1) * limit, page * limit);
+	const developedItems = Items.filter((item) => company.developed?.includes(item.id));
+	const publishedItems = Items.filter((item) => company.published?.includes(item.id));
 
 	const [tab, setTab] = useState<0 | 1>(0);
-	const [tabItems, setTabItems] = useState<Item[]>(developedItems);
+	const [tabItems, setTabItems] = useState(
+		developedItems
+			.sort((a, b) => {
+				switch (sortBy) {
+					case "releaseDate":
+						return a.releaseDate.getTime() - b.releaseDate.getTime();
+					case "name":
+					default:
+						return a.name.localeCompare(b.name);
+				}
+			})
+			.slice((page - 1) * limit, page * limit)
+	);
 	const [maxPage, setMaxPage] = useState(Math.ceil(developedItems.length / limit) || 1);
+
+	const getTabItems = (refresh?: boolean, localTab?: number) => {
+		const localPage = refresh ? 1 : page;
+		let items: Item[];
+		if (localTab) {
+			items = localTab === 0 ? developedItems : publishedItems;
+		} else {
+			items = tab === 0 ? developedItems : publishedItems;
+		}
+
+		const sorted = items
+			.sort((a, b) => {
+				switch (sortBy) {
+					case "releaseDate":
+						return a.releaseDate.getTime() - b.releaseDate.getTime();
+					case "name":
+					default:
+						return a.name.localeCompare(b.name);
+				}
+			})
+			.slice((localPage - 1) * limit, localPage * limit);
+		setTabItems(sorted);
+		refresh && setMaxPage(Math.ceil(items.length / limit) || 1);
+	};
 
 	const onTabChange = (_: SyntheticEvent, newValue: 0 | 1) => {
 		setTab(newValue);
-		const items = newValue === 0 ? developedItems : publishedItems;
-		setTabItems(items);
+		getTabItems(true, newValue);
 		setPage(1);
-		setMaxPage(Math.ceil(items.length / limit));
 	};
+
+	useEffect(() => {
+		setPage(1);
+		getTabItems(true);
+	}, [sortBy, limit]);
+
+	useEffect(() => {
+		getTabItems();
+	}, [page]);
 
 	return (
 		<Container sx={{ marginTop: "15px", height: "100%" }}>
@@ -114,7 +132,14 @@ export default function Company() {
 				</DataGroup>
 			</Grid>
 			<Box>
-				<Tabs value={tab} onChange={onTabChange} aria-label='items-tabs'>
+				<Tabs
+					value={tab}
+					onChange={onTabChange}
+					aria-label='items-tabs'
+					sx={{
+						marginBottom: "15px",
+					}}
+				>
 					<Tab
 						label={<Typography variant='body1'>Розроблено ({developedItems.length})</Typography>}
 						{...a11yProps("developed")}

@@ -1,16 +1,10 @@
 import ItemCard from "./ItemCard";
 import { Item } from "../../mock/Items";
-import { Box, FormControl, InputLabel, MenuItem, Select, SxProps } from "@mui/material";
+import { Box, SxProps } from "@mui/material";
 import Grid from "../CardsGrid/Grid";
 import NotFoundBox from "../CardsGrid/NotFoundBox";
-import styled from "@mui/material/styles/styled";
-import Pagination from "./Pagination";
-
-const SortAndLimitationBox = styled(Box)`
-	display: grid;
-	grid-template-columns: repeat(2, minmax(200px, 1fr));
-	gap: 10px;
-`;
+import Pagination from "../Common/Pagination";
+import ItemsTopBox from "./ItemsTopBox";
 
 type GridProps = {
 	items: Item[];
@@ -27,7 +21,6 @@ type GridProps = {
 		value: number;
 		setValue: (page: number) => void;
 		maxValue: number;
-		recalculate?: () => void;
 	};
 };
 export default function ItemsGrid({ items, sx, sorting, limitation, pagination }: GridProps) {
@@ -39,41 +32,7 @@ export default function ItemsGrid({ items, sx, sorting, limitation, pagination }
 				gap: "10px",
 			}}
 		>
-			<SortAndLimitationBox>
-				<FormControl>
-					<InputLabel id='sort-by-label'>Сортувати за</InputLabel>
-					<Select
-						labelId='sort-by-label'
-						id='sort-by'
-						value={sorting.value}
-						label='Сортувати за'
-						onChange={(event) => sorting.setValue(event.target.value as string)}
-					>
-						<MenuItem value={"name"}>Назвою</MenuItem>
-						<MenuItem value={"price"}>Ціною</MenuItem>
-						<MenuItem value={"releaseDate"}>Дата виходу</MenuItem>
-					</Select>
-				</FormControl>
-				<FormControl>
-					<InputLabel id='limit-label'>Показати</InputLabel>
-					<Select
-						labelId='limit-label'
-						id='limit'
-						value={limitation.value}
-						label='Показати'
-						onChange={(event) => {
-							limitation.setValue(event.target.value as number);
-							pagination.recalculate?.();
-						}}
-					>
-						{/* 3 is for testing on low amount of data */}
-						<MenuItem value={3}>3</MenuItem>
-						<MenuItem value={12}>12</MenuItem>
-						<MenuItem value={24}>24</MenuItem>
-						<MenuItem value={48}>48</MenuItem>
-					</Select>
-				</FormControl>
-			</SortAndLimitationBox>
+			<ItemsTopBox sorting={sorting} limitation={limitation} />
 			<Pagination data={pagination} />
 			<Grid sx={sx}>
 				{items.map((item) => (

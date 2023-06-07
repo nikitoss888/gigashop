@@ -32,7 +32,7 @@ export default function Item() {
 	const parsed = parseInt(id);
 	if (isNaN(parsed)) throw new HTTPError(400, "ID товару не є числом");
 
-	const item = Items.find((item) => item.id === parsed);
+	const item = Items.find((item) => item.id === parsed && !item.hide);
 	if (!item) throw new HTTPError(404, "Товар за даним ID не знайдено");
 
 	document.title = `${item.name} — gigashop`;
@@ -45,6 +45,8 @@ export default function Item() {
 	comments.forEach((comment) => {
 		comment.user = Users.find((user) => user.id === comment.userId);
 	});
+
+	const images = [item.mainImage, ...item.images];
 
 	return (
 		<Container maxWidth={false} disableGutters>
@@ -90,9 +92,9 @@ export default function Item() {
 							},
 						}}
 					>
-						<CarouselImage src={item.mainImage} alt={item.name} />
-						<CarouselImage src={item.mainImage} alt={item.name} />
-						<CarouselImage src={item.mainImage} alt={item.name} />
+						{images.map((image) => (
+							<CarouselImage key={image} src={image} alt={item.name} />
+						))}
 					</Carousel>
 				</Box>
 				<DataGroup title='Видавець'>

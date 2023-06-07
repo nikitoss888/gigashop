@@ -3,35 +3,15 @@ import Publications from "../mock/Publications";
 import HTTPError from "../HTTPError";
 import { Container, Box } from "@mui/material";
 import Author from "../components/NewsItem/Author";
+import NewsContent from "../components/NewsItem/NewsContent";
 import Users from "../mock/Users";
 import PublicationsComments from "../mock/PublicationsComments";
 import Typography from "@mui/material/Typography";
-import styled from "@mui/material/styles/styled";
 import * as DOMPurify from "dompurify";
 import parse from "html-react-parser";
 import ItemRating from "../components/Common/ItemRating";
 import CommentsList from "../components/Common/CommentsList";
 import { useLayoutEffect, useRef, useState } from "react";
-import { BodyFont, HeadingFont } from "../styles";
-
-const Content = styled(Typography)`
-	white-space: pre-wrap;
-	h1,
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
-		color: inherit;
-		font: ${HeadingFont};
-		text-align: center;
-	}
-	p {
-		color: inherit;
-		font: ${BodyFont};
-		text-indent: 1em;
-	}
-` as typeof Typography;
 
 export default function NewsItem() {
 	const { id } = useParams();
@@ -40,8 +20,16 @@ export default function NewsItem() {
 	const parsed = parseInt(id);
 	if (isNaN(parsed)) throw new HTTPError(400, "ID публікації не є числом");
 
-	const publication = Publications.find((publication) => publication.id === parsed);
+	const publication = Publications.find((publication) => publication.id === parsed && !publication.hide);
 	if (!publication) throw new HTTPError(404, "Публікацію за даним ID не знайдено");
+
+	if (publication.violation)
+		throw new HTTPError(
+			403,
+			`Публікація була заблокована за порушення правил${
+				publication.violation ? `: ${publication.violation}` : ""
+			}`
+		);
 
 	publication.user = Users.find((user) => user.id === publication.userId);
 	const comments = PublicationsComments.filter((comment) => comment.publicationId === publication.id);
@@ -59,7 +47,9 @@ export default function NewsItem() {
 		}
 	}, []);
 
-	document.title = `${publication.user?.firstName} ${publication.user?.lastName} / ${publication.title} — gigashop`;
+	document.title =
+		(publication.user && `${publication.user?.firstName} ${publication.user?.lastName} / `) +
+		`${publication.title} — gigashop`;
 
 	const cleanContent = DOMPurify.sanitize(publication.content, {
 		USE_PROFILES: { html: true },
@@ -79,18 +69,16 @@ export default function NewsItem() {
 					<Typography variant='h3' textAlign='center'>
 						{publication.title}
 					</Typography>
-					{publication.createdAt && (
-						<Typography variant='subtitle1' textAlign='center'>
-							{publication.createdAt.toLocaleDateString()}
-						</Typography>
-					)}
+					<Typography variant='subtitle1' textAlign='center'>
+						{publication.createdAt.toLocaleDateString()}
+					</Typography>
 				</Box>
 				{publication.tags && (
 					<Typography variant='h6'>Теги: {publication.tags.map((tag) => tag).join(", ")}</Typography>
 				)}
-				<Content variant='body1' component='article' ref={ref}>
+				<NewsContent variant='body1' component='article' ref={ref}>
 					{parse(cleanContent)}
-				</Content>
+				</NewsContent>
 				{publication.tags && contentHeight > 600 && (
 					<Typography variant='h6'>Теги: {publication.tags.map((tag) => tag).join(", ")}</Typography>
 				)}

@@ -199,7 +199,7 @@ const _whereHandler = (name?: string, description?: string,
 let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean,
                        includeWishlisted: boolean, includeInCart: boolean, includeBought: boolean,
                        includeRated: boolean, includeHidden: boolean,
-                       publisherId?: number, genresIds?: number[], developersId?: number[]) => {
+                       publisherId?: number, genresIds?: number[], developersIds?: number[]) => {
     let include: {}[] = [];
 
     if (includePublisher) {
@@ -265,12 +265,12 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
                 hide: false
             }
         }
-        if (developersId) {
+        if (developersIds) {
             where = {
                 ...where,
-                id: {[Op.in]: developersId}
+                id: {[Op.in]: developersIds}
             }
-            required = developersId.length > 0
+            required = developersIds.length > 0
         }
 
         include.push({

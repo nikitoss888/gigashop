@@ -1,11 +1,9 @@
 import { Dispatch, SetStateAction, useEffect, useRef } from "react";
 
-type SetterInput = { publicId: string; secureUrl: string };
-
 export default function WidgetSingle(
 	cloudName = "dnqlgypji",
 	uploadPreset = "gigashop_general",
-	setter?: Dispatch<SetStateAction<SetterInput[]>>
+	setter?: Dispatch<SetStateAction<string[]>>
 ) {
 	const cloudinaryRef = useRef<any>(null);
 	const widgetRef = useRef<any>(null);
@@ -25,13 +23,7 @@ export default function WidgetSingle(
 					console.log("Done! Here is the image info: ", result.info);
 
 					if (setter && result.info) {
-						setter((prev) => [
-							...prev,
-							{
-								publicId: result.info.public_id,
-								secureUrl: result.info.secure_url,
-							},
-						]);
+						setter((prev) => [...prev, result.info.secure_url]);
 					}
 				}
 			}

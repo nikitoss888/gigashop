@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import SubmitButton from "../components/Common/SubmitButton";
 
 const schema = yup.object().shape({
 	login: yup
@@ -60,17 +61,9 @@ const ImagePreview = styled("img")`
 	height: auto;
 `;
 
-const SubmitButtonStyle = styled(Button)`
-	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.secondary};
-	&:hover {
-		background-color: ${(props) => props.theme.colors.accentLight};
-	}
-`;
-
 export default function Register() {
-	const [image, setImage] = useState({ publicId: "", secureUrl: "" });
-	const { widgetRef } = WidgetSingle("dnqlgypji", "gigashop_general", setImage);
+	const [image, setImage] = useState<string | null>(null);
+	const { widgetRef } = WidgetSingle("dnqlgypji", "gigashop_users", setImage);
 
 	const methods = useForm({
 		resolver: yupResolver(schema),
@@ -81,7 +74,7 @@ export default function Register() {
 	};
 
 	const unsetImage = () => {
-		setImage({ publicId: "", secureUrl: "" });
+		setImage(null);
 	};
 
 	const onSubmit = (data: any) => {
@@ -171,7 +164,7 @@ export default function Register() {
 								Очистити
 							</Button>
 						</ButtonGroup>
-						{image.secureUrl !== "" && <ImagePreview src={image.secureUrl} />}
+						{image && <ImagePreview src={image} />}
 					</Box>
 					<Box
 						sx={{
@@ -262,9 +255,9 @@ export default function Register() {
 						}}
 						fullWidth
 					>
-						<SubmitButtonStyle type='submit' variant='contained'>
+						<SubmitButton type='submit' variant='contained'>
 							Відправити
-						</SubmitButtonStyle>
+						</SubmitButton>
 						<Button type='reset' variant='contained'>
 							Очистити
 						</Button>

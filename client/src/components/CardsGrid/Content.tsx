@@ -5,4 +5,5 @@ export default styled(CardContent)`
 	display: flex;
 	flex-direction: column;
 	flex-grow: 1;
+	height: fit-content;
 `;

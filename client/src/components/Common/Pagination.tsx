@@ -1,12 +1,12 @@
 import { Box, Pagination as MuiPagination, SxProps } from "@mui/material";
 import styled from "@mui/material/styles/styled";
+import { useTheme } from "@mui/material/styles";
 
 type PaginationProps = {
 	data: {
 		value: number;
 		setValue: (page: number) => void;
 		maxValue: number;
-		recalculate?: () => void;
 	};
 	sx?: SxProps;
 };
@@ -14,8 +14,10 @@ type PaginationProps = {
 const PaginationBox = styled(Box)`
 	display: flex;
 	justify-content: center;
+	align-items: center;
 `;
 export default function Pagination({ data, sx }: PaginationProps) {
+	const theme = useTheme();
 	return (
 		<PaginationBox sx={sx}>
 			<MuiPagination
@@ -23,10 +25,11 @@ export default function Pagination({ data, sx }: PaginationProps) {
 				page={data.value}
 				onChange={(_, page) => page <= data.maxValue && page >= 1 && page !== data.value && data.setValue(page)}
 				sx={{
+					color: "secondary.main",
 					"& .Mui-selected": {
-						backgroundColor: "accent.main",
+						backgroundColor: theme.colors.accent,
 						"&:hover": {
-							backgroundColor: "accent.main",
+							backgroundColor: theme.colors.accent,
 						},
 					},
 				}}

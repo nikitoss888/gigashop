@@ -15,8 +15,9 @@ import SearchIcon from "@mui/icons-material/Search";
 import Button from "@mui/material/Button";
 import ClearIcon from "@mui/icons-material/Clear";
 import styled from "@mui/material/styles/styled";
-import { default as MockGenres } from "../../mock/Genres";
+import { default as MockGenres, Genre } from "../../mock/Genres";
 import { default as MockCompanies, Company } from "../../mock/Companies";
+import SubmitButton from "../Common/SubmitButton";
 
 const ChipStyle = styled(Chip)`
 	background-color: ${(props) => props.theme.colors.accent};
@@ -32,14 +33,6 @@ const CheckboxStyle = styled(Checkbox)`
 
 const FormHelperTextStyle = styled(FormHelperText)`
 	color: ${(props) => props.theme.colors.secondary};
-`;
-
-const SubmitButtonStyle = styled(Button)`
-	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.secondary};
-	&:hover {
-		background-color: ${(props) => props.theme.colors.accentLight};
-	}
 `;
 
 const Genres = MockGenres.sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -180,7 +173,7 @@ export default function FiltersContent() {
 						multiple
 						filterSelectedOptions
 						isOptionEqualToValue={(option, value) => option.id === value.id}
-						onChange={(_, data: typeof Genres) => {
+						onChange={(_, data: Genre[]) => {
 							const genres = data.map((item) => {
 								return { id: item.id, name: item.name };
 							});
@@ -290,9 +283,9 @@ export default function FiltersContent() {
 			/>
 
 			<ButtonGroup fullWidth>
-				<SubmitButtonStyle variant='contained' type='submit' startIcon={<SearchIcon />}>
+				<SubmitButton variant='contained' type='submit' startIcon={<SearchIcon />}>
 					Пошук
-				</SubmitButtonStyle>
+				</SubmitButton>
 				<Button
 					variant='contained'
 					color='secondary'

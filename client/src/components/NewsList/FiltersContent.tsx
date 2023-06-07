@@ -8,6 +8,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import Publications from "../../mock/Publications";
 import Users, { User } from "../../mock/Users";
+import SubmitButton from "../Common/SubmitButton";
 
 const FormHelperTextStyle = styled(FormHelperText)`
 	color: ${(props) => props.theme.colors.secondary};
@@ -16,14 +17,6 @@ const FormHelperTextStyle = styled(FormHelperText)`
 const ChipStyle = styled(Chip)`
 	background-color: ${(props) => props.theme.colors.accent};
 	color: ${(props) => props.theme.colors.secondary};
-`;
-
-const SubmitButtonStyle = styled(Button)`
-	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.secondary};
-	&:hover {
-		background-color: ${(props) => props.theme.colors.accentLight};
-	}
 `;
 
 export default function FiltersContent() {
@@ -202,9 +195,9 @@ export default function FiltersContent() {
 			)}
 
 			<ButtonGroup fullWidth>
-				<SubmitButtonStyle variant='contained' type='submit' startIcon={<SearchIcon />}>
+				<SubmitButton variant='contained' type='submit' startIcon={<SearchIcon />}>
 					Пошук
-				</SubmitButtonStyle>
+				</SubmitButton>
 				<Button
 					variant='contained'
 					color='secondary'

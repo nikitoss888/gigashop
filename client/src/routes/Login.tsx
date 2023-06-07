@@ -5,6 +5,7 @@ import { Box, ButtonGroup, Container, TextField } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import styled from "@mui/material/styles/styled";
+import SubmitButton from "../components/Common/SubmitButton";
 
 const schema = yup.object().shape({
 	login: yup
@@ -21,14 +22,6 @@ const schema = yup.object().shape({
 			"Пароль має містити хоча б одну велику літеру, одну маленьку літеру та одну цифру"
 		),
 });
-
-const SubmitButtonStyle = styled(Button)`
-	background-color: ${(props) => props.theme.colors.accent};
-	color: ${(props) => props.theme.colors.secondary};
-	&:hover {
-		background-color: ${(props) => props.theme.colors.accentLight};
-	}
-`;
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -105,9 +98,9 @@ export default function Login() {
 							/>
 						</InputBoxStyle>
 						<ButtonGroup fullWidth>
-							<SubmitButtonStyle type='submit' variant='contained'>
+							<SubmitButton type='submit' variant='contained'>
 								Відправити
-							</SubmitButtonStyle>
+							</SubmitButton>
 							<Button type='reset' variant='contained'>
 								Очистити
 							</Button>

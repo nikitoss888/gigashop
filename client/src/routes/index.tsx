@@ -16,6 +16,12 @@ import Register from "./Register";
 import AdminBase from "./Admin/AdminBase";
 import AdminHome from "./Admin/AdminHome";
 import AdminItems from "./Admin/AdminItems";
+import AdminItem from "./Admin/AdminItem";
+import AdminItemForm from "./Admin/AdminItemForm";
+import NewsForm from "./NewsForm";
+import AdminNews from "./Admin/AdminNews";
+import AdminNewsItem from "./Admin/AdminNewsItem";
+import AdminNewsForm from "./Admin/AdminNewsForm";
 
 export default function Router() {
 	// const [user, _] = useRecoilState(userState);
@@ -82,11 +88,11 @@ export default function Router() {
 						},
 						{
 							path: "/news/create",
-							element: <p>Create news item</p>,
+							element: <NewsForm />,
 						},
 						{
 							path: "/news/:id/edit",
-							element: <p>Edit news item</p>,
+							element: <NewsForm />,
 						},
 					],
 				},
@@ -103,12 +109,16 @@ export default function Router() {
 							element: <AdminItems />,
 						},
 						{
+							path: "/admin/items/:id",
+							element: <AdminItem />,
+						},
+						{
 							path: "/admin/items/create",
-							element: <p>Admin create item page</p>,
+							element: <AdminItemForm />,
 						},
 						{
 							path: "/admin/items/:id/edit",
-							element: <p>Admin edit item page</p>,
+							element: <AdminItemForm />,
 						},
 						{
 							path: "/admin/genres",
@@ -136,15 +146,19 @@ export default function Router() {
 						},
 						{
 							path: "/admin/news",
-							element: <p>Admin news page</p>,
+							element: <AdminNews />,
+						},
+						{
+							path: "/admin/news/:id",
+							element: <AdminNewsItem />,
 						},
 						{
 							path: "/admin/news/create",
-							element: <p>Admin create news page</p>,
+							element: <AdminNewsForm />,
 						},
 						{
 							path: "/admin/news/:id/edit",
-							element: <p>Admin edit news page</p>,
+							element: <AdminNewsForm />,
 						},
 					],
 				},
