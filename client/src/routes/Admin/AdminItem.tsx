@@ -1,13 +1,17 @@
-import { Link, useParams } from "react-router-dom";
-import HTTPError from "../../HTTPError";
-import Items from "../../mock/Items";
+import { Link, useLoaderData } from "react-router-dom";
+import { Item } from "../../mock/Items";
 import Genres from "../../mock/Genres";
 import Companies from "../../mock/Companies";
 import { Box, Typography, IconButton, Tooltip } from "@mui/material";
-import ItemsComments from "../../mock/ItemsComments";
+import ItemsRates from "../../mock/ItemsRates";
 import Users from "../../mock/Users";
 import styled from "@mui/material/styles/styled";
 import { Delete, Edit } from "@mui/icons-material";
+import Chip from "../../components/Common/Chip";
+import ClientError from "../../ClientError";
+import List from "../../components/Admin/ItemsComments/List";
+import { useState } from "react";
+import { SortSwitch } from "./AdminItemsComments";
 
 const Image = styled("img")`
 	width: 100%;
@@ -16,34 +20,67 @@ const Image = styled("img")`
 `;
 
 export default function AdminItem() {
-	const { id } = useParams();
-	if (!id) throw new HTTPError(400, "Не вказано ID товару");
-
-	const parsed = parseInt(id);
-	if (isNaN(parsed)) throw new HTTPError(400, "ID товару не є числом");
-
-	const item = Items.find((item) => item.id === parsed);
-	if (!item) throw new HTTPError(404, "Товар за даним ID не знайдено");
+	const { item, error } = useLoaderData() as { item: Item; error?: ClientError };
+	if (error) throw error;
 
 	document.title = `${item.name} — Адміністративна панель — gigashop`;
 
-	const genres = Genres.filter((genre) => item.genres?.includes(genre.id));
-	const publisher = Companies.find((company) => company.id === item.publisher);
-	const developers = Companies.filter((company) => item.developers?.includes(company.id));
+	const genres = Genres.filter((genre) => item.genresIds?.includes(genre.id));
+	const publisher = Companies.find((company) => company.id === item.publisherId);
+	const developers = Companies.filter((company) => item.developersIds?.includes(company.id));
 
-	const comments = ItemsComments.filter((comment) => comment.itemId === item.id);
+	const [sortBy, setSortBy] = useState("createdAtAsc");
+	const [limit, setLimit] = useState(12);
+	const [page, setPage] = useState(1);
+
+	const [comments, setComments] = useState(
+		item.comments?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
+	);
+	comments.forEach((comment) => {
+		comment.user = Users.find((user) => user.id === comment.userId);
+		comment.item = item;
+	});
+	const [maxPage, setMaxPage] = useState(Math.ceil((item.comments?.length || 0) / limit) || 1);
+
 	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;
 	avgRate = Math.round(avgRate * 10) / 10;
 
-	comments.forEach((comment) => {
-		comment.user = Users.find((user) => user.id === comment.userId);
-	});
+	const getComments = (sortBy: string, limit: number, page: number) => {
+		const comments = ItemsRates.filter((comment) => comment.itemId === item.id)
+			.sort((a, b) => SortSwitch(sortBy, a, b))
+			.slice((page - 1) * limit, page * limit);
+		comments.forEach((comment) => {
+			comment.user = Users.find((user) => user.id === comment.userId);
+			comment.item = item;
+		});
+		setComments(comments);
+		setMaxPage(Math.ceil(ItemsRates.length / limit) || 1);
+	};
+
+	const sortByUpdate = (sortBy: string) => {
+		getComments(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
+
+	const limitUpdate = (limit: number) => {
+		getComments(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getComments(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	return (
 		<Box
 			sx={{
 				display: "flex",
 				flexDirection: "column",
+				alignItems: "start",
 				gap: "10px",
 			}}
 		>
@@ -101,14 +138,76 @@ export default function AdminItem() {
 					<Image key={image} src={image} alt={image} />
 				))}
 			</Box>
-			<Typography variant='h6'>Жанри: {genres.map((genre) => genre.name).join(", ")}</Typography>
-			<Typography variant='h6'>Видавець: {publisher?.name}</Typography>
-			<Typography variant='h6'>Розробники: {developers.map((developer) => developer.name).join(", ")}</Typography>
+			<Typography variant='h6'>Жанри:</Typography>
+			<Box
+				sx={{
+					display: "flex",
+					gap: "10px",
+				}}
+			>
+				{genres.map((genre) => (
+					<Chip
+						component={Link}
+						to={`/admin/genres/${genre.id}`}
+						key={genre.id.toString(16)}
+						label={genre.name}
+						sx={{ cursor: "pointer" }}
+					/>
+				))}
+			</Box>
+			<Typography variant='h6'>Видавець:</Typography>
+			{publisher && (
+				<Chip
+					component={Link}
+					to={`/admin/companies/${publisher?.id}`}
+					label={publisher?.name}
+					sx={{ cursor: "pointer" }}
+				/>
+			)}
+			<Typography variant='h6'>Розробники:</Typography>
+			<Box
+				sx={{
+					display: "flex",
+					gap: "10px",
+				}}
+			>
+				{developers.map((developer) => (
+					<Chip
+						component={Link}
+						to={`/admin/companies/${developer.id}`}
+						key={developer.id.toString(16)}
+						label={developer.name}
+						sx={{ cursor: "pointer" }}
+					/>
+				))}
+			</Box>
 			<Typography variant='h6'>Ціна: {item.price}</Typography>
 			<Typography variant='h6'>Кількість: {item.amount}</Typography>
 			<Typography variant='h6'>Дата виходу: {item.releaseDate.toLocaleDateString()}</Typography>
 			<Typography variant='h6'>Рейтинг: {avgRate}</Typography>
 			<Typography variant='h6'>Опис: {item.description}</Typography>
+			<Box>
+				<Typography variant='h6' mb={2}>
+					Коментарі:
+				</Typography>
+				<List
+					comments={comments}
+					sorting={{
+						value: sortBy,
+						setValue: sortByUpdate,
+					}}
+					limitation={{
+						value: limit,
+						setValue: limitUpdate,
+					}}
+					pagination={{
+						value: page,
+						setValue: pageUpdate,
+						maxValue: maxPage,
+					}}
+					linkToUser
+				/>
+			</Box>
 		</Box>
 	);
 }

@@ -117,23 +117,50 @@ const _includeHandler = (includeTags: boolean, includeComments: boolean, include
 
     return include;
 }
-
-const getPublications = async (title?: string, content?: string,
-                               createdAt?: Date, createdFrom?: Date, createdTo?: Date,
-                               descending = true, limit = 10, page = 0, sortBy = 'createdAt',
-                               includeTags = true, includeComments = false, includeViolations = false,
-                               includeHidden = false, violation = false, violationReason?: string) => {
-    const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, violation, violationReason);
+type getAllPublicationsParams = {
+    title?: string,
+    content?: string,
+    createdAt?: Date,
+    createdFrom?: Date,
+    createdTo?: Date,
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+    includeTags?: boolean,
+    includeComments?: boolean,
+    includeViolations?: boolean,
+    includeHidden?: boolean,
+    violationReason?: string
+}
+const getPublications = async ({title, content, createdAt, createdFrom, createdTo, descending = false,
+                                   limit = 10, page = 0, sortBy = 'createdAt', includeTags = true,
+                                   includeComments = true, includeViolations = false, includeHidden = false,
+                                   violationReason}: getAllPublicationsParams) => {
+    const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, includeViolations, violationReason);
     const include = _includeHandler(includeTags, includeComments, includeViolations, includeHidden);
 
     return await Publication.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 }
-const getPublication = async (id: number, includeTags = true, includeComments = true,
-                              includeViolations = false, includeHidden = false) => {
+type getOnePublicationParams = {
+    id: number,
+    includeTags?: boolean,
+    includeComments?: boolean,
+    includeViolations?: boolean,
+    includeHidden?: boolean
+}
+const getPublication = async ({id, includeTags = true, includeComments = true, includeViolations = false,
+                                  includeHidden = false}: getOnePublicationParams) => {
+    const where = {
+        id,
+        hide: {
+            [Op.in]: [includeHidden, false]
+        },
+    }
     const include = _includeHandler(includeTags, includeComments, includeViolations, includeHidden);
-    return await Publication.findByPk(id, {include});
+    return await Publication.findOne({where, include});
 }
 
 const getPublicationsByTags = async (tagNames: string[] | string, includeComments = true,

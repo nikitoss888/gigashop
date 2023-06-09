@@ -1,14 +1,15 @@
-import { useParams } from "react-router-dom";
-import Companies from "../mock/Companies";
-import Items, { Item } from "../mock/Items";
+import { useLoaderData } from "react-router-dom";
+import { Company as CompanyType } from "../mock/Companies";
+import { Item } from "../mock/Items";
 import { Box, Container, Tab, Tabs } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import LogoImage from "../components/Company/LogoImage";
 import Grid from "../components/Company/Grid";
 import DataGroup from "../components/Common/DataGroup";
-import { SyntheticEvent, useEffect, useState } from "react";
+import { SyntheticEvent, useState } from "react";
 import ItemsGrid from "../components/Items/ItemsGrid";
-import HTTPError from "../HTTPError";
+import ClientError from "../ClientError";
+import { SortSwitch } from "./Items";
 
 function a11yProps(index: string) {
 	return {
@@ -18,78 +19,76 @@ function a11yProps(index: string) {
 }
 
 export default function Company() {
-	const { id } = useParams();
-	if (!id) throw new HTTPError(400, "Не вказано ID компанії");
+	const { company, error, developedTotalCount } = useLoaderData() as {
+		company: CompanyType;
+		developedTotalCount: number;
+		publishedTotalCount: number;
+		error?: ClientError;
+	};
 
-	const parsed = parseInt(id);
-	if (isNaN(parsed)) throw new HTTPError(400, "ID компанії не є числом");
-
-	const company = Companies.find((company) => company.id === parsed);
-	if (!company) throw new HTTPError(404, "Компанію за даним ID не знайдено");
-
-	const [sortBy, setSortBy] = useState("releaseDate");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	if (error) throw error;
 
 	document.title = `${company.name} — gigashop`;
 
-	const developedItems = Items.filter((item) => company.developed?.includes(item.id));
-	const publishedItems = Items.filter((item) => company.published?.includes(item.id));
+	const initSortBy = "releaseDateAsc";
+	const initLimit = 12;
+	const initPage = 1;
+
+	const [sortBy, setSortBy] = useState(initSortBy);
+	const [limit, setLimit] = useState(initLimit);
+	const [page, setPage] = useState(initPage);
+
+	const developedItems = company.developed || [];
+	const publishedItems = company.published || [];
 
 	const [tab, setTab] = useState<0 | 1>(0);
 	const [tabItems, setTabItems] = useState(
 		developedItems
-			.sort((a, b) => {
-				switch (sortBy) {
-					case "releaseDate":
-						return a.releaseDate.getTime() - b.releaseDate.getTime();
-					case "name":
-					default:
-						return a.name.localeCompare(b.name);
-				}
-			})
-			.slice((page - 1) * limit, page * limit)
+			.sort((a, b) => SortSwitch(initSortBy, a, b))
+			.slice((initPage - 1) * initLimit, initPage * initLimit)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(developedItems.length / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((developedTotalCount || 0) / limit) || 1);
 
-	const getTabItems = (refresh?: boolean, localTab?: number) => {
-		const localPage = refresh ? 1 : page;
-		let items: Item[];
-		if (localTab) {
-			items = localTab === 0 ? developedItems : publishedItems;
-		} else {
-			items = tab === 0 ? developedItems : publishedItems;
+	const getTabItems = (sortBy: string, limit: number, page: number, tab: number) => {
+		let items: Item[] = [];
+		switch (tab) {
+			case 1:
+				items = publishedItems;
+				break;
+			default:
+			case 0:
+				items = developedItems;
+				break;
 		}
 
-		const sorted = items
-			.sort((a, b) => {
-				switch (sortBy) {
-					case "releaseDate":
-						return a.releaseDate.getTime() - b.releaseDate.getTime();
-					case "name":
-					default:
-						return a.name.localeCompare(b.name);
-				}
-			})
-			.slice((localPage - 1) * limit, localPage * limit);
-		setTabItems(sorted);
-		refresh && setMaxPage(Math.ceil(items.length / limit) || 1);
+		const count = items.length;
+		setTabItems(items.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit));
+		setMaxPage(Math.ceil(count / limit) || 1);
 	};
 
 	const onTabChange = (_: SyntheticEvent, newValue: 0 | 1) => {
 		setTab(newValue);
-		getTabItems(true, newValue);
 		setPage(1);
+		getTabItems(sortBy, limit, 1, newValue);
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getTabItems(true);
-	}, [sortBy, limit]);
+	const sortByUpdate = (sortBy: string) => {
+		getTabItems(sortBy, limit, page, tab);
+		setSortBy(sortBy);
+	};
 
-	useEffect(() => {
-		getTabItems();
-	}, [page]);
+	const limitUpdate = (limit: number) => {
+		getTabItems(sortBy, limit, page, tab);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getTabItems(sortBy, limit, localPage, tab);
+		setPage(localPage);
+	};
 
 	return (
 		<Container sx={{ marginTop: "15px", height: "100%" }}>
@@ -163,15 +162,15 @@ export default function Company() {
 					items={tabItems}
 					sorting={{
 						value: sortBy,
-						setValue: setSortBy,
+						setValue: sortByUpdate,
 					}}
 					limitation={{
 						value: limit,
-						setValue: setLimit,
+						setValue: limitUpdate,
 					}}
 					pagination={{
 						value: page,
-						setValue: setPage,
+						setValue: pageUpdate,
 						maxValue: maxPage,
 					}}
 				/>

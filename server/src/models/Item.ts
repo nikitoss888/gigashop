@@ -335,21 +335,49 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
 
     return include;
 }
-
-const getItems = async (name?: string, description?: string,
-                        releaseDate?: Date, releaseDateFrom?: Date, releaseDateTo?: Date,
-                        price?: number, priceFrom?: number, priceTo?: number,
-                        amount?: number, amountFrom?: number, amountTo?: number,
-                        discount?: boolean, discountFrom?: Date, discountTo?: Date,
-                        discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
-                        descending = false, limit = 10, page = 0, sortBy = 'id',
-                        includePublisher = false, publisherId?: number,
-                        includeGenres = false, genresIds?: number[],
-                        includeDevelopers = false, developersIds?: number[],
-                        includeWishlisted = false, includeInCart = false,
-                        includeBought = false, includeRated = false,
-                        includeHidden = false) => {
-
+type getAllItemsParams = {
+    name?: string,
+    description?: string,
+    releaseDate?: Date,
+    releaseDateFrom?: Date,
+    releaseDateTo?: Date,
+    price?: number,
+    priceFrom?: number,
+    priceTo?: number,
+    amount?: number,
+    amountFrom?: number,
+    amountTo?: number,
+    discount?: boolean,
+    discountFrom?: Date,
+    discountTo?: Date,
+    discountSize?: number,
+    discountSizeFrom?: number,
+    discountSizeTo?: number,
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+    includePublisher?: boolean,
+    publisherId?: number,
+    includeGenres?: boolean,
+    genresIds?: number[],
+    includeDevelopers?: boolean,
+    developersIds?: number[],
+    includeWishlisted?: boolean,
+    includeInCart?: boolean,
+    includeBought?: boolean,
+    includeRated?: boolean,
+    includeHidden?: boolean
+}
+const getItems = async ({name, description, releaseDate, releaseDateFrom, releaseDateTo,
+                            price, priceFrom, priceTo, amount, amountFrom, amountTo,
+                            discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo,
+                            descending = false, limit = 10, page = 0, sortBy = 'id',
+                            includePublisher = false, publisherId,
+                            includeGenres = false, genresIds,
+                            includeDevelopers = false, developersIds,
+                            includeWishlisted = false, includeInCart = false,
+                            includeBought = false, includeRated = false, includeHidden = false}: getAllItemsParams) => {
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
         discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
@@ -361,14 +389,30 @@ const getItems = async (name?: string, description?: string,
         where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 }
-
-const getItem = async (id: number, includePublisher = true, includeGenres = true,
-                       includeDevelopers = true, includeWishlisted = false, includeInCart = false,
-                       includeBought = false, includeRated = false, includeHidden = false) => {
+type getOneItemParams = {
+    id: number,
+    includePublisher?: boolean,
+    includeGenres?: boolean,
+    includeDevelopers?: boolean,
+    includeWishlisted?: boolean,
+    includeInCart?: boolean,
+    includeBought?: boolean,
+    includeRated?: boolean,
+    includeHidden?: boolean
+}
+const getItem = async ({id, includePublisher = false, includeGenres = false, includeDevelopers = false,
+                           includeWishlisted = false, includeInCart = false,
+                           includeBought = false, includeRated = false, includeHidden = false}: getOneItemParams) => {
+    const where = {
+        id,
+        hide: {
+            [Op.in]: [includeHidden, false]
+        }
+    }
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
         includeWishlisted, includeInCart, includeBought, includeRated, includeHidden);
 
-    return Item.findByPk(id, {include});
+    return Item.findOne({where, include});
 }
 
 

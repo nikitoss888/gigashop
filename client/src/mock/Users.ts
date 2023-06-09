@@ -1,11 +1,23 @@
+import { Item } from "./Items";
+import { Publication } from "./Publications";
+import { PublicationComment } from "./PublicationsComments";
+import { ItemRate } from "./ItemsRates";
+
 export type User = {
 	id: number;
 	login: string;
 	email: string;
 	firstName: string;
 	lastName: string;
-	avatar: string;
+	image: string;
 	role: string;
+	isBlocked: boolean;
+	createdAt: Date;
+	cart?: Item[];
+	wishlist?: Item[];
+	publications?: Publication[];
+	publicationsComments?: PublicationComment[];
+	itemsRates?: ItemRate[];
 };
 
 const Users: User[] = [
@@ -15,8 +27,10 @@ const Users: User[] = [
 		email: "admin@mail.com",
 		firstName: "John",
 		lastName: "Doe",
-		avatar: "https://i.pravatar.cc/300?img=1",
+		image: "https://i.pravatar.cc/300?img=1",
 		role: "admin",
+		isBlocked: false,
+		createdAt: new Date(),
 	},
 	{
 		id: 2,
@@ -24,8 +38,10 @@ const Users: User[] = [
 		email: "user1@mail.com",
 		firstName: "Jane",
 		lastName: "Doe",
-		avatar: "https://i.pravatar.cc/300?img=2",
+		image: "https://i.pravatar.cc/300?img=2",
 		role: "moderator",
+		isBlocked: false,
+		createdAt: new Date(),
 	},
 	{
 		id: 3,
@@ -33,8 +49,10 @@ const Users: User[] = [
 		email: "user2@mail.com",
 		firstName: "Jack",
 		lastName: "Doe",
-		avatar: "https://i.pravatar.cc/300?img=3",
+		image: "https://i.pravatar.cc/300?img=3",
 		role: "user",
+		isBlocked: false,
+		createdAt: new Date(),
 	},
 ];
 export default Users;

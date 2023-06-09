@@ -1,4 +1,5 @@
 import { User } from "./Users";
+import { PublicationComment } from "./PublicationsComments";
 
 export type Publication = {
 	id: number;
@@ -9,9 +10,11 @@ export type Publication = {
 	user?: User;
 	createdAt: Date;
 	updatedAt?: Date;
+	deletedAt?: Date;
 	hide: boolean;
 	violation: boolean;
 	violation_reason?: string;
+	comments?: PublicationComment[];
 };
 
 const Publications: Publication[] = [
@@ -24,7 +27,7 @@ const Publications: Publication[] = [
 		tags: ["tag1", "tag2", "tag3"],
 		createdAt: new Date(),
 		hide: false,
-		violation: true,
+		violation: false,
 		updatedAt: new Date(),
 		violation_reason: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	},

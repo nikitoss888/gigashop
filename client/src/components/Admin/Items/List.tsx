@@ -3,7 +3,6 @@ import ListItem from "./ListItem";
 import { Item } from "../../../mock/Items";
 import ItemsTopBox from "../../Items/ItemsTopBox";
 import Pagination from "../../Common/Pagination";
-import { ReactNode } from "react";
 
 type ListProps = {
 	items?: Item[];
@@ -20,7 +19,6 @@ type ListProps = {
 		setValue: (page: number) => void;
 		maxValue: number;
 	};
-	children?: ReactNode;
 };
 export default function List({ items, sorting, limitation, pagination }: ListProps) {
 	return (

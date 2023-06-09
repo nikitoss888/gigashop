@@ -36,6 +36,21 @@ export default function AdminBase() {
 							<AccordionLink variant='h6' component={RouterLink} to='/admin'>
 								Головна
 							</AccordionLink>
+							<AccordionLink variant='h6' component={RouterLink} to='/admin/statistics'>
+								Статистика
+							</AccordionLink>
+						</AccordionDetailsStyle>
+					</Accordion>
+					<Accordion disableGutters>
+						<AccordionSummary>
+							<Typography variant='h6' color='accent.main'>
+								Користувачі
+							</Typography>
+						</AccordionSummary>
+						<AccordionDetailsStyle>
+							<AccordionLink variant='h6' component={RouterLink} to='/admin/users'>
+								Всі користувачі
+							</AccordionLink>
 						</AccordionDetailsStyle>
 					</Accordion>
 					<Accordion disableGutters>
@@ -95,6 +110,21 @@ export default function AdminBase() {
 							</AccordionLink>
 							<AccordionLink variant='h6' component={RouterLink} to='/admin/news/create'>
 								Нова публікація
+							</AccordionLink>
+						</AccordionDetailsStyle>
+					</Accordion>
+					<Accordion disableGutters>
+						<AccordionSummary>
+							<Typography variant='h6' color='accent.main'>
+								Коментарі
+							</Typography>
+						</AccordionSummary>
+						<AccordionDetailsStyle>
+							<AccordionLink variant='h6' component={RouterLink} to='/admin/comments/news'>
+								Коментарі до публікацій
+							</AccordionLink>
+							<AccordionLink variant='h6' component={RouterLink} to='/admin/comments/items'>
+								Коментарі до товарів
 							</AccordionLink>
 						</AccordionDetailsStyle>
 					</Accordion>

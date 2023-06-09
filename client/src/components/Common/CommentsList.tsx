@@ -1,13 +1,29 @@
-import { ItemComment } from "../../mock/ItemsComments";
+import { ItemRate } from "../../mock/ItemsRates";
 import { PublicationComment } from "../../mock/PublicationsComments";
 import Typography from "@mui/material/Typography";
 import { Box } from "@mui/material";
 import Comment from "./Comment";
+import CommentInput from "./CommentInput";
+import styled from "@mui/material/styles/styled";
+import { FormEvent } from "react";
+
+const Form = styled("form")`
+	width: 100%;
+`;
 
 type CommentsProps = {
-	comments: (ItemComment | PublicationComment)[];
+	comments: (ItemRate | PublicationComment)[];
+	onSubmit: (event: FormEvent) => void;
+	message: {
+		value: string;
+		setValue: (message: string) => void;
+	};
+	rate: {
+		value: number;
+		setValue: (rate: number) => void;
+	};
 };
-export default function CommentsList({ comments }: CommentsProps) {
+export default function CommentsList({ comments, onSubmit, message, rate }: CommentsProps) {
 	return (
 		<Box
 			sx={{
@@ -29,6 +45,9 @@ export default function CommentsList({ comments }: CommentsProps) {
 			>
 				Коментарі:
 			</Typography>
+			<Form onSubmit={onSubmit}>
+				<CommentInput message={message} rate={rate} />
+			</Form>
 			{comments.map((comment) => (
 				<Comment key={comment.id} comment={comment} />
 			))}

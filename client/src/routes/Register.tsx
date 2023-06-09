@@ -7,6 +7,7 @@ import { Controller, FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import SubmitButton from "../components/Common/SubmitButton";
+// import { RegisterRequest } from "../http/User";
 
 const schema = yup.object().shape({
 	login: yup
@@ -77,8 +78,18 @@ export default function Register() {
 		setImage(null);
 	};
 
-	const onSubmit = (data: any) => {
-		console.log({ ...data, image });
+	const onSubmit = async (data: any) => {
+		const localImage = image || (process.env.REACT_APP_DEFAULT_USER_IMAGE as string);
+		console.log({ ...data, image: localImage });
+		// const result = await RegisterRequest({
+		// 	login: data.login,
+		// 	email: data.email,
+		// 	password: data.password,
+		// 	firstName: data.firstName,
+		// 	lastName: data.lastName,
+		// 	image: localImage,
+		// });
+		// console.log(result);
 	};
 
 	const onReset = () => {

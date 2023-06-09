@@ -4,7 +4,8 @@ import { default as CompaniesList, Company } from "../mock/Companies";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import CompaniesGrid from "../components/Companies/CompaniesGrid";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLoaderData } from "react-router-dom";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -31,35 +32,51 @@ const SortSwitch = (sortBy: string, a: Company, b: Company) => {
 export default function Companies() {
 	document.title = `Компанії — gigashop`;
 
-	const [sortBy, setSortBy] = useState("nameAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
+		data: Company[];
+		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
+	};
+
+	const [sortBy, setSortBy] = useState(initSortBy || "nameAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
 	const methods = useForm();
 
 	const [companies, setCompanies] = useState(
-		CompaniesList.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
+		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(CompaniesList.length / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getCompanies = (refresh?: boolean) => {
-		const localPage = refresh ? 1 : page;
+	const getCompanies = (sortBy: string, limit: number, page: number) => {
 		const companies = CompaniesList.sort((a, b) => SortSwitch(sortBy, a, b)).slice(
-			(localPage - 1) * limit,
-			localPage * limit
+			(page - 1) * limit,
+			page * limit
 		);
 		setCompanies(companies);
-		refresh && setMaxPage(Math.ceil(CompaniesList.length / limit) || 1);
+		setMaxPage(Math.ceil(CompaniesList.length / limit) || 1);
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getCompanies(true);
-	}, [sortBy, limit]);
+	const sortByUpdate = (sortBy: string) => {
+		getCompanies(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
 
-	useEffect(() => {
-		getCompanies();
-	}, [page]);
+	const limitUpdate = (limit: number) => {
+		getCompanies(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getCompanies(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	const onSubmit = (data: any) => {
 		try {
@@ -83,15 +100,15 @@ export default function Companies() {
 							companies={companies}
 							sorting={{
 								value: sortBy,
-								setValue: setSortBy,
+								setValue: sortByUpdate,
 							}}
 							limitation={{
 								value: limit,
-								setValue: setLimit,
+								setValue: limitUpdate,
 							}}
 							pagination={{
 								value: page,
-								setValue: setPage,
+								setValue: pageUpdate,
 								maxValue: maxPage,
 							}}
 						/>
@@ -101,3 +118,4 @@ export default function Companies() {
 		</Container>
 	);
 }
+export { SortSwitch };

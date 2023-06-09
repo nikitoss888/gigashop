@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import styled from "@mui/material/styles/styled";
 import SubmitButton from "../components/Common/SubmitButton";
+import { LogInRequest } from "../http/User";
 
 const schema = yup.object().shape({
 	login: yup
@@ -43,8 +44,9 @@ export default function Login() {
 		resolver: yupResolver(schema),
 	});
 
-	const onSubmit = (data: any) => {
-		console.log(data);
+	const onSubmit = async (data: any) => {
+		const result = await LogInRequest(data.login, data.password);
+		console.log(result);
 	};
 
 	const onReset = () => {

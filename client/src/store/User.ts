@@ -7,6 +7,7 @@ export type User = {
 	login: string;
 	email: string;
 	role: string;
+	image: string;
 };
 
 export const userState = atom<User | undefined>({
@@ -34,6 +35,7 @@ export const getUser = selector({
 			login: decoded.login,
 			email: decoded.email,
 			role: decoded.role,
+			image: decoded.image,
 		};
 
 		return data;
@@ -59,6 +61,7 @@ export const LogIn = (setUser: SetterOrUpdater<User | undefined>, token?: string
 		login: decoded.login,
 		email: decoded.email,
 		role: decoded.role,
+		image: decoded.image,
 	});
 
 	return true;

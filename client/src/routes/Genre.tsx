@@ -1,12 +1,13 @@
-import { useParams } from "react-router-dom";
-import Genres from "../mock/Genres";
+import { useLoaderData } from "react-router-dom";
+import { Genre as GenreType } from "../mock/Genres";
 import { Container } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import Items from "../mock/Items";
 import styled from "@mui/material/styles/styled";
-import HTTPError from "../HTTPError";
+import ClientError from "../ClientError";
 import { useState } from "react";
+import { SortSwitch } from "./Items";
 
 const ContainerStyle = styled(Container)`
 	display: flex;
@@ -19,35 +20,53 @@ const ContainerStyle = styled(Container)`
 `;
 
 export default function Genre() {
-	const { id } = useParams();
-	if (!id) throw new HTTPError(400, "Не вказано ID жанру");
+	const { genre, error, totalCount } = useLoaderData() as {
+		genre: GenreType;
+		totalCount: number;
+		error?: ClientError;
+	};
 
-	const parsed = parseInt(id);
-	if (isNaN(parsed)) throw new HTTPError(400, "ID жанру не є числом");
+	if (error) throw error;
 
-	const genre = Genres.find((genre) => genre.id === parsed);
-	if (!genre) throw new HTTPError(404, "Жанр за даним ID не знайдено");
+	const initSortBy = "releaseDateAsc";
+	const initLimit = 12;
+	const initPage = 1;
 
-	const [sortBy, setSortBy] = useState("releaseDate");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const [sortBy, setSortBy] = useState(initSortBy);
+	const [limit, setLimit] = useState(initLimit);
+	const [page, setPage] = useState(initPage);
 
 	document.title = `Жанр "${genre.name}" — gigashop`;
 
-	const items = Items.filter((item) => genre.items.includes(item.id))
-		.sort((a, b) => {
-			switch (sortBy) {
-				case "name":
-					return a.name.localeCompare(b.name);
-				case "price":
-					return a.price - b.price;
-				case "releaseDate":
-				default:
-					return a.releaseDate.getTime() - b.releaseDate.getTime();
-			}
-		})
-		.slice((page - 1) * limit, page * limit);
-	const maxPage = Math.ceil(items.length / limit) || 1;
+	const [items, setItems] = useState(
+		genre.items?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
+	);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+
+	const getItems = (sortBy: string, limit: number, page: number) => {
+		const items =
+			genre.items?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || [];
+		setItems(items);
+		setMaxPage(Math.ceil(Items.length / limit) || 1);
+	};
+
+	const sortByUpdate = (sortBy: string) => {
+		getItems(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
+
+	const limitUpdate = (limit: number) => {
+		getItems(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getItems(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	return (
 		<ContainerStyle>
@@ -71,15 +90,15 @@ export default function Genre() {
 				items={items}
 				sorting={{
 					value: sortBy,
-					setValue: setSortBy,
+					setValue: sortByUpdate,
 				}}
 				limitation={{
 					value: limit,
-					setValue: setLimit,
+					setValue: limitUpdate,
 				}}
 				pagination={{
 					value: page,
-					setValue: setPage,
+					setValue: pageUpdate,
 					maxValue: maxPage,
 				}}
 			/>

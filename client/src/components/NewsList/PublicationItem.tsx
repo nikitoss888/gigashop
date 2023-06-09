@@ -60,7 +60,14 @@ export default function PublicationItem({ item }: PublicationProps) {
 					}}
 				>
 					{item.tags?.map((tag) => (
-						<Chip key={`${item.id.toString(16)}-${tag}}`} label={tag} />
+						<Chip
+							key={`${item.id.toString(16)}-${tag}}`}
+							label={
+								<Typography variant='body1' color='secondary'>
+									{tag}
+								</Typography>
+							}
+						/>
 					))}
 				</Box>
 			)}
@@ -73,7 +80,7 @@ export default function PublicationItem({ item }: PublicationProps) {
 					marginTop: "10px",
 				}}
 			>
-				<MiniAvatarStyle src={item.user?.avatar} alt={item.user?.login} />
+				<MiniAvatarStyle src={item.user?.image} alt={item.user?.login} />
 				<Typography variant='body2' component='p' color='primary'>
 					{item.user?.firstName} {item.user?.lastName}
 					{item.createdAt ? `, ${item.createdAt.toLocaleDateString()}` : ""}

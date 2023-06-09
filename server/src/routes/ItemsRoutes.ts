@@ -1,12 +1,17 @@
 import {Router} from 'express';
 import ItemsController from "../controllers/Shop/ItemsController";
 import {checkWorker} from "../middleware/CheckRoleMiddleware";
+import auth from "../middleware/AuthMiddleware";
 
 const itemsRouter = Router()
 
 itemsRouter.post('/', checkWorker, ItemsController.create);
 itemsRouter.patch('/:id', checkWorker, ItemsController.update);
 itemsRouter.delete('/:id', checkWorker, ItemsController.delete);
+
+itemsRouter.post('/:id/toggleWishlist', auth, ItemsController.toggleWishList);
+itemsRouter.post('/:id/toggleCart', auth, ItemsController.toggleCart);
+itemsRouter.post('/buyCart', auth, ItemsController.buyCart);
 
 itemsRouter.post('/:id/developers', checkWorker, ItemsController.addDevelopers);
 itemsRouter.delete('/:id/developers', checkWorker, ItemsController.removeDevelopers);

@@ -4,9 +4,10 @@ import Link from "./Link";
 import styled from "@mui/material/styles/styled";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { User } from "../../store/User";
-import LoggedIn from "./LoggedIn";
-import LoggedOut from "./LoggedOut";
+import LoggedInXs from "./LoggedInXs";
+// import LoggedOut from "./LoggedOut";
 import AccordionDetailsStyle from "../Common/AccordionDetailsStyle";
+import LoggedOut from "./LoggedOut";
 
 const Nav = styled("nav")`
 	display: flex;
@@ -87,7 +88,7 @@ export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 					<Link component={RouterLink} to='/news' variant='h6'>
 						Публікації
 					</Link>
-					<Box mt={3}>{user ? <LoggedIn /> : <LoggedOut />}</Box>
+					<Box mt={3}>{user ? <LoggedInXs user={user} /> : <LoggedOut />}</Box>
 				</>
 			)}
 		</Nav>

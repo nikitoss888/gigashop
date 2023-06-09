@@ -21,7 +21,7 @@ export default function ItemCard({ item: { id, name, price, releaseDate, mainIma
 			<Link to={`/shop/items/${id}`} onClick={(e) => e.stopPropagation()}>
 				<Media image={mainImage} alt={name} />
 				<Content sx={{ gap: { xs: 0, sm: "15px" } }}>
-					<Typography gutterBottom variant='h6' component='div'>
+					<Typography gutterBottom variant='h6' color='secondary'>
 						{name}
 					</Typography>
 					<Typography

@@ -32,8 +32,17 @@ const ItemRate = sequelize_db.define('item_rate', {
         allowNull: true
     },
 });
-const getItemRates = async (itemId?: number, content?: string, rate?: number, rateFrom?: number, rateTo?: number,
-                            hide = false, violation = false, violationReason?: string) => {
+type getAllItemRatesParams = {
+    itemId?: number,
+    content?: string,
+    rate?: number,
+    rateFrom?: number,
+    rateTo?: number,
+    hide?: boolean,
+    violation?: boolean,
+    violationReason?: string
+}
+const getItemRates = async ({itemId, content, rate, rateFrom, rateTo, hide, violation, violationReason}: getAllItemRatesParams) => {
     let where: {itemId?: {}, content?: {}, rate?: {}, hide?: {}, violation?: {}, violationReason?: {}} = {};
 
     if (itemId) {

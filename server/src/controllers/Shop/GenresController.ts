@@ -27,14 +27,18 @@ class GenresController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        let { name, description, desc, descending, limit, page, sortBy } = req.query;
+        let { name, description, desc, descending, limit, page, sortBy, hide } = req.query;
 
+        const hideParsed = super.parseBoolean(hide as string | undefined) || false;
         let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
             super.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        const genres = await getGenres(name as string | undefined, description as string | undefined,
-            descendingParsed, limitParsed, pageParsed, sortBy as string | undefined)
+        const genres = await getGenres({
+            name: name as string | undefined, description: description as string | undefined,
+            descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
+            includeHidden: hideParsed
+        })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             }
@@ -46,7 +50,9 @@ class GenresController extends Controller {
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
 
-        const genre = await getGenre(+id, true);
+        const hideParsed = super.parseBoolean(req.query.hide as string | undefined);
+
+        const genre = await getGenre({ id: +id, includeItems: true, includeHidden: hideParsed });
         if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
         res.json(genre);
     }

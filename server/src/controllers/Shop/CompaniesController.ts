@@ -29,19 +29,31 @@ class CompaniesController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        let { name, description, director, founded, desc, descending, limit, page, sortBy } = req.query;
+        let {
+            name,
+            description,
+            director,
+            founded,
+            desc,
+            descending,
+            limit,
+            page,
+            sortBy,
+            hide } = req.query;
 
-        let foundedParsed = super.parseDate(founded as string | undefined);
+        const foundedParsed = super.parseDate(founded as string | undefined);
+        const hideParsed = super.parseBoolean(hide as string | undefined) || false;
 
         let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
             super.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        const companies = await getCompanies(
-            name as string | undefined, description as string | undefined,
-            director as string | undefined, foundedParsed,
-            descendingParsed, limitParsed, pageParsed, sortBy as string | undefined
-        )
+        const companies = await getCompanies({
+            name: name as string | undefined, description: description as string | undefined,
+            director: director as string | undefined, founded: foundedParsed,
+            descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
+            includeHidden: hideParsed
+        })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
         });
@@ -52,10 +64,13 @@ class CompaniesController extends Controller {
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
-        let includeItemsDeveloped = super.parseBoolean(req.query.includeDeveloped as string | undefined);
-        let includeItemsPublished = super.parseBoolean(req.query.includePublished as string | undefined);
+        const includeItemsDeveloped = super.parseBoolean(req.query.includeDeveloped as string | undefined) || true;
+        const includeItemsPublished = super.parseBoolean(req.query.includePublished as string | undefined) || true;
+        const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined) || false;
 
-        const company = await getCompany(+id, includeItemsDeveloped, includeItemsPublished);
+        const company = await getCompany({
+            id: +id, includeItemsDeveloped, includeItemsPublished, includeHidden
+        });
 
         if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
         res.json(company);

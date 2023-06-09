@@ -1,26 +1,9 @@
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/Items/List";
 import Items, { Item } from "../../mock/Items";
-import { useEffect, useState } from "react";
-import ListItem from "../../components/Admin/Items/ListItem";
-
-const SortSwitch = (sortBy: string, a: Item, b: Item) => {
-	switch (sortBy) {
-		case "nameDesc":
-			return b.name.localeCompare(a.name);
-		case "nameAsc":
-			return a.name.localeCompare(b.name);
-		case "priceDesc":
-			return b.price - a.price;
-		case "priceAsc":
-			return a.price - b.price;
-		case "releaseDateDesc":
-			return b.releaseDate.getTime() - a.releaseDate.getTime();
-		case "releaseDateAsc":
-		default:
-			return a.releaseDate.getTime() - b.releaseDate.getTime();
-	}
-};
+import { useState } from "react";
+import { SortSwitch } from "../Items";
+import { useLoaderData } from "react-router-dom";
 
 export default function AdminItems() {
 	document.title = "Товари - Адміністративна панель - gigashop";
@@ -29,26 +12,39 @@ export default function AdminItems() {
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
-	const [items, setItems] = useState(
-		Items.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(Items.length / limit) || 1);
-
-	const getItems = (refresh?: boolean) => {
-		const localPage = refresh ? 1 : page;
-		const items = Items.sort((a, b) => SortSwitch(sortBy, a, b)).slice((localPage - 1) * limit, localPage * limit);
-		setItems(items);
-		refresh && setMaxPage(Math.ceil(Items.length / limit) || 1);
+	const { data, totalCount } = useLoaderData() as {
+		data: Item[];
+		totalCount: number;
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getItems(true);
-	}, [sortBy, limit]);
+	const [items, setItems] = useState(
+		data?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
+	);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	useEffect(() => {
-		getItems();
-	}, [page]);
+	const getItems = (sortBy: string, limit: number, page: number) => {
+		const items = Items.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
+		setItems(items);
+		setMaxPage(Math.ceil(Items.length / limit) || 1);
+	};
+
+	const sortByUpdate = (sortBy: string) => {
+		getItems(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
+
+	const limitUpdate = (limit: number) => {
+		getItems(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getItems(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	return (
 		<Box>
@@ -59,22 +55,18 @@ export default function AdminItems() {
 				items={items}
 				sorting={{
 					value: sortBy,
-					setValue: setSortBy,
+					setValue: sortByUpdate,
 				}}
 				limitation={{
 					value: limit,
-					setValue: setLimit,
+					setValue: limitUpdate,
 				}}
 				pagination={{
 					value: page,
-					setValue: setPage,
+					setValue: pageUpdate,
 					maxValue: maxPage,
 				}}
-			>
-				{items?.map((item) => (
-					<ListItem key={item.id.toString(16)} item={item} />
-				))}
-			</List>
+			/>
 		</Box>
 	);
 }

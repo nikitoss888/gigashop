@@ -13,9 +13,9 @@ const ADMIN = 'ADMIN';
 const SALT_ROUNDS = 5;
 
 class UserController extends Controller {
-    static generateJwt(id: number, login: string, email: string, role: string) {
+    static generateJwt(id: number, login: string, email: string, role: string, image: string) {
         return jwt.sign({
-            id, login, email, role
+            id, login, email, role, image,
         }, process.env.SECRET_KEY as string, {expiresIn: '24h'});
     }
 
@@ -30,7 +30,7 @@ class UserController extends Controller {
             email, login, firstName, lastName, password: hashPasswordValid, image: imageName, role
         });
 
-        return UserController.generateJwt(user.id, user.login, user.email, user.role);
+        return UserController.generateJwt(user.id, user.login, user.email, user.role, user.image);
     }
 
     private static async _validateData(email: string, login: string, firstName: string,
@@ -154,12 +154,12 @@ class UserController extends Controller {
             return next(ApiError.badRequest('Невірний пароль'));
         }
 
-        const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
+        const token = UserController.generateJwt(user.id, user.login, user.email, user.role, user.image);
         return res.json({message: "Авторизацію пройдено успішно", token});
     }
 
     async check(req: Request, res: Response) {
-        const token = UserController.generateJwt(req.user.id, req.user.login, req.user.email, req.user.role);
+        const token = UserController.generateJwt(req.user.id, req.user.login, req.user.email, req.user.role, req.user.image);
         return res.json({token});
     }
 
@@ -225,7 +225,7 @@ class UserController extends Controller {
             // ToDo: delete image
             // if (image && oldImageName) super.deleteFile(USERS_DIR, oldImageName);
 
-            const token = UserController.generateJwt(user.id, user.login, user.email, user.role);
+            const token = UserController.generateJwt(user.id, user.login, user.email, user.role, user.image);
 
             return res.json({message: "Користувача відредаговано успішно", token});
         }
@@ -243,12 +243,12 @@ class UserController extends Controller {
                 includeWishlist, includePublications,
                 includePublicationComments } = req.query;
 
-            let includeBoughtItemsParsed = super.parseBoolean(includeBought as string);
-            let includeCartParsed = super.parseBoolean(includeCart as string);
-            let includeItemsRatesParsed = super.parseBoolean(includeRates as string);
-            let includeWishlistParsed = super.parseBoolean(includeWishlist as string);
-            let includePublicationsParsed = super.parseBoolean(includePublications as string);
-            let includePublicationCommentsParsed = super.parseBoolean(includePublicationComments as string);
+            let includeBoughtItemsParsed = super.parseBoolean(includeBought as string) || false;
+            let includeCartParsed = super.parseBoolean(includeCart as string) || false;
+            let includeItemsRatesParsed = super.parseBoolean(includeRates as string) || false;
+            let includeWishlistParsed = super.parseBoolean(includeWishlist as string) || false;
+            let includePublicationsParsed = super.parseBoolean(includePublications as string) || false;
+            let includePublicationCommentsParsed = super.parseBoolean(includePublicationComments as string) || false;
 
             const user = await getUser(req.user.id, includeBoughtItemsParsed, includeCartParsed,
                 includeItemsRatesParsed, includeWishlistParsed, includePublicationsParsed,

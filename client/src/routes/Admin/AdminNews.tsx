@@ -1,51 +1,50 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Publications, { Publication } from "../../mock/Publications";
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/News/List";
+import { SortSwitch } from "../NewsList";
+import { useLoaderData } from "react-router-dom";
 
-const SortSwitch = (sortBy: string, a: Publication, b: Publication) => {
-	switch (sortBy) {
-		case "titleDesc":
-			return b.title.localeCompare(a.title);
-		case "titleAsc":
-			return a.title.localeCompare(b.title);
-		case "createdAtDesc":
-			return b.createdAt.getTime() - a.createdAt.getTime();
-		case "createdAtAsc":
-		default:
-			return a.createdAt.getTime() - b.createdAt.getTime();
-	}
-};
 export default function AdminNews() {
 	document.title = "Новини - Адміністративна панель - gigashop";
+
+	const { data, totalCount } = useLoaderData() as {
+		data: Publication[];
+		totalCount: number;
+	};
 
 	const [sortBy, setSortBy] = useState("createdAtAsc");
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
 	const [news, setNews] = useState(
-		Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
+		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(Publications.length / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil(totalCount || 0 / limit) || 1);
 
-	const getNews = (refresh?: boolean) => {
-		const localPage = refresh ? 1 : page;
-		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice(
-			(localPage - 1) * limit,
-			localPage * limit
-		);
+	const getNews = (sortBy: string, limit: number, page: number) => {
+		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
 		setNews(news);
-		refresh && setMaxPage(Math.ceil(Publications.length / limit) || 1);
+		setMaxPage(Math.ceil(Publications.length / limit) || 1);
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getNews(true);
-	}, [sortBy, limit]);
+	const sortByUpdate = (sortBy: string) => {
+		getNews(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
 
-	useEffect(() => {
-		getNews();
-	}, [page]);
+	const limitUpdate = (limit: number) => {
+		getNews(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getNews(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	return (
 		<Box>
@@ -56,18 +55,19 @@ export default function AdminNews() {
 				news={news}
 				sorting={{
 					value: sortBy,
-					setValue: setSortBy,
+					setValue: sortByUpdate,
 				}}
 				limitation={{
 					value: limit,
-					setValue: setLimit,
+					setValue: limitUpdate,
 				}}
 				pagination={{
 					value: page,
-					setValue: setPage,
+					setValue: pageUpdate,
 					maxValue: maxPage,
 				}}
 			/>
 		</Box>
 	);
 }
+export { SortSwitch };

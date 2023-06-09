@@ -91,21 +91,23 @@ class NewsController extends Controller {
             const { title, content,
                 createdAt, createdFrom, createdTo,
                 desc, descending, limit,
-                page, sortBy } = req.query;
+                page, sortBy, hide } = req.query;
 
-            let createdAtParsed = super.parseDate(createdAt as string | undefined);
-            let createdFromParsed = super.parseDate(createdFrom as string | undefined);
-            let createdToParsed = super.parseDate(createdTo as string | undefined);
+            const createdAtParsed = super.parseDate(createdAt as string | undefined);
+            const createdFromParsed = super.parseDate(createdFrom as string | undefined);
+            const createdToParsed = super.parseDate(createdTo as string | undefined);
+            const hideParsed = super.parseBoolean(hide as string | undefined) || false;
 
             let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
                 super.parsePagination(desc as string | undefined, descending as string | undefined,
                     limit as string | undefined, page as string | undefined);
 
-            const publications = await getPublications(
-                title as string | undefined, content as string | undefined,
-                createdAtParsed, createdFromParsed, createdToParsed,
-                descendingParsed, limitParsed, pageParsed, sortBy as string | undefined
-            )
+            const publications = await getPublications({
+                title: title as string | undefined, content: content as string | undefined,
+                createdAt: createdAtParsed, createdFrom: createdFromParsed, createdTo: createdToParsed,
+                descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
+                includeHidden: hideParsed
+            })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
@@ -124,12 +126,18 @@ class NewsController extends Controller {
             const id = super.parseNumber(req.params.id);
             if (!id) return next(ApiError.badRequest('Неправильний id публікації'));
 
-            const includeTags = super.parseBoolean(req.query.includeTags as string | undefined);
-            const includeComments = super.parseBoolean(req.query.includeComments as string | undefined);
-            const includeViolations = super.parseBoolean(req.query.includeViolations as string | undefined);
-            const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined);
+            const includeTags = super.parseBoolean(req.query.includeTags as string | undefined) || true;
+            const includeComments = super.parseBoolean(req.query.includeComments as string | undefined) || true;
+            const includeViolations = super.parseBoolean(req.query.includeViolations as string | undefined) || false;
+            const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined) || false;
 
-            const publication = await getPublication(id, includeTags, includeComments, includeViolations, includeHidden)
+            const publication = await getPublication({
+                id,
+                includeTags,
+                includeComments,
+                includeViolations,
+                includeHidden
+            })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });

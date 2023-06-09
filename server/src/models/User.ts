@@ -32,7 +32,7 @@ const User = sequelize_db.define('user', {
     image: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'default.png'
+        defaultValue: 'https://res.cloudinary.com/dnqlgypji/image/upload/v1686310061/gigashop/users/r7mocr34rjlgfissqkaf.jpg'
     },
     firstName: {
         type: DataTypes.STRING,
@@ -59,7 +59,7 @@ const User = sequelize_db.define('user', {
         type: DataTypes.STRING,
         allowNull: false
     },
-    isBanned: {
+    isBlocked: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
@@ -68,8 +68,8 @@ const User = sequelize_db.define('user', {
 });
 
 const _whereHandler = (login?: string, email?: string, firstName?: string, lastName?: string,
-                        role?: string, isDeleted = false, isBanned = false) => {
-    let where: {login?: {}, email?: {}, firstName?: {}, lastName?: {}, role?: {}, isDeleted?: {}, isBanned?: {}} = {};
+                        role?: string, isDeleted = false, isBlocked = false) => {
+    let where: {login?: {}, email?: {}, firstName?: {}, lastName?: {}, role?: {}, isDeleted?: {}, isBlocked?: {}} = {};
 
     if (login) {
         where.login = {
@@ -97,7 +97,7 @@ const _whereHandler = (login?: string, email?: string, firstName?: string, lastN
         }
     }
     where.isDeleted = isDeleted;
-    where.isBanned = isBanned;
+    where.isBlocked = isBlocked;
 
     return where;
 }

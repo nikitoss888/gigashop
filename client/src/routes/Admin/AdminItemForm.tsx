@@ -1,15 +1,17 @@
-import { useParams } from "react-router-dom";
-import HTTPError from "../../HTTPError";
-import Items, { Item } from "../../mock/Items";
+import { useLoaderData } from "react-router-dom";
+import ClientError from "../../ClientError";
+import { Item } from "../../mock/Items";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
+	Alert,
+	AlertTitle,
 	Autocomplete,
 	Box,
 	Button,
 	ButtonGroup,
-	Checkbox,
+	Dialog,
 	FormControlLabel,
 	IconButton,
 	TextField,
@@ -25,6 +27,7 @@ import SubmitButton from "../../components/Common/SubmitButton";
 import { default as MockGenres } from "../../mock/Genres";
 import { default as MockCompanies } from "../../mock/Companies";
 import Chip from "../../components/Common/Chip";
+import Checkbox from "../../components/Form/Checkbox";
 
 const FormBox = styled(Box)`
 	display: flex;
@@ -35,13 +38,6 @@ const FormBox = styled(Box)`
 const InputBox = styled(Box)`
 	display: flex;
 	flex-direction: column;
-`;
-
-const CheckboxStyle = styled(Checkbox)`
-	color: ${(props) => props.theme.colors.accent};
-	&.Mui-checked {
-		color: ${(props) => props.theme.colors.accent};
-	}
 `;
 
 const ResponsiveBoxStyle = styled(Box)`
@@ -139,19 +135,47 @@ const schema = yup.object().shape({
 });
 
 export default function AdminItemForm() {
-	const { id } = useParams<{ id: string }>();
+	const { item, error } = useLoaderData() as {
+		item?: Item;
+		error?: ClientError;
+	};
 
-	let item: Item | undefined;
-	if (id) {
-		const parsed = parseInt(id);
-		if (isNaN(parsed)) throw new HTTPError(400, "ID товару не є числом");
+	if (error) throw error;
 
-		item = Items.find((item) => item.id === parsed);
-		if (!item) throw new HTTPError(404, "Товар за даним ID не знайдено");
-	} else item = undefined;
+	const [openDialog, setOpenDialog] = useState(false);
+
+	document.title =
+		(item ? `Редагування товару ${item.name} (№${item.id})` : "Створення товару") +
+		" — Адміністративна панель — gigashop";
+
+	type FormValues = {
+		name: string;
+		description: string;
+		releaseDate: Date | undefined;
+		price: number | undefined;
+		amount: number | undefined;
+		discount: boolean;
+		discountFrom: Date | undefined;
+		discountTo: Date | undefined;
+		discountSize: number | undefined;
+		hide: boolean;
+	};
+	let defaultValues: Item | FormValues = {
+		name: "",
+		description: "",
+		releaseDate: undefined,
+		price: undefined,
+		amount: undefined,
+		discount: false,
+		discountFrom: undefined,
+		discountTo: undefined,
+		discountSize: undefined,
+		hide: false,
+	};
+	if (item) defaultValues = item;
 
 	const methods = useForm({
-		defaultValues: item,
+		defaultValues,
 		resolver: yupResolver(schema),
 	});
 
@@ -165,10 +189,6 @@ export default function AdminItemForm() {
 		if (item.discountFrom) locDiscountFrom = new Date(item.discountFrom.getTime() - offset * 60 * 1000);
 		if (item.discountTo) locDiscountTo = new Date(item.discountTo.getTime() - offset * 60 * 1000);
 	}
-
-	document.title =
-		(item ? `Редагування товару ${item.name} (№${item.id})` : "Створення товару") +
-		" — Адміністративна панель — gigashop";
 
 	const [localReleaseDate, setLocalReleaseDate] = useState<Date | null>(locReleaseDate);
 	const [localDiscountFrom, setLocalDiscountFrom] = useState<Date | null>(locDiscountFrom);
@@ -185,7 +205,7 @@ export default function AdminItemForm() {
 		name: genre.name,
 	}));
 	const [itemGenres, setItemGenres] = useState<DataObject[]>(
-		Genres.filter((genre) => item?.genres?.includes(genre.id)).map((genre) => ({
+		Genres.filter((genre) => item?.genresIds?.includes(genre.id)).map((genre) => ({
 			id: genre.id,
 			name: genre.name,
 		})) || []
@@ -195,12 +215,12 @@ export default function AdminItemForm() {
 		id: company.id,
 		name: company.name,
 	}));
-	const publisher = Companies.find((company) => company.id === item?.publisher);
+	const publisher = Companies.find((company) => company.id === item?.publisherId);
 	const [itemPublisher, setItemPublisher] = useState<DataObject | null>(
 		publisher ? { id: publisher.id, name: publisher.name } : null
 	);
 	const [itemDevelopers, setItemDevelopers] = useState<DataObject[]>(
-		Companies.filter((company) => item?.developers?.includes(company.id)).map((company) => ({
+		Companies.filter((company) => item?.developersIds?.includes(company.id)).map((company) => ({
 			id: company.id,
 			name: company.name,
 		})) || []
@@ -240,6 +260,7 @@ export default function AdminItemForm() {
 			coverImage,
 			images,
 		});
+		setOpenDialog(true);
 	};
 
 	const onReset = () => {
@@ -250,378 +271,396 @@ export default function AdminItemForm() {
 	};
 
 	return (
-		<Box>
-			<Typography variant='h4' textAlign='center' mb={3}>
-				{item ? `Редагування товару ${item.name} (№${item.id})` : "Створення товару"}
-			</Typography>
-			<FormProvider {...methods}>
-				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
-					<FormBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='name'>
-								Назва
-							</Typography>
-							<Controller
-								name='name'
-								control={methods.control}
-								render={({ field, formState: { errors } }) => (
-									<TextField
-										{...field}
-										id='name'
-										placeholder='Назва'
-										required
-										variant='outlined'
-										error={!!errors.name}
-										helperText={errors.name?.message}
-									/>
-								)}
-							/>
-						</InputBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='description'>
-								Опис
-							</Typography>
-							<Controller
-								name='description'
-								control={methods.control}
-								render={({ field, formState: { errors } }) => (
-									<TextField
-										{...field}
-										id='description'
-										placeholder='Опис'
-										variant='outlined'
-										multiline
-										rows={4}
-										error={!!errors.description}
-										helperText={errors.description?.message}
-									/>
-								)}
-							/>
-						</InputBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='releaseDate'>
-								Дата випуску
-							</Typography>
-							<Controller
-								name='releaseDate'
-								control={methods.control}
-								render={({ field, formState: { errors } }) => (
-									<TextField
-										{...field}
-										value={localReleaseDate?.toISOString().slice(0, 10) ?? ""}
-										onChange={(e) => {
-											const date = new Date(e.target.value);
-											const offset = date.getTimezoneOffset();
-											setLocalReleaseDate(new Date(date.getTime() - offset * 60 * 1000));
-											field.onChange(e);
-										}}
-										id='releaseDate'
-										placeholder='Дата випуску'
-										required
-										variant='outlined'
-										type='date'
-										error={!!errors.releaseDate}
-										helperText={errors.releaseDate?.message}
-										sx={{ width: "100%" }}
-									/>
-								)}
-							/>
-						</InputBox>
-						<ResponsiveBox colsNum={2}>
+		<>
+			<Box>
+				<Typography variant='h4' textAlign='center' mb={3}>
+					{item ? `Редагування товару ${item.name} (№${item.id})` : "Створення товару"}
+				</Typography>
+				<FormProvider {...methods}>
+					<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
+						<FormBox>
 							<InputBox>
-								<Typography variant='h6' component='label' htmlFor='price'>
-									Ціна
+								<Typography variant='h6' component='label' htmlFor='name'>
+									Назва
 								</Typography>
 								<Controller
-									name='price'
+									name='name'
 									control={methods.control}
 									render={({ field, formState: { errors } }) => (
 										<TextField
 											{...field}
-											id='price'
-											placeholder='Ціна'
+											id='name'
+											placeholder='Назва'
 											required
 											variant='outlined'
-											type='number'
-											error={!!errors.price}
-											helperText={errors.price?.message}
+											error={!!errors.name}
+											helperText={errors.name?.message}
 										/>
 									)}
 								/>
 							</InputBox>
 							<InputBox>
-								<Typography variant='h6' component='label' htmlFor='amount'>
-									Кількість
+								<Typography variant='h6' component='label' htmlFor='description'>
+									Опис
 								</Typography>
 								<Controller
-									name='amount'
+									name='description'
 									control={methods.control}
 									render={({ field, formState: { errors } }) => (
 										<TextField
 											{...field}
-											id='amount'
-											placeholder='Кількість'
-											required
+											id='description'
+											placeholder='Опис'
 											variant='outlined'
-											type='number'
-											error={!!errors.amount}
-											helperText={errors.amount?.message}
+											multiline
+											rows={4}
+											error={!!errors.description}
+											helperText={errors.description?.message}
 										/>
 									)}
 								/>
 							</InputBox>
-						</ResponsiveBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='genres'>
-								Жанри
-							</Typography>
-							<Autocomplete
-								id='genres'
-								multiple
-								options={Genres}
-								value={itemGenres}
-								filterSelectedOptions
-								getOptionLabel={(option) => option.name}
-								isOptionEqualToValue={(option, value) => option.id === value.id}
-								onChange={(_, data: DataObject[]) => {
-									setItemGenres(data);
-								}}
-								renderInput={(params) => (
-									<TextField {...params} placeholder='Жанри' variant='outlined' />
-								)}
-								renderTags={(value, getTagProps) => {
-									return value.map((option, index) => (
-										<Chip
-											{...getTagProps({ index })}
-											key={index}
-											label={<Typography variant='body2'>{option.name}</Typography>}
+							<InputBox>
+								<Typography variant='h6' component='label' htmlFor='releaseDate'>
+									Дата випуску
+								</Typography>
+								<Controller
+									name='releaseDate'
+									control={methods.control}
+									render={({ field, formState: { errors } }) => (
+										<TextField
+											{...field}
+											value={localReleaseDate?.toISOString().slice(0, 10) ?? ""}
+											onChange={(e) => {
+												const date = new Date(e.target.value);
+												const offset = date.getTimezoneOffset();
+												setLocalReleaseDate(new Date(date.getTime() - offset * 60 * 1000));
+												field.onChange(e);
+											}}
+											id='releaseDate'
+											placeholder='Дата випуску'
+											required
+											variant='outlined'
+											type='date'
+											error={!!errors.releaseDate}
+											helperText={errors.releaseDate?.message}
+											sx={{ width: "100%" }}
 										/>
-									));
-								}}
-							/>
-						</InputBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='developers'>
-								Розробники
-							</Typography>
-							<Autocomplete
-								id='developers'
-								multiple
-								options={Companies}
-								value={itemDevelopers}
-								filterSelectedOptions
-								getOptionLabel={(option) => option.name}
-								isOptionEqualToValue={(option, value) => option.id === value.id}
-								onChange={(_, data: DataObject[]) => {
-									setItemDevelopers(data);
-								}}
-								renderInput={(params) => (
-									<TextField {...params} placeholder='Розробники' variant='outlined' />
-								)}
-								renderTags={(value, getTagProps) => {
-									return value.map((option, index) => (
-										<Chip
-											{...getTagProps({ index })}
-											key={index}
-											label={<Typography variant='body2'>{option.name}</Typography>}
-										/>
-									));
-								}}
-							/>
-						</InputBox>
-						<InputBox>
-							<Typography variant='h6' component='label' htmlFor='publisher'>
-								Видавець
-							</Typography>
-							<Autocomplete
-								id='publisher'
-								options={Companies}
-								value={itemPublisher}
-								getOptionLabel={(option) => option.name}
-								isOptionEqualToValue={(option, value) => option.id === value.id}
-								onChange={(_, data: DataObject | null) => {
-									setItemPublisher(data);
-								}}
-								renderInput={(params) => (
-									<TextField {...params} placeholder='Видавці' variant='outlined' />
-								)}
-								renderTags={(value, getTagProps) => {
-									return value.map((option, index) => (
-										<Chip
-											{...getTagProps({ index })}
-											key={index}
-											label={<Typography variant='body2'>{option.name}</Typography>}
-										/>
-									));
-								}}
-							/>
-						</InputBox>
-						<Controller
-							name='discount'
-							control={methods.control}
-							render={({ field }) => (
-								<FormControlLabel
-									control={<CheckboxStyle {...field} id='discount' checked={Boolean(field.value)} />}
-									label='Знижка'
+									)}
 								/>
-							)}
-						/>
-						{methods.watch("discount") && (
-							<>
+							</InputBox>
+							<ResponsiveBox colsNum={2}>
 								<InputBox>
-									<Typography variant='h6' component='label' htmlFor='discountSize'>
-										Розмір знижки
+									<Typography variant='h6' component='label' htmlFor='price'>
+										Ціна
 									</Typography>
 									<Controller
-										name='discountSize'
+										name='price'
 										control={methods.control}
 										render={({ field, formState: { errors } }) => (
 											<TextField
 												{...field}
-												id='discountSize'
-												placeholder='Розмір знижки'
+												id='price'
+												placeholder='Ціна'
+												required
 												variant='outlined'
 												type='number'
-												error={!!errors.discountSize}
-												helperText={errors.discountSize?.message}
+												error={!!errors.price}
+												helperText={errors.price?.message}
 											/>
 										)}
 									/>
 								</InputBox>
-								<ResponsiveBox colsNum={2}>
-									<InputBox>
-										<Typography variant='h6' component='label' htmlFor='discountFrom'>
-											Дата початку знижки
-										</Typography>
-										<Controller
-											name='discountFrom'
-											control={methods.control}
-											render={({ field, formState: { errors } }) => (
-												<TextField
-													{...field}
-													value={localDiscountFrom?.toISOString().slice(0, 10) ?? ""}
-													onChange={(e) => {
-														const date = new Date(e.target.value);
-														const offset = date.getTimezoneOffset();
-														setLocalDiscountFrom(
-															new Date(date.getTime() - offset * 60 * 1000)
-														);
-														field.onChange(e);
-													}}
-													id='discountFrom'
-													variant='outlined'
-													type='date'
-													error={!!errors.discountFrom}
-													helperText={errors.discountFrom?.message}
-													sx={{ width: "100%" }}
-												/>
-											)}
-										/>
-									</InputBox>
-									<InputBox>
-										<Typography variant='h6' component='label' htmlFor='discountTo'>
-											Дата кінця знижки
-										</Typography>
-										<Controller
-											name='discountTo'
-											control={methods.control}
-											render={({ field, formState: { errors } }) => (
-												<TextField
-													{...field}
-													value={localDiscountTo?.toISOString().slice(0, 10) ?? ""}
-													onChange={(e) => {
-														const date = new Date(e.target.value);
-														const offset = date.getTimezoneOffset();
-														setLocalDiscountTo(
-															new Date(date.getTime() - offset * 60 * 1000)
-														);
-														field.onChange(e);
-													}}
-													id='discountTo'
-													variant='outlined'
-													type='date'
-													error={!!errors.discountTo}
-													helperText={errors.discountTo?.message}
-													sx={{ width: "100%" }}
-												/>
-											)}
-										/>
-									</InputBox>
-								</ResponsiveBox>
-							</>
-						)}
-						<Tooltip title='Форма запису: "назва_характеристики: характеристика;", розділення через ";" із новим рядком'>
+								<InputBox>
+									<Typography variant='h6' component='label' htmlFor='amount'>
+										Кількість
+									</Typography>
+									<Controller
+										name='amount'
+										control={methods.control}
+										render={({ field, formState: { errors } }) => (
+											<TextField
+												{...field}
+												id='amount'
+												placeholder='Кількість'
+												required
+												variant='outlined'
+												type='number'
+												error={!!errors.amount}
+												helperText={errors.amount?.message}
+											/>
+										)}
+									/>
+								</InputBox>
+							</ResponsiveBox>
 							<InputBox>
-								<Typography variant='h6' component='label' htmlFor='characteristics'>
-									Характеристики *
+								<Typography variant='h6' component='label' htmlFor='genres'>
+									Жанри
 								</Typography>
-								<TextField
-									id='characteristics'
-									value={characteristics}
-									placeholder='Характеристики'
-									variant='outlined'
-									multiline
-									rows={4}
-									onChange={(e) => {
-										const data = e.target.value;
-										setCharacteristics(data);
+								<Autocomplete
+									id='genres'
+									multiple
+									options={Genres}
+									value={itemGenres}
+									filterSelectedOptions
+									getOptionLabel={(option) => option.name}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									onChange={(_, data: DataObject[]) => {
+										setItemGenres(data);
+									}}
+									renderInput={(params) => (
+										<TextField {...params} placeholder='Жанри' variant='outlined' />
+									)}
+									renderTags={(value, getTagProps) => {
+										return value.map((option, index) => (
+											<Chip
+												{...getTagProps({ index })}
+												key={index}
+												label={<Typography variant='body2'>{option.name}</Typography>}
+											/>
+										));
 									}}
 								/>
 							</InputBox>
-						</Tooltip>
-						<ResponsiveBox colsNum={2}>
-							<Box>
-								<ButtonGroup fullWidth>
-									<SubmitButton onClick={uploadMainImage} variant='contained'>
-										Завантажити головне зображення
-									</SubmitButton>
-									<Button onClick={removeMainImage} variant='contained'>
-										Видалити головне зображення
-									</Button>
-								</ButtonGroup>
-								{mainImage && <Image src={mainImage} alt='mainImage' />}
-							</Box>
-							<Box>
-								<ButtonGroup fullWidth>
-									<SubmitButton onClick={uploadCoverImage} variant='contained'>
-										Завантажити обкладинку
-									</SubmitButton>
-									<Button onClick={removeCoverImage} variant='contained'>
-										Видалити обкладинку
-									</Button>
-								</ButtonGroup>
-								{coverImage && <Image src={coverImage} alt='coverImage' />}
-							</Box>
-						</ResponsiveBox>
-						<ButtonGroup fullWidth>
-							<SubmitButton onClick={uploadImages} variant='contained'>
-								Завантажити додаткові зображення
-							</SubmitButton>
-							<Button onClick={removeImages} variant='contained'>
-								Видалити додаткові зображення
-							</Button>
-						</ButtonGroup>
-						<ImagesGrid>
-							{images.map((image, index) => (
-								<ImageBox key={`image-${index}`}>
-									<Image src={image} alt={`image-${index}`} />
-									<IconButton onClick={() => removeImage(index)}>
-										<Delete />
-									</IconButton>
-								</ImageBox>
-							))}
-						</ImagesGrid>
-						<ButtonGroup fullWidth>
-							<SubmitButton type='submit' variant='contained'>
-								Зберегти
-							</SubmitButton>
-							<Button type='reset' variant='contained'>
-								Скинути
-							</Button>
-						</ButtonGroup>
-					</FormBox>
-				</form>
-			</FormProvider>
-		</Box>
+							<InputBox>
+								<Typography variant='h6' component='label' htmlFor='developers'>
+									Розробники
+								</Typography>
+								<Autocomplete
+									id='developers'
+									multiple
+									options={Companies}
+									value={itemDevelopers}
+									filterSelectedOptions
+									getOptionLabel={(option) => option.name}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									onChange={(_, data: DataObject[]) => {
+										setItemDevelopers(data);
+									}}
+									renderInput={(params) => (
+										<TextField {...params} placeholder='Розробники' variant='outlined' />
+									)}
+									renderTags={(value, getTagProps) => {
+										return value.map((option, index) => (
+											<Chip
+												{...getTagProps({ index })}
+												key={index}
+												label={<Typography variant='body2'>{option.name}</Typography>}
+											/>
+										));
+									}}
+								/>
+							</InputBox>
+							<InputBox>
+								<Typography variant='h6' component='label' htmlFor='publisher'>
+									Видавець
+								</Typography>
+								<Autocomplete
+									id='publisher'
+									options={Companies}
+									value={itemPublisher}
+									getOptionLabel={(option) => option.name}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									onChange={(_, data: DataObject | null) => {
+										setItemPublisher(data);
+									}}
+									renderInput={(params) => (
+										<TextField {...params} placeholder='Видавці' variant='outlined' />
+									)}
+									renderTags={(value, getTagProps) => {
+										return value.map((option, index) => (
+											<Chip
+												{...getTagProps({ index })}
+												key={index}
+												label={<Typography variant='body2'>{option.name}</Typography>}
+											/>
+										));
+									}}
+								/>
+							</InputBox>
+							<Controller
+								name='hide'
+								control={methods.control}
+								render={({ field }) => (
+									<FormControlLabel
+										control={<Checkbox {...field} id='hide' checked={Boolean(field.value)} />}
+										label='Приховати'
+									/>
+								)}
+							/>
+							<Controller
+								name='discount'
+								control={methods.control}
+								render={({ field }) => (
+									<FormControlLabel
+										control={<Checkbox {...field} id='discount' checked={Boolean(field.value)} />}
+										label='Знижка'
+									/>
+								)}
+							/>
+							{methods.watch("discount") && (
+								<>
+									<InputBox>
+										<Typography variant='h6' component='label' htmlFor='discountSize'>
+											Розмір знижки
+										</Typography>
+										<Controller
+											name='discountSize'
+											control={methods.control}
+											render={({ field, formState: { errors } }) => (
+												<TextField
+													{...field}
+													id='discountSize'
+													placeholder='Розмір знижки'
+													variant='outlined'
+													type='number'
+													error={!!errors.discountSize}
+													helperText={errors.discountSize?.message}
+												/>
+											)}
+										/>
+									</InputBox>
+									<ResponsiveBox colsNum={2}>
+										<InputBox>
+											<Typography variant='h6' component='label' htmlFor='discountFrom'>
+												Дата початку знижки
+											</Typography>
+											<Controller
+												name='discountFrom'
+												control={methods.control}
+												render={({ field, formState: { errors } }) => (
+													<TextField
+														{...field}
+														value={localDiscountFrom?.toISOString().slice(0, 10) ?? ""}
+														onChange={(e) => {
+															const date = new Date(e.target.value);
+															const offset = date.getTimezoneOffset();
+															setLocalDiscountFrom(
+																new Date(date.getTime() - offset * 60 * 1000)
+															);
+															field.onChange(e);
+														}}
+														id='discountFrom'
+														variant='outlined'
+														type='date'
+														error={!!errors.discountFrom}
+														helperText={errors.discountFrom?.message}
+														sx={{ width: "100%" }}
+													/>
+												)}
+											/>
+										</InputBox>
+										<InputBox>
+											<Typography variant='h6' component='label' htmlFor='discountTo'>
+												Дата кінця знижки
+											</Typography>
+											<Controller
+												name='discountTo'
+												control={methods.control}
+												render={({ field, formState: { errors } }) => (
+													<TextField
+														{...field}
+														value={localDiscountTo?.toISOString().slice(0, 10) ?? ""}
+														onChange={(e) => {
+															const date = new Date(e.target.value);
+															const offset = date.getTimezoneOffset();
+															setLocalDiscountTo(
+																new Date(date.getTime() - offset * 60 * 1000)
+															);
+															field.onChange(e);
+														}}
+														id='discountTo'
+														variant='outlined'
+														type='date'
+														error={!!errors.discountTo}
+														helperText={errors.discountTo?.message}
+														sx={{ width: "100%" }}
+													/>
+												)}
+											/>
+										</InputBox>
+									</ResponsiveBox>
+								</>
+							)}
+							<Tooltip title='Форма запису: "назва_характеристики: характеристика;", розділення через ";" із новим рядком'>
+								<InputBox>
+									<Typography variant='h6' component='label' htmlFor='characteristics'>
+										Характеристики *
+									</Typography>
+									<TextField
+										id='characteristics'
+										value={characteristics}
+										placeholder='Характеристики'
+										variant='outlined'
+										multiline
+										rows={4}
+										onChange={(e) => {
+											const data = e.target.value;
+											setCharacteristics(data);
+										}}
+									/>
+								</InputBox>
+							</Tooltip>
+							<ResponsiveBox colsNum={2}>
+								<Box>
+									<ButtonGroup fullWidth>
+										<SubmitButton onClick={uploadMainImage} variant='contained'>
+											Завантажити головне зображення
+										</SubmitButton>
+										<Button onClick={removeMainImage} variant='contained'>
+											Видалити головне зображення
+										</Button>
+									</ButtonGroup>
+									{mainImage && <Image src={mainImage} alt='mainImage' />}
+								</Box>
+								<Box>
+									<ButtonGroup fullWidth>
+										<SubmitButton onClick={uploadCoverImage} variant='contained'>
+											Завантажити обкладинку
+										</SubmitButton>
+										<Button onClick={removeCoverImage} variant='contained'>
+											Видалити обкладинку
+										</Button>
+									</ButtonGroup>
+									{coverImage && <Image src={coverImage} alt='coverImage' />}
+								</Box>
+							</ResponsiveBox>
+							<ButtonGroup fullWidth>
+								<SubmitButton onClick={uploadImages} variant='contained'>
+									Завантажити додаткові зображення
+								</SubmitButton>
+								<Button onClick={removeImages} variant='contained'>
+									Видалити додаткові зображення
+								</Button>
+							</ButtonGroup>
+							<ImagesGrid>
+								{images.map((image, index) => (
+									<ImageBox key={`image-${index}`}>
+										<Image src={image} alt={`image-${index}`} />
+										<IconButton onClick={() => removeImage(index)}>
+											<Delete />
+										</IconButton>
+									</ImageBox>
+								))}
+							</ImagesGrid>
+							<ButtonGroup fullWidth>
+								<SubmitButton type='submit' variant='contained'>
+									Зберегти
+								</SubmitButton>
+								<Button type='reset' variant='contained'>
+									Скинути
+								</Button>
+							</ButtonGroup>
+						</FormBox>
+					</form>
+				</FormProvider>
+			</Box>
+			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+				<Alert severity='success'>
+					<AlertTitle>Успіх</AlertTitle>
+					Товар успішно {item ? "оновлено" : "додано"}!
+				</Alert>
+			</Dialog>
+		</>
 	);
 }

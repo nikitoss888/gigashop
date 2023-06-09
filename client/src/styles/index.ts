@@ -27,42 +27,55 @@ const BaseTheme = {
 	typography: {
 		h1: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		h2: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		h3: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		h4: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		h5: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		h6: {
 			fontFamily: HeadingFont,
+			color: Black,
 		},
 		subtitle1: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		subtitle2: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		body1: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		body2: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		caption: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		button: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 		overline: {
 			fontFamily: BodyFont,
+			color: Black,
 		},
 	},
 };

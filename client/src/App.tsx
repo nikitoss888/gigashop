@@ -15,7 +15,7 @@ function App() {
 
 			if (decoded.exp && decoded.exp < Date.now() / 1000) {
 				LogOut(setUser);
-			} else if (decoded.id && decoded.login && decoded.email && decoded.role) {
+			} else if (decoded.id && decoded.login && decoded.email && decoded.role && decoded.image) {
 				LogIn(setUser, token);
 			}
 		}

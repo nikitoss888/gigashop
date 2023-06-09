@@ -7,7 +7,8 @@ import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
 import { default as ItemsList, Item } from "../mock/Items";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLoaderData } from "react-router-dom";
 
 const Object = yup.object().shape({
 	id: yup.number(),
@@ -73,39 +74,55 @@ const FormBox = styled(Box)`
 
 export default function Items() {
 	document.title = "Товари — gigashop";
+	const { data, totalCount, initPage, initSortBy, initLimit } = useLoaderData() as {
+		data: Item[];
+		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
+	};
 
-	const [sortBy, setSortBy] = useState("releaseDateAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const [sortBy, setSortBy] = useState(initSortBy || "releaseDateAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
 
 	const [items, setItems] = useState(
-		ItemsList.sort((a, b) => SortSwitch(sortBy, a, b))
+		data
+			.sort((a, b) => SortSwitch(sortBy, a, b))
 			.slice((page - 1) * limit, page * limit)
 			.filter((item) => !item.hide)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(ItemsList.length / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getItems = (refresh?: boolean) => {
-		const localPage = refresh ? 1 : page;
+	const getItems = (sortBy: string, limit: number, page: number) => {
 		const items = ItemsList.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((localPage - 1) * limit, localPage * limit)
+			.slice((page - 1) * limit, page * limit)
 			.filter((item) => !item.hide);
 		setItems(items);
-		refresh && setMaxPage(Math.ceil(ItemsList.length / limit) || 1);
+		setMaxPage(Math.ceil(ItemsList.length / limit) || 1);
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getItems(true);
-	}, [sortBy, limit]);
+	const sortByUpdate = (sortBy: string) => {
+		getItems(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
 
-	useEffect(() => {
-		getItems();
-	}, [page]);
+	const limitUpdate = (limit: number) => {
+		getItems(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getItems(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	const onSubmit = (data: any) => {
 		try {
@@ -134,15 +151,15 @@ export default function Items() {
 							items={items}
 							sorting={{
 								value: sortBy,
-								setValue: setSortBy,
+								setValue: sortByUpdate,
 							}}
 							limitation={{
 								value: limit,
-								setValue: setLimit,
+								setValue: limitUpdate,
 							}}
 							pagination={{
 								value: page,
-								setValue: setPage,
+								setValue: pageUpdate,
 								maxValue: maxPage,
 							}}
 							sx={{
@@ -158,3 +175,4 @@ export default function Items() {
 		</Container>
 	);
 }
+export { SortSwitch };

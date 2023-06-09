@@ -1,4 +1,4 @@
-import { ItemComment } from "../../mock/ItemsComments";
+import { ItemRate } from "../../mock/ItemsRates";
 import { Box, Rating } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
@@ -20,7 +20,7 @@ const Avatar = styled("img")`
 `;
 
 type CommentProps = {
-	comment: ItemComment | PublicationComment;
+	comment: ItemRate | PublicationComment;
 };
 export default function Comment({ comment }: CommentProps) {
 	return (
@@ -35,7 +35,7 @@ export default function Comment({ comment }: CommentProps) {
 					justifyContent: "start",
 				}}
 			>
-				<Avatar src={comment.user?.avatar} alt={comment.user?.login} />
+				<Avatar src={comment.user?.image} alt={comment.user?.login} />
 			</Box>
 			<Box
 				sx={{
@@ -58,7 +58,7 @@ export default function Comment({ comment }: CommentProps) {
 				>
 					{comment.user?.firstName} {comment.user?.lastName}
 				</Typography>
-				<Typography variant='body1'>{comment.text}</Typography>
+				<Typography variant='body1'>{comment.content}</Typography>
 				<Box sx={{ display: "flex" }}>
 					<Rating
 						name='comment-rating'

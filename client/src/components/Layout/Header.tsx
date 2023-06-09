@@ -3,13 +3,14 @@ import { type ReactNode, useState } from "react";
 import logo from "../../static/logo.png";
 import { Typography, AppBar, Container, Box, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import LoggedIn from "./LoggedIn";
+import LoggedInMd from "./LoggedInMd";
 import { userState } from "../../store/User";
 import { useRecoilState } from "recoil";
-import LoggedOut from "./LoggedOut";
+// import LoggedOut from "./LoggedOut";
 import MenuIcon from "@mui/icons-material/Menu";
 import HeaderMdNav from "./HeaderMdNav";
 import HeaderXsNav from "./HeaderXsNav";
+import LoggedOut from "./LoggedOut";
 
 const Logo = styled("img")`
 	height: 45px;
@@ -48,7 +49,6 @@ const HeaderComponent = ({ children }: HeaderComponentProps) => (
 type HeaderProps = {
 	isAdminRoute?: boolean;
 };
-
 export default function Header({ isAdminRoute }: HeaderProps) {
 	const [user, _] = useRecoilState(userState);
 	const [expanded, setExpanded] = useState<boolean>(false);
@@ -78,7 +78,7 @@ export default function Header({ isAdminRoute }: HeaderProps) {
 					{title}
 				</Link>
 				<HeaderMdNav isAdminRoute={isAdminRoute} />
-				<Box sx={{ marginLeft: "auto" }}>{user ? <LoggedIn /> : <LoggedOut />}</Box>
+				<Box sx={{ marginLeft: "auto" }}>{user ? <LoggedInMd user={user} /> : <LoggedOut />}</Box>
 			</HeaderBox>
 			<Accordion
 				sx={{

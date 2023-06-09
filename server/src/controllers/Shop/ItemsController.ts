@@ -2,7 +2,8 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
 import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
-import {User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company} from "../../models";
+import { User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company, ItemBought } from "../../models";
+import ItemCart from "../../models/ItemCart";
 
 type parseOutput = {
     name: string | undefined, description: string | undefined, sortBy: string | undefined,
@@ -344,10 +345,11 @@ class ItemsController extends Controller {
             includeGenres, genresIds,
             includeDevelopers, developersIds,
             includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden }
-                = ItemsController.parseData(req.query);
+            includeBought, includeRated, includeHidden
+        } = ItemsController.parseData(req.query);
 
-        const items = await getItems(name, description,
+        const items = await getItems({
+            name, description,
             releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
             amount, amountFrom, amountTo,
@@ -358,7 +360,8 @@ class ItemsController extends Controller {
             includeGenres, genresIds,
             includeDevelopers, developersIds,
             includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden)
+            includeBought, includeRated, includeHidden
+        })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -375,9 +378,11 @@ class ItemsController extends Controller {
             includeDevelopers, includeWishlisted, includeInCart,
             includeBought, includeRated, includeHidden } = ItemsController.parseData(req.query);
 
-        const item = await getItem(id, includePublisher, includeGenres,
+        const item = await getItem({
+            id, includePublisher, includeGenres,
             includeDevelopers, includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden)
+            includeBought, includeRated, includeHidden
+        })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
@@ -633,14 +638,82 @@ class ItemsController extends Controller {
             const user = await User.findByPk(request_user.Id);
             if (!user) return next(ApiError.notFound('Користувача не знайдено'));
 
-            const wishList = await Wishlist.findAll({where: {userId: user.id, itemId: id}});
+            const wishList = await Wishlist.findOne({where: {userId: user.id, itemId: id}});
 
-            if (wishList.length === 0)
+            if (!wishList)
                 return next(ApiError.badRequest('Товару немає в списку бажань'));
 
             const wishListItem = await Wishlist.destroy({where: {userId: user.id, itemId: id}});
-
             return res.json({message: 'Товар успішно видалено зі списку бажань', wishListItem});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async toggleWishList(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {id} = req.query;
+            const request_user = req.user;
+
+            const item = await Item.findByPk(id);
+            if (!item) return next(ApiError.notFound('Товар не знайдено'));
+
+            const user = await User.findByPk(request_user.Id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const wishList = await Wishlist.findOne({where: {userId: user.id, itemId: id}});
+            if (wishList) {
+                await Wishlist.destroy({where: {userId: user.id, itemId: id}});
+                return res.json({message: 'Товар успішно видалено зі списку бажань'});
+            }
+            await Wishlist.create({userId: user.id, itemId: id});
+            return res.json({message: 'Товар успішно додано до списку бажань'});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async toggleCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {id} = req.query;
+            const request_user = req.user;
+
+            const item = await Item.findByPk(id);
+            if (!item) return next(ApiError.notFound('Товар не знайдено'));
+
+            const user = await User.findByPk(request_user.Id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const itemCart = await ItemCart.findOne({where: {userId: user.id, itemId: id}});
+            if (itemCart) {
+                await ItemCart.destroy({where: {userId: user.id, itemId: id}});
+                return res.json({message: 'Товар успішно видалено з кошика'});
+            }
+            await ItemCart.create({userId: user.id, itemId: id});
+            return res.json({message: 'Товар успішно додано до кошика'});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async buyCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const request_user = req.user;
+            const user = await User.findByPk(request_user.Id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const cart = await ItemCart.findAll({where: {userId: user.id}});
+            if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
+
+            const ids = cart.map((item: typeof ItemCart) => item.itemId);
+
+            const bought = await ItemBought.create({userId: user.id, itemId: ids});
+            await ItemCart.destroy({where: {userId: user.id}});
+
+            return res.json({message: 'Товари успішно придбані', bought});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));

@@ -44,7 +44,7 @@ const Company = sequelize_db.define('company', {
 });
 
 const _whereHandler = (name?: string, description?: string,
-                            director?: string, founded?: Date, includeHidden?: boolean) => {
+                            director?: string, founded?: Date, foundedFrom?: Date, foundedTo?: Date, includeHidden?: boolean) => {
     let where: {name?: {}, description?: {}, director?: {}, founded?: {}, hide?: {}} = {};
     if (name) {
         where.name = {
@@ -64,7 +64,21 @@ const _whereHandler = (name?: string, description?: string,
     if (founded) {
         where.founded = founded;
     }
-    where.hide = includeHidden;
+    if (foundedFrom) {
+        where.founded = {
+            ...where.founded,
+            [Op.gte]: foundedFrom
+        }
+    }
+    if (foundedTo) {
+        where.founded = {
+            ...where.founded,
+            [Op.lte]: foundedTo
+        }
+    }
+    if (!includeHidden) {
+        where.hide = false;
+    }
 
     return where;
 }
@@ -91,23 +105,46 @@ const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: 
 
     return include;
 }
-const getCompanies = async (name?: string, description?: string,
-                            director?: string, founded?: Date,
-                            descending = false, limit = 10, page = 0, sortBy = 'id',
-                            includeItemsDeveloped = false,
-                            includeItemsPublished = false, includeHidden = false) => {
-    const where   = _whereHandler(name, description, director, founded, includeHidden);
+type getAllCompaniesParams = {
+    name?: string,
+    description?: string,
+    director?: string,
+    founded?: Date,
+    foundedFrom?: Date,
+    foundedTo?: Date,
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+    includeItemsDeveloped?: boolean,
+    includeItemsPublished?: boolean,
+    includeHidden?: boolean
+}
+const getCompanies = async ({name, description, director, founded, foundedFrom, foundedTo, descending = false,
+                                limit = 10, page = 0, sortBy = 'name', includeItemsDeveloped = true,
+                                includeItemsPublished = true, includeHidden = false}: getAllCompaniesParams) => {
+    const where   = _whereHandler(name, description, director, founded, foundedFrom, foundedTo, includeHidden);
     const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
 
     return Company.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 };
-
-const getCompany = async (id: number, includeItemsDeveloped = true,
-                            includeItemsPublished = true, includeHidden = false) => {
+type getOneCompanyParams = {
+    id: number,
+    includeItemsDeveloped?: boolean,
+    includeItemsPublished?: boolean,
+    includeHidden?: boolean
+}
+const getCompany = async ({id, includeItemsDeveloped = true, includeItemsPublished = true, includeHidden = false}: getOneCompanyParams) => {
+    const where   = {
+        id,
+        hide: {
+            [Op.in]: [includeHidden, false]
+        }
+    }
     const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
-    return Company.findByPk(id, {include});
+    return Company.findOne({where, include});
 }
 
 export default Company;

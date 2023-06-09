@@ -1,3 +1,7 @@
+import { ItemRate } from "./ItemsRates";
+import { Company } from "./Companies";
+import { Genre } from "./Genres";
+
 export type Item = {
 	id: number;
 	name: string;
@@ -14,9 +18,15 @@ export type Item = {
 	coverImage?: string;
 	characteristics?: { [key: string]: string | number };
 	hide: boolean;
-	genres?: number[];
-	developers?: number[];
-	publisher?: number;
+	createdAt: Date;
+	deletedAt?: Date;
+	genresIds?: number[];
+	developersIds?: number[];
+	publisherId?: number;
+	comments?: ItemRate[];
+	genres?: Genre[];
+	developers?: Company[];
+	publisher?: Company;
 };
 
 const Items: Item[] = [
@@ -34,9 +44,9 @@ const Items: Item[] = [
 		coverImage: "https://images5.alphacoders.com/927/thumb-1920-927025.png",
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
-		genres: [1, 2, 3],
-		developers: [1, 2],
-		publisher: 1,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		characteristics: {
 			Платформа: "Steam",
 			"Мінімальні вимоги":
@@ -47,6 +57,7 @@ const Items: Item[] = [
 		amount: 123,
 		discount: false,
 		hide: false,
+		createdAt: new Date(),
 	},
 	{
 		id: 2,
@@ -55,13 +66,17 @@ const Items: Item[] = [
 		releaseDate: new Date(2000, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg?t=1632933588",
 		images: [
-			"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg?t=1632933588",
-			"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg?t=1632933588",
-			"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg?t=1632933588",
+			"https://i.redd.it/6c4pjx2vw8371.jpg",
+			"https://images.pushsquare.com/13be55ee96f03/red-dead-redemption-2-how-to-quickly-open-the-map-guide-1.large.jpg",
+			"https://vrscout.com/wp-content/uploads/2021/05/RDR2.jpeg",
 		],
+		coverImage: "https://images.hdqwalls.com/wallpapers/red-dead-redemption-2-mission-4k-lw.jpg",
 		description:
 			"Red Dead Redemption 2 — комп'ютерна гра в жанрі action-adventure з відкритим світом, розроблена Rockstar Studios.",
 		amount: 0,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 2,
 		discount: true,
 		discountSize: 10,
 		discountFrom: new Date(2000, 1, 1),
@@ -74,11 +89,15 @@ const Items: Item[] = [
 			"Рекомендовані вимоги":
 				"Intel Core i7-4790 / AMD Ryzen 3 3200G, 12 GB RAM, NVIDIA GeForce GTX 1060 / AMD Radeon R9 Fury, 70 GB HDD, Windows 10 64-bit",
 		},
+		createdAt: new Date(),
 	},
 	{
 		id: 3,
 		name: "Grand Theft Auto V",
 		price: 3500,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 2,
 		releaseDate: new Date(),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -89,6 +108,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: false,
+		createdAt: new Date(),
 		description:
 			"Grand Theft Auto V — мультиплатформна відеогра в жанрі action-adventure з відкритим світом, розроблена Rockstar North і видана Rockstar Games.",
 	},
@@ -96,6 +116,9 @@ const Items: Item[] = [
 		id: 4,
 		name: "The Witcher 3: Wild Hunt",
 		price: 4500,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		releaseDate: new Date(),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -106,6 +129,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: false,
+		createdAt: new Date(),
 		description:
 			"The Witcher 3: Wild Hunt — комп'ютерна гра в жанрі action/RPG, розроблена польською компанією CD Projekt RED.",
 	},
@@ -113,6 +137,9 @@ const Items: Item[] = [
 		id: 5,
 		name: "Cyberpunk 2077",
 		price: 1000,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		releaseDate: new Date(),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -123,6 +150,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: false,
+		createdAt: new Date(),
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 	},
@@ -130,6 +158,9 @@ const Items: Item[] = [
 		id: 6,
 		name: "Cyberpunk 2078",
 		price: 2000,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		releaseDate: new Date(2010, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -140,6 +171,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: true,
+		createdAt: new Date(),
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 	},
@@ -147,6 +179,9 @@ const Items: Item[] = [
 		id: 7,
 		name: "Cyberpunk 2079",
 		price: 3000,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		releaseDate: new Date(2010, 1, 2),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -157,6 +192,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: false,
+		createdAt: new Date(),
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 	},
@@ -164,6 +200,9 @@ const Items: Item[] = [
 		id: 8,
 		name: "Cyberpunk 2080",
 		price: 4000,
+		genresIds: [1, 2, 3],
+		developersIds: [1, 2],
+		publisherId: 1,
 		releaseDate: new Date(2010, 1, 3),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
@@ -174,6 +213,7 @@ const Items: Item[] = [
 		discount: false,
 		amount: 123,
 		hide: false,
+		createdAt: new Date(),
 		description:
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 	},

@@ -39,7 +39,9 @@ const _whereHandler = (includeHidden: boolean, name?: string, description?: stri
             [Op.iLike]: `%${description}%`
         }
     }
-    where.hide = includeHidden;
+    if (!includeHidden) {
+        where.hide = false;
+    }
 
     return where;
 }
@@ -58,9 +60,17 @@ const _includeHandler = (includeItems: boolean, includeHidden: boolean) => {
 
     return include;
 }
-const getGenres = async (name?: string, description?: string,
-                         descending = false, limit = 10, page = 0, sortBy = 'id',
-                         includeItems = false, includeHidden = false) => {
+type getAllGenresParams = {
+    name?: string,
+    description?: string,
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+    includeItems?: boolean,
+    includeHidden?: boolean
+}
+const getGenres = async ({name, description, descending = false, limit = 10, page = 0, sortBy = 'name', includeItems = true, includeHidden = false}: getAllGenresParams) => {
     const where   = _whereHandler(includeHidden, name, description);
     const include = _includeHandler(includeItems, includeHidden);
 
@@ -68,9 +78,20 @@ const getGenres = async (name?: string, description?: string,
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
 }
-const getGenre = async (id: number, includeItems = true, includeHidden = false) => {
+type getOneGenreParams = {
+    id: number,
+    includeItems?: boolean,
+    includeHidden?: boolean
+}
+const getGenre = async ({id, includeItems = true, includeHidden = false}: getOneGenreParams) => {
+    const where   = {
+        id,
+        hide: {
+            [Op.in]: [includeHidden, false]
+        }
+    }
     const include = _includeHandler(includeItems, includeHidden);
-    return Genre.findByPk(id, {include});
+    return Genre.findOne(id, {where, include});
 }
 
 export default Genre;

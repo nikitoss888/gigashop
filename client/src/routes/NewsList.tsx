@@ -8,9 +8,9 @@ import Filters from "../components/NewsList/Filters";
 import Publications, { Publication } from "../mock/Publications";
 import PublicationsList from "../components/NewsList/PublicationsList";
 import Users from "../mock/Users";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Typography from "@mui/material/Typography";
-import { Link } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 
 const User = yup.object().shape({
 	id: yup.number().required(),
@@ -58,18 +58,25 @@ const FormBox = styled(Box)`
 export default function NewsList() {
 	document.title = "Новини - gigashop";
 
-	const [sortBy, setSortBy] = useState("createdAtAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
+		data: Publication[];
+		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
+	};
+	console.log({ data, totalCount });
+
+	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
 
 	const [news, setNews] = useState(
-		Publications.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((page - 1) * limit, page * limit)
-			.filter((item) => !item.hide && !item.violation)
+		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
 	);
 	news.map((item) => {
 		const user = Users.find((user) => user.id === item.userId);
@@ -77,13 +84,10 @@ export default function NewsList() {
 			item.user = user;
 		}
 	});
-	const [maxPage, setMaxPage] = useState(Math.ceil(Publications.length / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getNews = (refresh?: boolean) => {
-		const localPage = refresh ? 1 : page;
-		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((localPage - 1) * limit, localPage * limit)
-			.filter((item) => !item.hide);
+	const getNews = (sortBy: string, limit: number, page: number) => {
+		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
 		news.map((item) => {
 			const user = Users.find((user) => user.id === item.userId);
 			if (user) {
@@ -91,17 +95,26 @@ export default function NewsList() {
 			}
 		});
 		setNews(news);
-		refresh && setMaxPage(Math.ceil(Publications.length / limit) || 1);
+		setMaxPage(Math.ceil(totalCount / limit) || 1);
 	};
 
-	useEffect(() => {
-		setPage(1);
-		getNews(true);
-	}, [sortBy, limit]);
+	const sortByUpdate = (sortBy: string) => {
+		getNews(sortBy, limit, page);
+		setSortBy(sortBy);
+	};
 
-	useEffect(() => {
-		getNews();
-	}, [page]);
+	const limitUpdate = (limit: number) => {
+		getNews(sortBy, limit, page);
+		setLimit(limit);
+	};
+
+	const pageUpdate = (page: number) => {
+		let localPage = page;
+		if (page < 1) localPage = 1;
+		if (page > maxPage) localPage = maxPage;
+		getNews(sortBy, limit, localPage);
+		setPage(localPage);
+	};
 
 	const onSubmit = (data: any) => {
 		try {
@@ -152,15 +165,15 @@ export default function NewsList() {
 							items={news}
 							sorting={{
 								value: sortBy,
-								setValue: setSortBy,
+								setValue: sortByUpdate,
 							}}
 							limitation={{
 								value: limit,
-								setValue: setLimit,
+								setValue: limitUpdate,
 							}}
 							pagination={{
 								value: page,
-								setValue: setPage,
+								setValue: pageUpdate,
 								maxValue: maxPage,
 							}}
 						/>
@@ -170,3 +183,4 @@ export default function NewsList() {
 		</Container>
 	);
 }
+export { SortSwitch };

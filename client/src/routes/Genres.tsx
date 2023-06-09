@@ -3,7 +3,8 @@ import { Box, Container } from "@mui/material";
 import SearchBar from "../components/SearchPages/SearchBar";
 import styled from "@mui/material/styles/styled";
 import AlphabetGrid from "../components/Genres/AlphabetGrid";
-import { default as GenresList } from "../mock/Genres";
+import { Genre } from "../mock/Genres";
+import { useLoaderData } from "react-router-dom";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -16,7 +17,11 @@ const BoxStyle = styled(Box)`
 export default function Genres() {
 	const methods = useForm();
 
-	const genres = GenresList.sort((a, b) => a.name.localeCompare(b.name));
+	const { data } = useLoaderData() as {
+		data: Genre[];
+	};
+
+	const genres = data.sort((a, b) => a.name.localeCompare(b.name));
 	document.title = `Жанри — gigashop`;
 
 	const onSubmit = (data: any) => {

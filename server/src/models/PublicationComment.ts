@@ -32,10 +32,17 @@ const PublicationComment = sequelize_db.define('publication_comment', {
         allowNull: true
     },
 });
-const getPublicationComments = async (publicationId?: number, content?: string,
-                                      rate?: number, rateFrom?: number, rateTo?: number,
-                                      hide = false, violation = false,
-                                      violationReason?: string) => {
+type getAllPublicationCommentsParams = {
+    publicationId?: number,
+    content?: string,
+    rate?: number,
+    rateFrom?: number,
+    rateTo?: number,
+    hide?: boolean,
+    violation?: boolean,
+    violationReason?: string
+}
+const getPublicationComments = async ({publicationId, content, rate, rateFrom, rateTo, hide, violation, violationReason}: getAllPublicationCommentsParams) => {
     let where: {publicationId?: {}, content?: {}, rate?: {}, hide?: {},
                 violation?: {}, violationReason?: {}} = {};
 

@@ -7,6 +7,9 @@ const SubmitButton = styled(Button)`
 	&:hover {
 		background-color: ${(props) => props.theme.colors.accentLight};
 	}
+	&:disabled {
+		background-color: ${(props) => props.theme.colors.accentLighter};
+	}
 ` as typeof Button;
 
 export default SubmitButton;

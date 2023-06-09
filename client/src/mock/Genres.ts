@@ -1,8 +1,13 @@
+import { Item } from "./Items";
+
 export type Genre = {
 	id: number;
 	name: string;
 	description?: string;
-	items: number[];
+	items?: Item[];
+	hide: boolean;
+	createdAt: Date;
+	deletedAt?: Date;
 };
 
 const Genres: Genre[] = [
@@ -10,164 +15,196 @@ const Genres: Genre[] = [
 		id: 1,
 		name: "Action",
 		description: "Action games usually involve elements of physical conflict.",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 2,
 		name: "RPG",
 		description:
 			"Role-playing games are a type of video game where the player controls the actions of a character (and/or several party members) immersed in some well-defined world.",
-		items: [1, 4],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 3,
 		name: "Adventure",
-		items: [2, 3],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 4,
 		name: "Open World",
-		items: [2, 3, 4],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 5,
 		name: "Shooter",
-		items: [1],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 6,
 		name: "Third Person",
-		items: [1, 2, 3, 4],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 7,
 		name: "First Person",
-		items: [1],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 8,
 		name: "Singleplayer",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 9,
 		name: "Aaab",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: true,
 	},
 	{
 		id: 10,
 		name: "Aaac",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 11,
 		name: "Aaad",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 12,
 		name: "Aaae",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 13,
 		name: "Abaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 14,
 		name: "Abac",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 15,
 		name: "Baaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 16,
 		name: "Baac",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 17,
 		name: "Bbaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 18,
 		name: "Caaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 19,
 		name: "Caab",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 20,
 		name: "Caba",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 21,
 		name: "Ccaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 22,
 		name: "Daaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 23,
 		name: "Daba",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 24,
 		name: "Daca",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 25,
 		name: "Ddaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 26,
 		name: "Ddab",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 27,
 		name: "Oooo",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 28,
 		name: "Ooop",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 29,
 		name: "Opaa",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 30,
 		name: "Opoo",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 31,
 		name: "Open Worlc",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 	{
 		id: 32,
 		name: "Open Worle",
-		items: [1, 2, 3, 4, 5],
+		createdAt: new Date(),
+		hide: false,
 	},
 ];
 

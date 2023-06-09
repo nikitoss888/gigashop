@@ -3,7 +3,6 @@ import ListItem from "./ListItem";
 import { Publication } from "../../../mock/Publications";
 import NewsTopBox from "../../NewsList/NewsTopBox";
 import Pagination from "../../Common/Pagination";
-import { ReactNode } from "react";
 
 type ListProps = {
 	news?: Publication[];
@@ -20,7 +19,6 @@ type ListProps = {
 		setValue: (page: number) => void;
 		maxValue: number;
 	};
-	children?: ReactNode;
 };
 export default function List({ news, sorting, limitation, pagination }: ListProps) {
 	return (

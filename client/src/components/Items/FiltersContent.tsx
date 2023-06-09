@@ -1,16 +1,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import MainBox from "../SearchPages/MainBox";
 import Typography from "@mui/material/Typography";
-import {
-	Autocomplete,
-	Box,
-	ButtonGroup,
-	Checkbox,
-	Chip,
-	FormControlLabel,
-	FormHelperText,
-	TextField,
-} from "@mui/material";
+import { Autocomplete, Box, ButtonGroup, Chip, FormControlLabel, FormHelperText, TextField } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import Button from "@mui/material/Button";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -18,17 +9,11 @@ import styled from "@mui/material/styles/styled";
 import { default as MockGenres, Genre } from "../../mock/Genres";
 import { default as MockCompanies, Company } from "../../mock/Companies";
 import SubmitButton from "../Common/SubmitButton";
+import Checkbox from "../Form/Checkbox";
 
 const ChipStyle = styled(Chip)`
 	background-color: ${(props) => props.theme.colors.accent};
 	color: ${(props) => props.theme.colors.secondary};
-`;
-
-const CheckboxStyle = styled(Checkbox)`
-	color: ${(props) => props.theme.colors.secondary};
-	&.Mui-checked {
-		color: ${(props) => props.theme.colors.secondary};
-	}
 `;
 
 const FormHelperTextStyle = styled(FormHelperText)`
@@ -260,7 +245,7 @@ export default function FiltersContent() {
 				render={({ field }) => (
 					<FormControlLabel
 						control={
-							<CheckboxStyle
+							<Checkbox
 								{...field}
 								checked={field.value || false}
 								onChange={(e) => {

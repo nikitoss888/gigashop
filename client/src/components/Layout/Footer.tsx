@@ -31,7 +31,9 @@ const FooterComponent = ({ children }: FooterComponentProps) => (
 export default function Footer() {
 	return (
 		<FooterComponent>
-			<p>Footer</p>
+			<Box>
+				© 2023-{new Date().getFullYear()} {process.env.REACT_APP_PROJECT_NAME}
+			</Box>
 		</FooterComponent>
 	);
 }

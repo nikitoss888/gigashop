@@ -1,11 +1,11 @@
-import { ItemComment } from "../../mock/ItemsComments";
+import { ItemRate } from "../../mock/ItemsRates";
 import { PublicationComment } from "../../mock/PublicationsComments";
 import DataGroup from "./DataGroup";
 import { Typography, Rating } from "@mui/material";
 import { StarRate } from "@mui/icons-material";
 
 type RateProps = {
-	comments: (ItemComment | PublicationComment)[];
+	comments: (ItemRate | PublicationComment)[];
 };
 export default function ItemRating({ comments }: RateProps) {
 	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;

@@ -6,4 +6,10 @@ export default styled(Carousel)`
 	background-color: ${(props) => props.theme.colors.primary};
 	border-radius: 5px;
 	padding-bottom: 20px;
+	div:has(img) {
+		display: flex;
+		width: 100%;
+		align-items: start;
+		justify-content: center;
+	}
 `;
