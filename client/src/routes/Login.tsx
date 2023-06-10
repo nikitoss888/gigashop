@@ -7,6 +7,10 @@ import Button from "@mui/material/Button";
 import styled from "@mui/material/styles/styled";
 import SubmitButton from "../components/Common/SubmitButton";
 import { LogInRequest } from "../http/User";
+import { useRecoilState } from "recoil";
+import { LogIn, userState } from "../store/User";
+import { useNavigate } from "react-router-dom";
+import ClientError from "../ClientError";
 
 const schema = yup.object().shape({
 	login: yup
@@ -40,13 +44,34 @@ const InputBoxStyle = styled(Box)`
 `;
 
 export default function Login() {
+	const [user, setUser] = useRecoilState(userState);
+	const navigate = useNavigate();
+
+	if (user) {
+		navigate("/");
+	}
+
 	const methods = useForm({
 		resolver: yupResolver(schema),
 	});
 
 	const onSubmit = async (data: any) => {
 		const result = await LogInRequest(data.login, data.password);
-		console.log(result);
+		if (result && result.data.token) {
+			try {
+				const logInResult = LogIn(setUser, result.data.token);
+				if (!logInResult) throw new ClientError(500, "Помилка авторизації");
+				navigate(-1);
+			} catch (e: unknown) {
+				if (e instanceof Error) {
+					throw new ClientError(500, e.message);
+				}
+				if (e instanceof ClientError) {
+					throw e;
+				}
+				console.error(e);
+			}
+		}
 	};
 
 	const onReset = () => {

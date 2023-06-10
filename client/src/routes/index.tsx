@@ -46,6 +46,8 @@ import Profile from "./Profile";
 import ItemCart from "../mock/ItemCart";
 import AdminStatistics from "./Admin/AdminStatistics";
 import CartSuccess from "./CartSuccess";
+import { ProfileRequest } from "../http/User";
+import Cookies from "js-cookie";
 
 const SearchItem = (params: Params<string>, allComments?: boolean) => {
 	try {
@@ -160,7 +162,20 @@ const SearchCompany = (params: Params<string>, admin?: boolean) => {
 	}
 };
 
-const SearchProfile = () => {
+const SearchProfile = async () => {
+	const token = Cookies.get("token");
+	if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
+
+	try {
+		const result = await ProfileRequest(token);
+		if (result) console.log(result);
+	} catch (e) {
+		if (e instanceof ClientError) {
+			if (e.status === 401) return { error: new ClientError(401, "Необхідно авторизуватися") };
+			if (e.status === 403) return { error: new ClientError(403, "Необхідно авторизуватися") };
+		}
+		if (e instanceof Error) throw new ClientError(500, "Помилка сервера");
+	}
 	const user = Users[0];
 
 	const itemCarts = ItemCart.filter((item) => item.userId === user.id);
@@ -172,8 +187,14 @@ const SearchProfile = () => {
 	const publications = PublicationsList.filter((publication) => publication.userId === user.id);
 
 	const publicationsComments = PublicationsCommentsList.filter((comment) => comment.userId === user.id);
+	publicationsComments.forEach((comment) => {
+		comment.user = user;
+	});
 
 	const itemsRates = ItemsRatesList.filter((rate) => rate.userId === user.id);
+	itemsRates.forEach((rate) => {
+		rate.user = user;
+	});
 
 	return { user, cart, wishlist, publications, publicationsComments, itemsRates };
 };

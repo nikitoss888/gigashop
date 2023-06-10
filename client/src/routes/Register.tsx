@@ -7,7 +7,11 @@ import { Controller, FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import SubmitButton from "../components/Common/SubmitButton";
-// import { RegisterRequest } from "../http/User";
+import { RegisterRequest } from "../http/User";
+import { LogIn, userState } from "../store/User";
+import { useRecoilState } from "recoil";
+import { useNavigate } from "react-router-dom";
+import ClientError from "../ClientError";
 
 const schema = yup.object().shape({
 	login: yup
@@ -63,6 +67,13 @@ const ImagePreview = styled("img")`
 `;
 
 export default function Register() {
+	const [user, setUser] = useRecoilState(userState);
+	const navigate = useNavigate();
+
+	if (user) {
+		navigate("/");
+	}
+
 	const [image, setImage] = useState<string | null>(null);
 	const { widgetRef } = WidgetSingle("dnqlgypji", "gigashop_users", setImage);
 
@@ -81,15 +92,29 @@ export default function Register() {
 	const onSubmit = async (data: any) => {
 		const localImage = image || (process.env.REACT_APP_DEFAULT_USER_IMAGE as string);
 		console.log({ ...data, image: localImage });
-		// const result = await RegisterRequest({
-		// 	login: data.login,
-		// 	email: data.email,
-		// 	password: data.password,
-		// 	firstName: data.firstName,
-		// 	lastName: data.lastName,
-		// 	image: localImage,
-		// });
-		// console.log(result);
+		const result = await RegisterRequest({
+			login: data.login,
+			email: data.email,
+			password: data.password,
+			firstName: data.firstName,
+			lastName: data.lastName,
+			image: localImage,
+		});
+		if (result && result.data.token) {
+			try {
+				const logInResult = LogIn(setUser, result.data.token);
+				if (!logInResult) throw new ClientError(500, "Помилка авторизації");
+				navigate(-1);
+			} catch (e) {
+				if (e instanceof Error) {
+					throw new ClientError(500, e.message);
+				}
+				if (e instanceof ClientError) {
+					throw e;
+				}
+				console.error({ error: e });
+			}
+		}
 	};
 
 	const onReset = () => {

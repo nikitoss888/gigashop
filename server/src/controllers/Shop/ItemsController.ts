@@ -696,7 +696,7 @@ class ItemsController extends Controller {
                 return res.json({message: 'Товар успішно видалено з кошика'});
             }
             await ItemCart.create({userId: user.id, itemId: id});
-            return res.json({message: 'Товар успішно додано до кошика'});
+            return res.json({message: 'Товар успішно додано до кошика', ok: true});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));

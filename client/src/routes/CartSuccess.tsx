@@ -1,11 +1,17 @@
 import { Container, Typography } from "@mui/material";
 import { User } from "../mock/Users";
 import { useLoaderData } from "react-router-dom";
+import { ItemCart } from "../mock/ItemCart";
+import ClientError from "../ClientError";
 
 export default function CartSuccess() {
-	const { user } = useLoaderData() as {
+	const { user, cart } = useLoaderData() as {
 		user: User;
+		cart?: ItemCart[];
 	};
+	if (cart && cart.length > 0) {
+		throw new ClientError(404, "Ваш кошик не пустий");
+	}
 
 	return (
 		<Container sx={{ marginTop: "15px", height: "100%" }}>

@@ -4,7 +4,7 @@ import styled from "@mui/material/styles/styled";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { User } from "../../store/User";
+import { UserAtom } from "../../store/User";
 // import { LogOut } from "../../store/User";
 
 const Avatar = styled("img")`
@@ -13,7 +13,7 @@ const Avatar = styled("img")`
 	border-radius: 50%;
 `;
 type LoggedInMdProps = {
-	user: User;
+	user: UserAtom;
 };
 export default function LoggedInMd({ user }: LoggedInMdProps) {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

@@ -300,6 +300,9 @@ class UserController extends Controller {
         try {
             const { transactionId } = req.params;
 
+            const alreadyBought = await ItemBought.findOne({ where: { transactionId }});
+            if (alreadyBought) return next(ApiError.badRequest('Товари вже придбані'));
+
             const cart = await ItemCart.findAll({ where: { transactionId }});
             if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
 
@@ -309,7 +312,7 @@ class UserController extends Controller {
             const bought = await ItemBought.create({ userId, itemId: ids });
             await ItemCart.destroy({where: { transactionId }});
 
-            return res.json({message: 'Товари успішно придбані', bought});
+            return res.json({message: 'Товари успішно придбані', bought, ok: true});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));

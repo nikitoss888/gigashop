@@ -3,7 +3,7 @@ import { Link as RouterLink } from "react-router-dom";
 import Link from "./Link";
 import styled from "@mui/material/styles/styled";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { User } from "../../store/User";
+import { UserAtom } from "../../store/User";
 import LoggedInXs from "./LoggedInXs";
 // import LoggedOut from "./LoggedOut";
 import AccordionDetailsStyle from "../Common/AccordionDetailsStyle";
@@ -18,7 +18,7 @@ const Nav = styled("nav")`
 
 type HeaderXsNavProps = {
 	isAdminRoute?: boolean;
-	user?: User;
+	user?: UserAtom;
 };
 export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 	return (
@@ -45,6 +45,7 @@ export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 									margin: "0 !important",
 								},
 								minHeight: "unset",
+								color: "secondary.main",
 							}}
 						>
 							<Typography variant='h6'>Магазин</Typography>

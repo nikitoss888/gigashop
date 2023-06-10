@@ -2,7 +2,7 @@ import { atom, selector, SetterOrUpdater } from "recoil";
 import Cookies from "js-cookie";
 import jwt_decode, { JwtPayload } from "jwt-decode";
 
-export type User = {
+export type UserAtom = {
 	id: string | number;
 	login: string;
 	email: string;
@@ -10,7 +10,7 @@ export type User = {
 	image: string;
 };
 
-export const userState = atom<User | undefined>({
+export const userState = atom<UserAtom | undefined>({
 	key: "userState",
 	default: undefined,
 });
@@ -24,13 +24,13 @@ export const getUser = selector({
 		const token = Cookies.get("token");
 		if (!token) return undefined;
 
-		const decoded = jwt_decode<JwtPayload & User>(token);
+		const decoded = jwt_decode<JwtPayload & UserAtom>(token);
 		if (decoded.exp && decoded.exp < Date.now() / 1000) {
 			Cookies.remove("token");
 			return undefined;
 		}
 
-		const data: User = {
+		const data: UserAtom = {
 			id: decoded.id,
 			login: decoded.login,
 			email: decoded.email,
@@ -42,17 +42,17 @@ export const getUser = selector({
 	},
 });
 
-export const LogOut = (setUser: SetterOrUpdater<User | undefined>) => {
+export const LogOut = (setUser: SetterOrUpdater<UserAtom | undefined>) => {
 	Cookies.remove("token");
 	setUser(undefined);
 
 	return true;
 };
 
-export const LogIn = (setUser: SetterOrUpdater<User | undefined>, token?: string) => {
+export const LogIn = (setUser: SetterOrUpdater<UserAtom | undefined>, token?: string) => {
 	if (!token) throw new Error("No token provided");
 
-	const decoded = jwt_decode<JwtPayload & User>(token);
+	const decoded = jwt_decode<JwtPayload & UserAtom>(token);
 	if (decoded.exp && decoded.exp < Date.now() / 1000) throw new Error("Token expired");
 
 	Cookies.set("token", token);

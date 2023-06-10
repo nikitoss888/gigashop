@@ -4,7 +4,7 @@ import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { Link as RouterLink } from "react-router-dom";
 import AccordionDetailsStyle from "../Common/AccordionDetailsStyle";
-import { User } from "../../store/User";
+import { UserAtom } from "../../store/User";
 
 const Avatar = styled("img")`
 	width: 45px;
@@ -12,7 +12,7 @@ const Avatar = styled("img")`
 	border-radius: 50%;
 `;
 type LoggedInXsProps = {
-	user: User;
+	user: UserAtom;
 };
 export default function LoggedInXs({ user }: LoggedInXsProps) {
 	return (
@@ -44,7 +44,9 @@ export default function LoggedInXs({ user }: LoggedInXsProps) {
 					}}
 				>
 					<Avatar src={user.image} alt={user.login} />
-					<Typography variant='h6'>{user.login}</Typography>
+					<Typography variant='h6' color='secondary'>
+						{user.login}
+					</Typography>
 				</Box>
 			</AccordionSummary>
 			<AccordionDetailsStyle>

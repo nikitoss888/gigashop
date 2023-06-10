@@ -12,6 +12,7 @@ import { Item } from "../mock/Items";
 import { Publication } from "../mock/Publications";
 import { ItemRate } from "../mock/ItemsRates";
 import { PublicationComment } from "../mock/PublicationsComments";
+import ClientError from "../ClientError";
 function a11yProps(index: number) {
 	return {
 		id: `profile-tab-${index}`,
@@ -26,13 +27,8 @@ export default function Profile() {
 		publications: Publication[];
 		publicationsComments: PublicationComment[];
 		itemsRates: ItemRate[];
+		error?: ClientError;
 	};
-	user.publicationsComments?.forEach((comment) => {
-		comment.user = user;
-	});
-	user.itemsRates?.forEach((rate) => {
-		rate.user = user;
-	});
 
 	document.title = `Профіль користувача ${user.login} — gigashop`;
 
