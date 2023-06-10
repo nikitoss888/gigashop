@@ -6,10 +6,10 @@ services:
       context: ./client
       target: production
     container_name: client
-    volumes:
-      - ./static:/usr/src/app/static
     ports:
       - 3000:3000
+    environment:
+      REACT_APP_NGROK_SERVER_URL: http://localhost:5000
     depends_on:
       - server
 
@@ -21,7 +21,6 @@ services:
     volumes:
       - ./server:/usr/src/app
       - /usr/src/app/node_modules
-      - ./static:/usr/src/app/static
     ports:
       - 5000:5000
     environment:
@@ -33,6 +32,8 @@ services:
       CONNECT_TIMEOUT: 5000
       CONNECT_RETRIES: 10
       CLOUDINARY_SECRET: dxCEJghbMzdX0gtVpZUqn43eEOU
+      LIQPAY_TEST_PUBLIC_KEY: sandbox_i27206268381
+      LIQPAY_TEST_PRIVATE_KEY: sandbox_3DM1ZMsYJPj9NMgSa73gsG9HEN88pvk14APy9hfu
     depends_on:
       - database
 

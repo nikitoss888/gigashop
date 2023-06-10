@@ -48,7 +48,15 @@ export default function CompaniesGrid({ companies, sx, sorting, limitation, pagi
 						<MenuItem value={"foundedDesc"}>Датою заснування (за спаданням)</MenuItem>
 					</Select>
 				</FormControl>
-				<Pagination data={pagination} />
+				<Pagination
+					data={pagination}
+					sx={{
+						display: {
+							xs: "none",
+							md: "flex",
+						},
+					}}
+				/>
 				<FormControl>
 					<InputLabel id='limit-label'>Показати</InputLabel>
 					<Select
@@ -67,6 +75,15 @@ export default function CompaniesGrid({ companies, sx, sorting, limitation, pagi
 						<MenuItem value={48}>48</MenuItem>
 					</Select>
 				</FormControl>
+				<Pagination
+					data={pagination}
+					sx={{
+						display: {
+							xs: "flex",
+							md: "none",
+						},
+					}}
+				/>
 			</TopBox>
 			<Grid sx={sx}>
 				{companies.map((company) => (

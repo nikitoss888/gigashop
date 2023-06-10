@@ -14,7 +14,7 @@ export default function CompanyCard({ company: { id, name, description, image, f
 			<Link to={`/shop/companies/${id}`} onClick={(e) => e.stopPropagation()}>
 				<Logo image={image} alt={name} />
 				<Content sx={{ gap: { xs: 0, sm: "15px" } }}>
-					<Typography gutterBottom variant='h6'>
+					<Typography gutterBottom variant='h6' color='secondary'>
 						{name}
 					</Typography>
 					<Typography

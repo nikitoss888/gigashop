@@ -73,10 +73,15 @@ type getAllGenresParams = {
 const getGenres = async ({name, description, descending = false, limit = 10, page = 0, sortBy = 'name', includeItems = true, includeHidden = false}: getAllGenresParams) => {
     const where   = _whereHandler(includeHidden, name, description);
     const include = _includeHandler(includeItems, includeHidden);
-
-    return Genre.findAll({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
+    const totalCount = await Genre.count({ where: includeHidden ? {} : { hide: false } } );
+    const genres = Genre.findAll({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include
     });
+
+    return {
+        genres,
+        totalCount,
+    };
 }
 type getOneGenreParams = {
     id: number,

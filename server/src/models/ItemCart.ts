@@ -3,6 +3,7 @@ import {DataTypes} from 'sequelize';
 
 const ItemCart = sequelize_db.define('item_favorite', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    transactionId: {type: DataTypes.STRING, allowNull: true},
 });
 const getCarts = async (userId?: number, itemId?: number) => {
     let where: {userId?: {}, itemId?: {}} = {};

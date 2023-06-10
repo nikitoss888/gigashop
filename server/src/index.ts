@@ -23,7 +23,6 @@ declare global {
 const app: Express = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('../static'));
 app.use('/api', routes);
 
 // last middleware!

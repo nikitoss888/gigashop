@@ -8,6 +8,10 @@ import ItemsList from "../components/Profile/ItemsList";
 import PublicationsList from "../components/Profile/PublicationsList";
 import ItemsRatesList from "../components/Profile/ItemsRatesList";
 import PublicationsCommentsList from "../components/Profile/PublicationsCommentsList";
+import { Item } from "../mock/Items";
+import { Publication } from "../mock/Publications";
+import { ItemRate } from "../mock/ItemsRates";
+import { PublicationComment } from "../mock/PublicationsComments";
 function a11yProps(index: number) {
 	return {
 		id: `profile-tab-${index}`,
@@ -16,8 +20,12 @@ function a11yProps(index: number) {
 }
 
 export default function Profile() {
-	const { user } = useLoaderData() as {
+	const { user, wishlist, publications, publicationsComments, itemsRates } = useLoaderData() as {
 		user: User;
+		wishlist: Item[];
+		publications: Publication[];
+		publicationsComments: PublicationComment[];
+		itemsRates: ItemRate[];
 	};
 	user.publicationsComments?.forEach((comment) => {
 		comment.user = user;
@@ -106,29 +114,29 @@ export default function Profile() {
 					</Tabs>
 				</Box>
 				<TabPanel index={0} value={tab}>
-					{user.wishlist && user.wishlist.length > 0 ? (
-						<ItemsList items={user.wishlist} />
+					{wishlist && wishlist.length > 0 ? (
+						<ItemsList items={wishlist} />
 					) : (
 						<Typography variant='h5'>Список бажань порожній</Typography>
 					)}
 				</TabPanel>
 				<TabPanel index={1} value={tab}>
-					{user.publications && user.publications.length > 0 ? (
-						<PublicationsList publications={user.publications} />
+					{publications && publications.length > 0 ? (
+						<PublicationsList publications={publications} />
 					) : (
 						<Typography variant='h5'>Публікації відсутні</Typography>
 					)}
 				</TabPanel>
 				<TabPanel index={2} value={tab}>
-					{user.publicationsComments && user.publicationsComments.length > 0 ? (
-						<PublicationsCommentsList comments={user.publicationsComments} />
+					{publicationsComments && publicationsComments.length > 0 ? (
+						<PublicationsCommentsList comments={publicationsComments} />
 					) : (
 						<Typography variant='h5'>Коментарі до публікацій відсутні</Typography>
 					)}
 				</TabPanel>
 				<TabPanel index={3} value={tab}>
-					{user.itemsRates && user.itemsRates.length > 0 ? (
-						<ItemsRatesList rates={user.itemsRates} />
+					{itemsRates && itemsRates.length > 0 ? (
+						<ItemsRatesList rates={itemsRates} />
 					) : (
 						<Typography variant='h5'>Відгуки до товарів відсутні</Typography>
 					)}

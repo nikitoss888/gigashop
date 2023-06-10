@@ -1,16 +1,16 @@
 import * as yup from "yup";
 import { Box, Container } from "@mui/material";
-import { FormProvider, useForm } from "react-hook-form";
+import { FieldValues, FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/NewsList/Filters";
-import Publications, { Publication } from "../mock/Publications";
+import { Publication } from "../mock/Publications";
 import PublicationsList from "../components/NewsList/PublicationsList";
-import Users from "../mock/Users";
 import { useState } from "react";
 import Typography from "@mui/material/Typography";
 import { Link, useLoaderData } from "react-router-dom";
+import { GetPublications } from "./index";
 
 const User = yup.object().shape({
 	id: yup.number().required(),
@@ -19,33 +19,46 @@ const User = yup.object().shape({
 	lastName: yup.string().required(),
 });
 
-const schema = yup.object().shape({
-	title: yup.string().nullable().label("Заголовок"),
-	createdFrom: yup
-		.date()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.label("Дата від"),
-	createdTo: yup
-		.date()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.label("Дата до"),
-	tags: yup.array().of(yup.string()).notRequired().label("Теги"),
-	authors: yup.array().of(User).notRequired().label("Автори"),
-});
+const schema = yup.object().shape(
+	{
+		title: yup.string().nullable().label("Заголовок"),
+		createdFrom: yup
+			.date()
+			.nullable()
+			.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+			.label("Дата від")
+			.when(["createdTo"], {
+				is: (createdTo: Date | string | null) => createdTo !== null,
+				then: (schema) =>
+					schema.max(yup.ref("createdTo"), "Початкова дата пошуку не може бути пізніше кінцевої"),
+			}),
+		createdTo: yup
+			.date()
+			.nullable()
+			.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+			.label("Дата до")
+			.when(["createdFrom"], {
+				is: (createdFrom: Date | string | null) => createdFrom !== null,
+				then: (schema) =>
+					schema.min(yup.ref("createdFrom"), "Кінцева дата пошуку не може бути раніше початкової"),
+			}),
+		tags: yup.array().of(yup.string()).notRequired().label("Теги"),
+		authors: yup.array().of(User).notRequired().label("Автори"),
+	},
+	[["createdFrom", "createdTo"]]
+);
 
-const SortSwitch = (sortBy: string, a: Publication, b: Publication) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		case "titleDesc":
-			return b.title.localeCompare(a.title);
+			return { sortBy: "title", descending: true };
 		case "titleAsc":
-			return a.title.localeCompare(b.title);
+			return { sortBy: "title", descending: false };
 		case "createdAtDesc":
-			return b.createdAt.getTime() - a.createdAt.getTime();
+			return { sortBy: "createdAt", descending: true };
 		case "createdAtAsc":
 		default:
-			return a.createdAt.getTime() - b.createdAt.getTime();
+			return { sortBy: "createdAt", descending: false };
 	}
 };
 
@@ -65,7 +78,6 @@ export default function NewsList() {
 		initPage?: number;
 		initSortBy?: string;
 	};
-	console.log({ data, totalCount });
 
 	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
 	const [limit, setLimit] = useState(initLimit || 12);
@@ -75,36 +87,48 @@ export default function NewsList() {
 		resolver: yupResolver(schema),
 	});
 
-	const [news, setNews] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
-	news.map((item) => {
-		const user = Users.find((user) => user.id === item.userId);
-		if (user) {
-			item.user = user;
-		}
-	});
+	const [news, setNews] = useState(data);
 	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getNews = (sortBy: string, limit: number, page: number) => {
-		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		news.map((item) => {
-			const user = Users.find((user) => user.id === item.userId);
-			if (user) {
-				item.user = user;
-			}
-		});
-		setNews(news);
-		setMaxPage(Math.ceil(totalCount / limit) || 1);
+	type getNewsParams = {
+		title?: string;
+		dateFrom?: Date;
+		dateTo?: Date;
+		tags?: string[];
+		authors?: {
+			id: number;
+			login: string;
+			firstName: string;
+			lastName: string;
+		}[];
+	};
+	const [params, setParams] = useState<getNewsParams>({});
+
+	const parseValues = (values: FieldValues): getNewsParams => {
+		const params: getNewsParams = {};
+		if (values.title) params.title = values.title;
+		if (values.createdFrom) params.dateFrom = new Date(values.createdFrom);
+		if (values.createdTo) params.dateTo = new Date(values.createdTo);
+		if (values.tags) params.tags = values.tags;
+		if (values.authors) params.authors = values.authors;
+		console.log({ params });
+		return params;
+	};
+
+	const getNews = (sortBy: string, limit: number, page: number, params?: getNewsParams) => {
+		const { data, totalCount } = GetPublications({ admin: false, limit, page, sortBy, searchParams: params });
+		setNews(data);
+		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
-		getNews(sortBy, limit, page);
+		getNews(sortBy, limit, page, params);
 		setSortBy(sortBy);
 	};
 
 	const limitUpdate = (limit: number) => {
-		getNews(sortBy, limit, page);
+		getNews(sortBy, limit, 1, params);
+		setPage(1);
 		setLimit(limit);
 	};
 
@@ -112,13 +136,16 @@ export default function NewsList() {
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getNews(sortBy, limit, localPage);
+		getNews(sortBy, limit, localPage, params);
 		setPage(localPage);
 	};
 
-	const onSubmit = (data: any) => {
+	const onSubmit = () => {
 		try {
-			console.log(data);
+			const data = methods.getValues();
+			const params = parseValues(data);
+			setParams(params);
+			getNews(sortBy, limit, page, params);
 		} catch (error) {
 			console.log(error);
 		}

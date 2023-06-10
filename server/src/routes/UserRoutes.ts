@@ -12,5 +12,8 @@ userRouter.post('/login', UserController.login);
 userRouter.patch('/update', auth, UserController.update);
 userRouter.get('/profile', auth, UserController.profile);
 userRouter.get('/auth', auth, UserController.check);
+userRouter.get('/', UserController.allUsers);
+userRouter.post('/cart/setup', auth, UserController.setUpCart);
+userRouter.post('/cart/success/:transactionId', UserController.buyCart);
 
 module.exports = userRouter

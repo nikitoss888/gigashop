@@ -157,10 +157,24 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
 
     return include;
 }
-const getUsers = async (login?: string, email?: string, firstName?: string, lastName?: string,
-                        role?: string, isDeleted = false, isBanned = false) => {
-    let where = _whereHandler(login, email, firstName, lastName, role, isDeleted, isBanned);
-    return User.findAll({where});
+type getUsersParams = {
+    login?: string,
+    email?: string,
+    firstName?: string,
+    lastName?: string,
+    role?: string,
+    isDeleted?: boolean,
+    isBanned?: boolean
+}
+const getUsers = async ({login, email, firstName, lastName, role, isDeleted = false, isBanned = false}: getUsersParams) => {
+    const where = _whereHandler(login, email, firstName, lastName, role, isDeleted, isBanned);
+    const totalCount = User.count();
+    const users = User.findAll({where});
+
+    return {
+        users,
+        totalCount,
+    };
 }
 
 const getUser = async (id: number, includeBoughtItems= true, includeCart = true,

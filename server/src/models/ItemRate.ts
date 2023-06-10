@@ -82,6 +82,25 @@ const getItemRates = async ({itemId, content, rate, rateFrom, rateTo, hide, viol
     return ItemRate.findAll({where});
 }
 
+type getAllRatesParams = {
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+}
+export const getAllRates = async ({descending = true, limit = 12, page = 1, sortBy = "createdAt"}: getAllRatesParams) => {
+    if (page < 1) throw ApiError.badRequest('Сторінка повинна бути більша за 0');
+    if (limit < 1) throw ApiError.badRequest('Ліміт повинен бути більший за 0');
+
+    const totalCount = await ItemRate.count();
+    const rates = await ItemRate.findAll({order: [[sortBy, descending ? 'DESC' : 'ASC']], limit, offset: (page - 1) * limit - limit});
+
+    return {
+        totalCount,
+        rates,
+    }
+};
+
 export default ItemRate;
 export {
     ItemRate,

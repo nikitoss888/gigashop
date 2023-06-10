@@ -1,11 +1,12 @@
 import { Box, Container } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
-import { default as CompaniesList, Company } from "../mock/Companies";
+import { Company } from "../mock/Companies";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import CompaniesGrid from "../components/Companies/CompaniesGrid";
 import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
+import { GetCompanies } from "./index";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -15,17 +16,17 @@ const BoxStyle = styled(Box)`
 	gap: 15px;
 `;
 
-const SortSwitch = (sortBy: string, a: Company, b: Company) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		case "foundedDesc":
-			return b.founded.getTime() - a.founded.getTime();
+			return { sortBy: "founded", descending: true };
 		case "foundedAsc":
-			return a.founded.getTime() - b.founded.getTime();
+			return { sortBy: "founded", descending: false };
 		case "nameDesc":
-			return b.name.localeCompare(a.name);
+			return { sortBy: "name", descending: true };
 		case "nameAsc":
 		default:
-			return a.name.localeCompare(b.name);
+			return { sortBy: "name", descending: false };
 	}
 };
 
@@ -46,40 +47,41 @@ export default function Companies() {
 
 	const methods = useForm();
 
-	const [companies, setCompanies] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
+	const [companies, setCompanies] = useState(data);
 	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getCompanies = (sortBy: string, limit: number, page: number) => {
-		const companies = CompaniesList.sort((a, b) => SortSwitch(sortBy, a, b)).slice(
-			(page - 1) * limit,
-			page * limit
-		);
-		setCompanies(companies);
-		setMaxPage(Math.ceil(CompaniesList.length / limit) || 1);
+	const getCompanies = (sortBy: string, limit: number, page: number, name?: string) => {
+		const { data, totalCount } = GetCompanies({ admin: false, sortBy, limit, page, name });
+		setCompanies(data);
+		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
-		getCompanies(sortBy, limit, page);
+		const { name } = methods.getValues();
+		getCompanies(sortBy, limit, page, name);
 		setSortBy(sortBy);
 	};
 
 	const limitUpdate = (limit: number) => {
-		getCompanies(sortBy, limit, page);
+		const { name } = methods.getValues();
+		getCompanies(sortBy, limit, 1, name);
 		setLimit(limit);
+		setPage(1);
 	};
 
 	const pageUpdate = (page: number) => {
+		const { name } = methods.getValues();
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getCompanies(sortBy, limit, localPage);
+		getCompanies(sortBy, limit, localPage, name);
 		setPage(localPage);
 	};
 
-	const onSubmit = (data: any) => {
+	const onSubmit = () => {
 		try {
+			const { name } = methods.getValues();
+			getCompanies(sortBy, limit, page, name);
 			console.log(data);
 		} catch (err) {
 			console.log(err);

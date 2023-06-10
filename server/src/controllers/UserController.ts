@@ -3,8 +3,11 @@ import ApiError from "../errors/ApiError";
 import Controller from "./Controller";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User, {getUser} from "../models/User";
+import User, { getUser, getUsers } from "../models/User";
 import {Op} from "sequelize";
+import ItemCart from "../models/ItemCart";
+import { ItemBought } from "../models";
+import { v4 as uuidv4 } from 'uuid';
 
 const USER = 'USER'
 const MODERATOR = 'MODERATOR';
@@ -262,6 +265,87 @@ class UserController extends Controller {
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
         }
+    }
+
+    async setUpCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const reqUser = req.user;
+            const transactionId = uuidv4();
+
+            const cart = await ItemCart.findAll({ where: { userId: reqUser.id }});
+            if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
+
+            const setupResult = ItemCart.update({ transactionId }, { where: { userId: reqUser.id }});
+
+            if (!setupResult) return next(ApiError.internal('Помилка при встановленні транзакції'));
+
+            return res.json({message: "Транзакцію встановлено успішно"});
+
+            // const itemsIds = cart.map((item: typeof ItemCart) => item.itemId);
+            // const items = await Item.findAll({ where: { id: itemsIds }});
+            // const type = "pay";
+            // const description = "Оплата товарів";
+            // const amount = items.reduce((sum: number, item: typeof Item) => sum + item.price, 0);
+            // const currency = "UAH";
+            //
+            // const client_url = "http://localhost:3000/cart/success";
+            // const server_url = (process.env.NGROK_SERVER_URL || 'http://localhost:5000') + `/api/user/cart/success/${transactionId}`;
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async buyCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { transactionId } = req.params;
+
+            const cart = await ItemCart.findAll({ where: { transactionId }});
+            if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
+
+            const userId = cart[0].userId;
+            const ids = cart.map((item: typeof ItemCart) => item.itemId);
+
+            const bought = await ItemBought.create({ userId, itemId: ids });
+            await ItemCart.destroy({where: { transactionId }});
+
+            return res.json({message: 'Товари успішно придбані', bought});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async allUsers(req: Request, res: Response, next: NextFunction) {
+        const {
+            login,
+            email,
+            firstName,
+            lastName,
+            role,
+        } = req.query;
+        const isDeleted = super.parseBoolean(req.query.isDeleted as string) || false;
+        const isBanned = super.parseBoolean(req.query.isBanned as string) || false;
+
+        const result = await getUsers({
+            login: login as string,
+            email: email as string,
+            firstName: firstName as string,
+            lastName: lastName as string,
+            role: role as string,
+            isDeleted,
+            isBanned,
+        })
+            .catch((e: unknown) => {
+                return next(super.exceptionHandle(e));
+        });
+        if (!result) return next(ApiError.internal('Помилка отримання користувачів'));
+
+        const { users, totalCount } = result;
+
+        if (!users) return next(ApiError.internal('Користувачів не знайдено'));
+
+        return res.json({users, totalCount});
     }
 
     async test(req: Request, res: Response) {

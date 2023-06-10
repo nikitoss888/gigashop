@@ -2,43 +2,45 @@ import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/Users/List";
 import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
-import Users, { User } from "../../mock/Users";
+import { User } from "../../mock/Users";
+import { GetUsers } from "../index";
 
-const SortSwitch = (sortBy: string, a: User, b: User) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		default:
-		case "createdAt":
-			return a.createdAt > b.createdAt ? -1 : 1;
+		case "createdAtAsc":
+			return { sortBy: "createdAt", descending: false };
 		case "createdAtDesc":
-			return a.createdAt < b.createdAt ? -1 : 1;
+			return { sortBy: "createdAt", descending: true };
 		case "loginAsc":
-			return a.login > b.login ? -1 : 1;
+			return { sortBy: "login", descending: false };
 		case "loginDesc":
-			return a.login < b.login ? -1 : 1;
+			return { sortBy: "login", descending: true };
 	}
 };
 
 export default function AdminUsers() {
 	document.title = `Користувачі — Адміністративна панель — gigashop`;
 
-	const [sortBy, setSortBy] = useState("createdAt");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
-
-	const { data, totalCount } = useLoaderData() as {
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
 		data: User[];
 		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
 	};
 
-	const [users, setUsers] = useState(
-		data?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
-	);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [sortBy, setSortBy] = useState(initSortBy || "createdAt");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
+
+	const [users, setUsers] = useState(data);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getUsers = (sortBy: string, limit: number, page: number) => {
-		const users = Users.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		setUsers(users);
-		setMaxPage(Math.ceil(Users.length / limit) || 1);
+		const { data, totalCount } = GetUsers({ sortBy, limit, page });
+		setUsers(data);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -47,7 +49,8 @@ export default function AdminUsers() {
 	};
 
 	const limitUpdate = (limit: number) => {
-		getUsers(sortBy, limit, page);
+		getUsers(sortBy, limit, 1);
+		setPage(1);
 		setLimit(limit);
 	};
 
@@ -83,3 +86,4 @@ export default function AdminUsers() {
 		</Box>
 	);
 }
+export { SortSwitch };

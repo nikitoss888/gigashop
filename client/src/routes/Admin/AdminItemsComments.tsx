@@ -2,49 +2,41 @@ import { useLoaderData } from "react-router-dom";
 import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/ItemsComments/List";
-import Users from "../../mock/Users";
-import ItemsRates, { ItemRate } from "../../mock/ItemsRates";
-import Items from "../../mock/Items";
+import { ItemRate } from "../../mock/ItemsRates";
+import { GetItemsRates } from "../index";
 
-const SortSwitch = (sortBy: string, a: ItemRate, b: ItemRate) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		case "createdAtDesc":
-			return b.createdAt.getTime() - a.createdAt.getTime();
+			return { descending: true };
 		case "createdAtAsc":
 		default:
-			return a.createdAt.getTime() - b.createdAt.getTime();
+			return { descending: false };
 	}
 };
 
 export default function AdminNewsComments() {
 	document.title = "Коментарі до товарів - Адміністративна панель - gigashop";
 
-	const { data, totalCount } = useLoaderData() as {
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
 		data: ItemRate[];
 		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
 	};
 
-	const [sortBy, setSortBy] = useState("createdAtAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
-	const [comments, setComments] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
-	comments.forEach((comment) => {
-		comment.user = Users.find((user) => user.id === comment.userId);
-		comment.item = Items.find((item) => item.id === comment.itemId);
-	});
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [comments, setComments] = useState(data);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getComments = (sortBy: string, limit: number, page: number) => {
-		const comments = ItemsRates.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		comments.forEach((comment) => {
-			comment.user = Users.find((user) => user.id === comment.userId);
-			comment.item = Items.find((item) => item.id === comment.itemId);
-		});
-		setComments(comments);
-		setMaxPage(Math.ceil(ItemsRates.length / limit) || 1);
+		const { data, totalCount } = GetItemsRates({ sortBy, limit, page });
+		setComments(data);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -53,7 +45,8 @@ export default function AdminNewsComments() {
 	};
 
 	const limitUpdate = (limit: number) => {
-		getComments(sortBy, limit, page);
+		getComments(sortBy, limit, 1);
+		setPage(1);
 		setLimit(limit);
 	};
 
@@ -86,7 +79,6 @@ export default function AdminNewsComments() {
 					maxValue: maxPage,
 				}}
 				linkToItem
-				linkToUser
 			/>
 		</Box>
 	);

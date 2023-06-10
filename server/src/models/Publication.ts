@@ -139,10 +139,15 @@ const getPublications = async ({title, content, createdAt, createdFrom, createdT
                                    violationReason}: getAllPublicationsParams) => {
     const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, includeViolations, violationReason);
     const include = _includeHandler(includeTags, includeComments, includeViolations, includeHidden);
-
-    return await Publication.findAll({
+    const totalCount = await Publication.count({where: includeHidden ? {} : { hide: false }});
+    const publications = await Publication.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
     });
+
+    return {
+        publications,
+        totalCount,
+    };
 }
 type getOnePublicationParams = {
     id: number,

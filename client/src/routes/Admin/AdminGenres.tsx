@@ -1,41 +1,43 @@
 import { useState } from "react";
-import Genres, { Genre } from "../../mock/Genres";
+import { Genre } from "../../mock/Genres";
 import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import List from "../../components/Admin/Genres/List";
 import { useLoaderData } from "react-router-dom";
+import { GetGenres } from "../index";
 
-const SortSwitch = (sortBy: string, a: Genre, b: Genre) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		case "nameDesc":
-			return b.name.localeCompare(a.name);
+			return { descending: true };
 		default:
 		case "nameAsc":
-			return a.name.localeCompare(b.name);
+			return { descending: false };
 	}
 };
 
 export default function AdminGenre() {
 	document.title = "Жанри - Адміністративна панель - gigashop";
 
-	const [sortBy, setSortBy] = useState("nameAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
-
-	const { data, totalCount } = useLoaderData() as {
+	const { data, totalCount, initSortBy, initLimit, initPage } = useLoaderData() as {
 		data: Genre[];
 		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
 	};
 
-	const [genres, setGenres] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
-	);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [sortBy, setSortBy] = useState(initSortBy || "nameAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
+
+	const [genres, setGenres] = useState(data);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getGenres = (sortBy: string, limit: number, page: number) => {
-		const genres = Genres.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		setGenres(genres);
-		setMaxPage(Math.ceil(Genres.length / limit) || 1);
+		const { data, totalCount } = GetGenres({ admin: true, sortBy, limit, page });
+		setGenres(data);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -44,7 +46,8 @@ export default function AdminGenre() {
 	};
 
 	const limitUpdate = (limit: number) => {
-		getGenres(sortBy, limit, page);
+		getGenres(sortBy, limit, 1);
+		setPage(1);
 		setLimit(limit);
 	};
 
@@ -80,3 +83,4 @@ export default function AdminGenre() {
 		</Box>
 	);
 }
+export { SortSwitch };

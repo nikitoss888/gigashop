@@ -2,8 +2,9 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from '../Controller';
 import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
-import { User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company, ItemBought } from "../../models";
+import { User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company } from "../../models";
 import ItemCart from "../../models/ItemCart";
+import { getAllRates } from "../../models/ItemRate";
 
 type parseOutput = {
     name: string | undefined, description: string | undefined, sortBy: string | undefined,
@@ -348,7 +349,7 @@ class ItemsController extends Controller {
             includeBought, includeRated, includeHidden
         } = ItemsController.parseData(req.query);
 
-        const items = await getItems({
+        const result = await getItems({
             name, description,
             releaseDate, releaseDateFrom, releaseDateTo,
             price, priceFrom, priceTo,
@@ -365,9 +366,12 @@ class ItemsController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
             });
+        if (!result) return next(ApiError.notFound('Товари не знайдено'));
+
+        const { items, totalCount } = result;
 
         if (!items) return next(ApiError.notFound('Товари не знайдено'));
-        return res.json(items);
+        return res.json({ items, totalCount });
     }
 
     async getOne(req: Request, res: Response, next: NextFunction) {
@@ -699,21 +703,22 @@ class ItemsController extends Controller {
         }
     }
 
-    async buyCart(req: Request, res: Response, next: NextFunction) {
+    async getAllRates(req: Request, res: Response, next: NextFunction) {
         try {
-            const request_user = req.user;
-            const user = await User.findByPk(request_user.Id);
-            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+            const {
+                sortBy
+            } = req.query;
+            const descending = super.parseBoolean(req.query.descending as string) || false;
+            const limit = super.parseNumber(req.query.limit as string) || 12;
+            const page = super.parseNumber(req.query.page as string) || 1;
 
-            const cart = await ItemCart.findAll({where: {userId: user.id}});
-            if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
+            const result = await getAllRates({sortBy: sortBy as string, descending, limit, page});
+            if (!result) return next(ApiError.notFound('Коментарів не знайдено'));
 
-            const ids = cart.map((item: typeof ItemCart) => item.itemId);
+            const { totalCount, rates } = result;
 
-            const bought = await ItemBought.create({userId: user.id, itemId: ids});
-            await ItemCart.destroy({where: {userId: user.id}});
-
-            return res.json({message: 'Товари успішно придбані', bought});
+            if(!rates) return next(ApiError.notFound('Коментарів не знайдено'));
+            return res.json({totalCount, rates});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));

@@ -384,10 +384,15 @@ const getItems = async ({name, description, releaseDate, releaseDateFrom, releas
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
         includeWishlisted, includeInCart, includeBought, includeRated, includeHidden,
         publisherId, genresIds, developersIds);
-
-    return Item.findAll({
-        where, limit, offset: limit * page, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
+    const totalCount = await Item.count({where: includeHidden ? {} : { hide: false }});
+    const items = await Item.findAll({
+        where, limit, offset: limit * page, order: [[sortBy, descending ? "DESC" : "ASC"]], include
     });
+
+    return {
+        items,
+        totalCount,
+    };
 }
 type getOneItemParams = {
     id: number,

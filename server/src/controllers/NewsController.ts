@@ -2,7 +2,7 @@ import type {NextFunction, Request, Response} from 'express';
 import Controller from './Controller';
 import Publication, { getPublication, getPublications } from "../models/Publication";
 import ApiError from "../errors/ApiError";
-import PublicationComment from "../models/PublicationComment";
+import PublicationComment, { getAllComments } from "../models/PublicationComment";
 import User from "../models/User";
 import PublicationTag from "../models/PublicationTag";
 
@@ -102,7 +102,7 @@ class NewsController extends Controller {
                 super.parsePagination(desc as string | undefined, descending as string | undefined,
                     limit as string | undefined, page as string | undefined);
 
-            const publications = await getPublications({
+            const result = await getPublications({
                 title: title as string | undefined, content: content as string | undefined,
                 createdAt: createdAtParsed, createdFrom: createdFromParsed, createdTo: createdToParsed,
                 descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
@@ -111,10 +111,13 @@ class NewsController extends Controller {
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 });
+            if (!result) return next(ApiError.badRequest('Публікацій не знайдено'));
+
+            const { publications, totalCount } = result;
 
             if (!publications) return next(ApiError.badRequest('Публікацій не знайдено'));
 
-            res.json(publications);
+            return res.json({ publications, totalCount });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -144,7 +147,7 @@ class NewsController extends Controller {
 
             if (!publication) return next(ApiError.badRequest('Публікацію не знайдено'));
 
-            res.json(publication);
+            return res.json(publication);
         }
         catch (e: unknown) {
             console.log(e);
@@ -184,7 +187,7 @@ class NewsController extends Controller {
                 }) : undefined;
             if (err) return next(super.exceptionHandle(err));
 
-            res.json({message: "Публікацію оновлено", publication, tags: tagsRes});
+            return res.json({message: "Публікацію оновлено", publication, tags: tagsRes});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -207,7 +210,7 @@ class NewsController extends Controller {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json(result);
+            return res.json(result);
         }
         catch (e: unknown) {
             console.log(e);
@@ -231,7 +234,7 @@ class NewsController extends Controller {
 
             await NewsController.removeTags(id);
 
-            res.json(result);
+            return res.json(result);
         }
         catch (e: unknown) {
             console.log(e);
@@ -258,7 +261,7 @@ class NewsController extends Controller {
             const result = await PublicationComment
                 .create({ content, rate: rateParsed, publicationId: id, userId: req.user.id })
 
-            res.json({ message: "Коментар успішно додано", comment: result });
+            return res.json({ message: "Коментар успішно додано", comment: result });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -286,7 +289,7 @@ class NewsController extends Controller {
                 ],
             });
 
-            res.json({ message: "Коментарі успішно отримано", comments });
+            return res.json({ message: "Коментарі успішно отримано", comments });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -319,7 +322,7 @@ class NewsController extends Controller {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json({ message: "Коментар успішно оновлено", comment: result });
+            return res.json({ message: "Коментар успішно оновлено", comment: result });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -339,7 +342,7 @@ class NewsController extends Controller {
                     return next(super.exceptionHandle(e));
                 });
 
-            res.json({ message: "Коментар успішно видалено", result });
+            return res.json({ message: "Коментар успішно видалено", result });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -363,7 +366,7 @@ class NewsController extends Controller {
             if (hide) comment.hide = hide;
             const result = await comment.save();
 
-            res.json(result);
+            return res.json(result);
         }
         catch (e: unknown) {
             console.log(e);
@@ -371,8 +374,30 @@ class NewsController extends Controller {
         }
     }
 
+    async getAllComments(req: Request, res: Response, next: NextFunction) {
+        try {
+            const {
+                sortBy
+            } = req.query;
+            const descending = super.parseBoolean(req.query.descending as string) || false;
+            const limit = super.parseNumber(req.query.limit as string) || 12;
+            const page = super.parseNumber(req.query.page as string) || 1;
+
+            const result = getAllComments({sortBy: sortBy as string, descending, limit, page});
+            if (!result) return next(ApiError.badRequest('Невірні параметри запиту'));
+
+            const { totalCount, comments } = await result;
+
+            if (!comments) return next(ApiError.badRequest('Коментарі не знайдено'));
+            return res.json({ totalCount, comments });
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
     async test(req: Request, res: Response) {
-        res.json({message: `News route works!`, request: {body: req.body, query: req.query}})
+        return res.json({message: `News route works!`, request: {body: req.body, query: req.query}})
     }
 }
 

@@ -11,7 +11,6 @@ itemsRouter.delete('/:id', checkWorker, ItemsController.delete);
 
 itemsRouter.post('/:id/toggleWishlist', auth, ItemsController.toggleWishList);
 itemsRouter.post('/:id/toggleCart', auth, ItemsController.toggleCart);
-itemsRouter.post('/buyCart', auth, ItemsController.buyCart);
 
 itemsRouter.post('/:id/developers', checkWorker, ItemsController.addDevelopers);
 itemsRouter.delete('/:id/developers', checkWorker, ItemsController.removeDevelopers);

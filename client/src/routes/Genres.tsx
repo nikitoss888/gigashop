@@ -5,6 +5,8 @@ import styled from "@mui/material/styles/styled";
 import AlphabetGrid from "../components/Genres/AlphabetGrid";
 import { Genre } from "../mock/Genres";
 import { useLoaderData } from "react-router-dom";
+import { useState } from "react";
+import { GetGenres } from "./index";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -21,12 +23,14 @@ export default function Genres() {
 		data: Genre[];
 	};
 
-	const genres = data.sort((a, b) => a.name.localeCompare(b.name));
+	const [genres, setGenres] = useState(data);
 	document.title = `Жанри — gigashop`;
 
 	const onSubmit = (data: any) => {
 		try {
 			console.log(data);
+			const { data: genres } = GetGenres({ admin: false, name: data.name });
+			setGenres(genres);
 		} catch (err) {
 			console.log(err);
 		}

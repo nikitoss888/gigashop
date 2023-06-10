@@ -21,7 +21,7 @@ class CompaniesController extends Controller {
                 return next(ApiError.badRequest('Компанію не створено'));
             }
 
-            res.json(company);
+            return res.json(company);
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -48,7 +48,7 @@ class CompaniesController extends Controller {
             super.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        const companies = await getCompanies({
+        const result = await getCompanies({
             name: name as string | undefined, description: description as string | undefined,
             director: director as string | undefined, founded: foundedParsed,
             descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
@@ -57,9 +57,12 @@ class CompaniesController extends Controller {
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
         });
+        if (!result) return next(ApiError.badRequest('Компаній не знайдено'));
+
+        const { companies, totalCount } = result;
 
         if (!companies) return next(ApiError.badRequest('Компаній не знайдено'));
-        res.json(companies);
+        return res.json({ companies, totalCount });
     }
 
     async getOne(req: Request, res: Response, next: NextFunction) {
@@ -73,7 +76,7 @@ class CompaniesController extends Controller {
         });
 
         if (!company) return next(ApiError.badRequest('Компанію не знайдено'));
-        res.json(company);
+        return res.json(company);
     }
 
     async update(req: Request, res: Response, next: NextFunction) {
@@ -112,7 +115,7 @@ class CompaniesController extends Controller {
         // ToDo: delete files
         //
         // if (image) super.deleteFile(COMPANIES_DIR, oldImage);
-        res.json(company);
+        return res.json(company);
     }
 
     async delete(req: Request, res: Response, next: NextFunction) {
@@ -135,11 +138,11 @@ class CompaniesController extends Controller {
         // ToDo: delete files
         //
         // super.deleteFile(COMPANIES_DIR, image);
-        res.json(result);
+        return res.json(result);
     }
 
     async test(req: Request, res: Response) {
-        res.json({message: `Companies route works!`, request: {body: req.body, query: req.query}})
+        return res.json({message: `Companies route works!`, request: {body: req.body, query: req.query}})
     }
 }
 export default new CompaniesController();

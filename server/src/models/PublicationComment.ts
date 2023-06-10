@@ -83,6 +83,25 @@ const getPublicationComments = async ({publicationId, content, rate, rateFrom, r
     return PublicationComment.findAll({where});
 }
 
+type getAllCommentsParams = {
+    descending?: boolean,
+    limit?: number,
+    page?: number,
+    sortBy?: string,
+}
+export const getAllComments = async ({descending = true, limit = 12, page = 1, sortBy = "createdAt"}: getAllCommentsParams) => {
+    if (page < 1) throw ApiError.badRequest('Сторінка повинна бути більша за 0');
+    if (limit < 1) throw ApiError.badRequest('Ліміт повинен бути більший за 0');
+
+    const totalCount = await PublicationComment.count();
+    const comments = await PublicationComment.findAll({order: [[sortBy, descending ? 'DESC' : 'ASC']], limit, offset: (page - 1) * limit});
+
+    return {
+        totalCount,
+        comments,
+    }
+};
+
 export default PublicationComment;
 export {
     PublicationComment,

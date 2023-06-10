@@ -1,12 +1,10 @@
 import { Link, useLoaderData } from "react-router-dom";
 import ClientError from "../../ClientError";
 import { Publication } from "../../mock/Publications";
-import Users from "../../mock/Users";
 import * as DOMPurify from "dompurify";
 import { Box, IconButton, TextField, Tooltip } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { Delete, Edit, Visibility, VisibilityOff, Error, SettingsBackupRestore } from "@mui/icons-material";
-import PublicationsComments from "../../mock/PublicationsComments";
 import parse from "html-react-parser";
 import NewsContent from "../../components/NewsItem/NewsContent";
 import { useState } from "react";
@@ -60,28 +58,32 @@ export default function AdminNewsItem() {
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
+	const { descending } = SortSwitch(sortBy);
 	const [comments, setComments] = useState(
-		publication.comments?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
+		publication.comments
+			?.sort((a, b) => {
+				if (descending) return b.createdAt.getTime() - a.createdAt.getTime();
+				return a.createdAt.getTime() - b.createdAt.getTime();
+			})
+			.slice((page - 1) * limit, page * limit) || []
 	);
-	comments.forEach((comment) => {
-		comment.user = Users.find((user) => user.id === comment.userId);
-		comment.publication = publication;
-	});
-	const [maxPage, setMaxPage] = useState(Math.ceil((publication.comments?.length || 0) / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((publication.comments?.length || 1) / limit) || 1);
 
 	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;
 	avgRate = Math.round(avgRate * 10) / 10;
 
 	const getComments = (sortBy: string, limit: number, page: number) => {
-		const comments = PublicationsComments.filter((comment) => comment.publicationId === publication.id)
-			.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((page - 1) * limit, page * limit);
-		comments.forEach((comment) => {
-			comment.user = Users.find((user) => user.id === comment.userId);
-			comment.publication = publication;
-		});
+		const { descending } = SortSwitch(sortBy);
+		const comments =
+			publication.comments
+				?.filter((comment) => comment.publicationId === publication.id)
+				.sort((a, b) => {
+					if (descending) return b.createdAt.getTime() - a.createdAt.getTime();
+					return a.createdAt.getTime() - b.createdAt.getTime();
+				})
+				.slice((page - 1) * limit, page * limit) || [];
 		setComments(comments);
-		setMaxPage(Math.ceil(PublicationsComments.length / limit) || 1);
+		setMaxPage(Math.ceil((publication.comments?.length || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {

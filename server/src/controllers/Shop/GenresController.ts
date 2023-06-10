@@ -19,7 +19,7 @@ class GenresController extends Controller {
             if (!genre) {
                 return next(ApiError.badRequest('Жанр не створено'));
             }
-            res.json(genre);
+            return res.json(genre);
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -34,7 +34,7 @@ class GenresController extends Controller {
             super.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        const genres = await getGenres({
+        const result = await getGenres({
             name: name as string | undefined, description: description as string | undefined,
             descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
             includeHidden: hideParsed
@@ -43,8 +43,12 @@ class GenresController extends Controller {
                 return next(super.exceptionHandle(e));
             }
         );
+        if (!result) return next(ApiError.badRequest('Жанрів не знайдено'));
+
+        const { genres, totalCount } = result;
+
         if (!genres) return next(ApiError.badRequest('Жанрів не знайдено'));
-        res.json(genres);
+        return res.json({ genres, totalCount });
     }
 
     async getOne(req: Request, res: Response, next: NextFunction) {
@@ -54,7 +58,7 @@ class GenresController extends Controller {
 
         const genre = await getGenre({ id: +id, includeItems: true, includeHidden: hideParsed });
         if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
-        res.json(genre);
+        return res.json(genre);
     }
 
     async update(req: Request, res: Response, next: NextFunction) {
@@ -70,7 +74,7 @@ class GenresController extends Controller {
             }
         );
         if (!genre) return next(ApiError.badRequest('Жанр не оновлено'));
-        res.json(genre);
+        return res.json(genre);
     }
 
     async delete(req: Request, res: Response, next: NextFunction) {
@@ -83,11 +87,11 @@ class GenresController extends Controller {
             }
         );
         if (!genre) return next(ApiError.badRequest('Жанр не видалено'));
-        res.json(genre);
+        return res.json(genre);
     }
 
     async test(req: Request, res: Response) {
-        res.json({message: `Genres route works!`, request: {body: req.body, query: req.query}})
+        return res.json({message: `Genres route works!`, request: {body: req.body, query: req.query}})
     }
 }
 

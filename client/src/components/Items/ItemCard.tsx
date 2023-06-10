@@ -1,6 +1,6 @@
 import { Typography, Box } from "@mui/material";
 import styled from "@mui/material/styles/styled";
-import { Item } from "../../mock/Items";
+import { calculateDiscount, Item } from "../../mock/Items";
 import Link from "../CardsGrid/Link";
 import Card from "../CardsGrid/Card";
 import Media from "../CardsGrid/Media";
@@ -10,12 +10,15 @@ const ContentBottom = styled(Box)`
 	margin-top: auto;
 	display: flex;
 	justify-content: space-between;
+	align-items: end;
 `;
 
 type CardProps = {
 	item: Item;
 };
-export default function ItemCard({ item: { id, name, price, releaseDate, mainImage, description } }: CardProps) {
+export default function ItemCard({ item }: CardProps) {
+	const { id, name, price, releaseDate, mainImage, description } = item;
+	const { isDiscount, finalPrice } = calculateDiscount(item);
 	return (
 		<Card>
 			<Link to={`/shop/items/${id}`} onClick={(e) => e.stopPropagation()}>
@@ -41,9 +44,22 @@ export default function ItemCard({ item: { id, name, price, releaseDate, mainIma
 						{description}
 					</Typography>
 					<ContentBottom>
-						<Typography variant='body1' color='secondary'>
-							{price} грн
-						</Typography>
+						<Box>
+							<Typography
+								variant='body1'
+								color='secondary'
+								sx={{
+									textDecoration: isDiscount ? "line-through" : "none",
+								}}
+							>
+								{price} грн
+							</Typography>
+							{isDiscount && (
+								<Typography variant='body1' sx={{ color: "accent.main" }}>
+									{finalPrice} грн
+								</Typography>
+							)}
+						</Box>
 						<Typography variant='body1' color='secondary'>
 							{releaseDate.toLocaleDateString()}
 						</Typography>

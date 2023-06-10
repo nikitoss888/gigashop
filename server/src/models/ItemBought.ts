@@ -3,6 +3,7 @@ import {DataTypes} from 'sequelize';
 
 const ItemBought = sequelize_db.define('item_bought', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    transactionId: {type: DataTypes.STRING, allowNull: true},
 }, {
     paranoid: true,
 });

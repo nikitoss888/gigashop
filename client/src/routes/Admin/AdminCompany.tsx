@@ -47,9 +47,32 @@ export default function AdminCompany() {
 	const publishedItems = company.published || [];
 
 	const [tab, setTab] = useState<0 | 1>(0);
+	const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
 	const [tabItems, setTabItems] = useState(
 		developedItems
-			.sort((a, b) => SortSwitch(initSortBy, a, b))
+			.sort((a, b) => {
+				if (descending) {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return b.releaseDate.getTime() - a.releaseDate.getTime();
+						case "name":
+							return b.name.localeCompare(a.name);
+						case "price":
+							return b.price - a.price;
+					}
+				} else {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return a.releaseDate.getTime() - b.releaseDate.getTime();
+						case "name":
+							return a.name.localeCompare(b.name);
+						case "price":
+							return a.price - b.price;
+					}
+				}
+			})
 			.slice((initPage - 1) * initLimit, initPage * initLimit)
 	);
 	const [maxPage, setMaxPage] = useState(Math.ceil((developedTotalCount || 0) / limit) || 1);
@@ -67,7 +90,34 @@ export default function AdminCompany() {
 		}
 
 		const count = items.length;
-		setTabItems(items.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit));
+		const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
+		setTabItems(
+			items
+				.sort((a, b) => {
+					if (descending) {
+						switch (specificSortBy) {
+							default:
+							case "releaseDate":
+								return b.releaseDate.getTime() - a.releaseDate.getTime();
+							case "name":
+								return b.name.localeCompare(a.name);
+							case "price":
+								return b.price - a.price;
+						}
+					} else {
+						switch (specificSortBy) {
+							default:
+							case "releaseDate":
+								return a.releaseDate.getTime() - b.releaseDate.getTime();
+							case "name":
+								return a.name.localeCompare(b.name);
+							case "price":
+								return a.price - b.price;
+						}
+					}
+				})
+				.slice((page - 1) * limit, page * limit)
+		);
 		setMaxPage(Math.ceil(count / limit) || 1);
 	};
 

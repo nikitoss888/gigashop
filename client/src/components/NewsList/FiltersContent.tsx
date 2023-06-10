@@ -27,12 +27,10 @@ export default function FiltersContent() {
 		formState: { errors },
 	} = useFormContext();
 
-	const Tags = Publications.reduce((acc: string[], curr) => {
-		curr.tags?.forEach((tag) => {
-			if (!acc.includes(tag)) acc.push(tag);
-		});
-		return acc;
-	}, []);
+	const onTagsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const tags = event.target.value.split(/[ ,]+/);
+		setValue("tags", tags, { shouldValidate: true, shouldDirty: true });
+	};
 
 	const Authors = Users.filter((user) => Publications.some((publication) => publication.userId === user.id));
 
@@ -84,7 +82,7 @@ export default function FiltersContent() {
 							<Controller
 								name='createdTo'
 								control={control}
-								defaultValue={new Date().toISOString().slice(0, 10)}
+								defaultValue={""}
 								render={({ field }) => (
 									<TextField
 										{...field}
@@ -116,29 +114,16 @@ export default function FiltersContent() {
 				name='tags'
 				control={control}
 				defaultValue={[]}
-				render={({ field }) => (
-					<Autocomplete
+				render={({ field, formState: { errors } }) => (
+					<TextField
 						{...field}
-						options={Tags}
-						getOptionLabel={(option) => option}
-						multiple
-						filterSelectedOptions
-						isOptionEqualToValue={(option, value) => option === value}
-						onChange={(_, data: string[]) => {
-							setValue("tags", data, { shouldValidate: true, shouldDirty: true });
-						}}
-						renderInput={(params) => (
-							<TextField {...params} variant='outlined' size='small' placeholder='Теги' fullWidth />
-						)}
-						renderTags={(value, getTagProps) => {
-							return value.map((option, index) => (
-								<ChipStyle
-									{...getTagProps({ index })}
-									key={index}
-									label={<Typography variant='body2'>{option}</Typography>}
-								/>
-							));
-						}}
+						id='tags'
+						placeholder='Теги'
+						variant='outlined'
+						onChange={onTagsChange}
+						fullWidth
+						error={!!errors.tags}
+						helperText={errors.tags ? errors.tags.message?.toString() : ""}
 					/>
 				)}
 			/>
@@ -178,7 +163,7 @@ export default function FiltersContent() {
 									{...getTagProps({ index })}
 									key={index}
 									label={
-										<Typography variant='body2'>
+										<Typography variant='body2' color='secondary'>
 											{`${option.firstName} ${option.lastName} (${option.login})`}
 										</Typography>
 									}

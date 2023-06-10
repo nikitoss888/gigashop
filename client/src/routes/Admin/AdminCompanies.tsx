@@ -1,31 +1,32 @@
 import { useLoaderData } from "react-router-dom";
-import Companies, { Company } from "../../mock/Companies";
+import { Company } from "../../mock/Companies";
 import { useState } from "react";
-import { SortSwitch } from "../Companies";
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/Companies/List";
+import { GetCompanies } from "../index";
 
 export default function AdminCompanies() {
 	document.title = `Компанії — Адміністративна панель — gigashop`;
 
-	const { data, totalCount } = useLoaderData() as {
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
 		data: Company[];
 		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
 	};
 
-	const [sortBy, setSortBy] = useState("nameAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const [sortBy, setSortBy] = useState(initSortBy || "nameAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
-	const [companies, setCompanies] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [companies, setCompanies] = useState(data);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getCompanies = (sortBy: string, limit: number, page: number) => {
-		const companies = Companies.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		setCompanies(companies);
-		setMaxPage(Math.ceil(Companies.length / limit) || 1);
+		const { data, totalCount } = GetCompanies({ admin: true, sortBy, limit, page });
+		setCompanies(data);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -34,7 +35,8 @@ export default function AdminCompanies() {
 	};
 
 	const limitUpdate = (limit: number) => {
-		getCompanies(sortBy, limit, page);
+		getCompanies(sortBy, limit, 1);
+		setPage(1);
 		setLimit(limit);
 	};
 

@@ -1,17 +1,13 @@
 import { Link, useLoaderData } from "react-router-dom";
 import { Item } from "../../mock/Items";
-import Genres from "../../mock/Genres";
-import Companies from "../../mock/Companies";
 import { Box, Typography, IconButton, Tooltip } from "@mui/material";
-import ItemsRates from "../../mock/ItemsRates";
-import Users from "../../mock/Users";
 import styled from "@mui/material/styles/styled";
 import { Delete, Edit } from "@mui/icons-material";
 import Chip from "../../components/Common/Chip";
 import ClientError from "../../ClientError";
 import List from "../../components/Admin/ItemsComments/List";
 import { useState } from "react";
-import { SortSwitch } from "./AdminItemsComments";
+import { SortSwitch as ItemsRatesSortSwitch } from "./AdminItemsComments";
 
 const Image = styled("img")`
 	width: 100%;
@@ -25,36 +21,34 @@ export default function AdminItem() {
 
 	document.title = `${item.name} — Адміністративна панель — gigashop`;
 
-	const genres = Genres.filter((genre) => item.genresIds?.includes(genre.id));
-	const publisher = Companies.find((company) => company.id === item.publisherId);
-	const developers = Companies.filter((company) => item.developersIds?.includes(company.id));
+	const genres = item.genres || [];
+	const publisher = item.publisher || null;
+	const developers = item.developers || [];
 
 	const [sortBy, setSortBy] = useState("createdAtAsc");
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
-	const [comments, setComments] = useState(
-		item.comments?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || []
-	);
-	comments.forEach((comment) => {
-		comment.user = Users.find((user) => user.id === comment.userId);
-		comment.item = item;
-	});
-	const [maxPage, setMaxPage] = useState(Math.ceil((item.comments?.length || 0) / limit) || 1);
+	const [comments, setComments] = useState(item.comments || []);
+	const [maxPage, setMaxPage] = useState(Math.ceil((item.comments?.length || 1) / limit) || 1);
 
 	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;
 	avgRate = Math.round(avgRate * 10) / 10;
 
 	const getComments = (sortBy: string, limit: number, page: number) => {
-		const comments = ItemsRates.filter((comment) => comment.itemId === item.id)
-			.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((page - 1) * limit, page * limit);
-		comments.forEach((comment) => {
-			comment.user = Users.find((user) => user.id === comment.userId);
-			comment.item = item;
-		});
+		const { descending } = ItemsRatesSortSwitch(sortBy);
+		const comments =
+			item.comments
+				?.sort((a, b) => {
+					if (descending) {
+						return b.createdAt.getTime() - a.createdAt.getTime();
+					} else {
+						return a.createdAt.getTime() - b.createdAt.getTime();
+					}
+				})
+				.slice((page - 1) * limit, page * limit) || [];
 		setComments(comments);
-		setMaxPage(Math.ceil(ItemsRates.length / limit) || 1);
+		setMaxPage(Math.ceil((item.comments?.length || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {

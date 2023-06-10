@@ -125,10 +125,15 @@ const getCompanies = async ({name, description, director, founded, foundedFrom, 
                                 includeItemsPublished = true, includeHidden = false}: getAllCompaniesParams) => {
     const where   = _whereHandler(name, description, director, founded, foundedFrom, foundedTo, includeHidden);
     const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
+    const totalCount = await Company.count({ where: includeHidden ? {} : { hide: false } } );
+    const companies = await Company.findAll({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include
+    })
 
-    return Company.findAll({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
-    });
+    return {
+        companies,
+        totalCount
+    };
 };
 type getOneCompanyParams = {
     id: number,

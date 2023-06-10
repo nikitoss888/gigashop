@@ -34,7 +34,7 @@ const Items: Item[] = [
 		id: 1,
 		name: "Cyberpunk 2077",
 		price: 1000,
-		releaseDate: new Date(),
+		releaseDate: new Date(2022, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
 			"https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
@@ -74,13 +74,13 @@ const Items: Item[] = [
 		description:
 			"Red Dead Redemption 2 — комп'ютерна гра в жанрі action-adventure з відкритим світом, розроблена Rockstar Studios.",
 		amount: 0,
-		genresIds: [1, 2, 3],
-		developersIds: [1, 2],
+		genresIds: [2, 3],
+		developersIds: [2, 3],
 		publisherId: 2,
 		discount: true,
 		discountSize: 10,
 		discountFrom: new Date(2000, 1, 1),
-		discountTo: new Date(2000, 1, 10),
+		discountTo: new Date(2023, 12, 1),
 		hide: false,
 		characteristics: {
 			Платформа: "Steam",
@@ -98,7 +98,7 @@ const Items: Item[] = [
 		genresIds: [1, 2, 3],
 		developersIds: [1, 2],
 		publisherId: 2,
-		releaseDate: new Date(),
+		releaseDate: new Date(2022, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/capsule_616x353.jpg?t=1632933588",
 		images: [
 			"https://cdn.cloudflare.steamstatic.com/steam/apps/271590/capsule_616x353.jpg?t=1632933588",
@@ -119,7 +119,7 @@ const Items: Item[] = [
 		genresIds: [1, 2, 3],
 		developersIds: [1, 2],
 		publisherId: 1,
-		releaseDate: new Date(),
+		releaseDate: new Date(2024, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg?t=1632933588",
 		images: [
 			"https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg?t=1632933588",
@@ -140,7 +140,7 @@ const Items: Item[] = [
 		genresIds: [1, 2, 3],
 		developersIds: [1, 2],
 		publisherId: 1,
-		releaseDate: new Date(),
+		releaseDate: new Date(2022, 1, 1),
 		mainImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
 		images: [
 			"https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg?t=1632933588",
@@ -218,5 +218,16 @@ const Items: Item[] = [
 			"Cyberpunk 2077 – комп'ютерна гра в жанрі Action/RPG, розроблена польською компанією CD Projekt RED.",
 	},
 ];
+
+export const calculateDiscount = (item: Item) => {
+	const date = new Date();
+	let isDiscount = item.discount;
+	if (item.discountFrom) isDiscount = date.getTime() >= item.discountFrom.getTime();
+	if (item.discountTo) isDiscount = date.getTime() <= item.discountTo.getTime();
+
+	const finalPrice =
+		isDiscount && item.discountSize ? item.price - (item.price * item.discountSize) / 100 : item.price;
+	return { isDiscount, finalPrice };
+};
 
 export default Items;

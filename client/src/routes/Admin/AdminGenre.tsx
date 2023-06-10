@@ -4,7 +4,6 @@ import { Link, useLoaderData } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import { Delete, Edit } from "@mui/icons-material";
 import { useState } from "react";
-import Items from "../../mock/Items";
 import List from "../../components/Admin/Items/List";
 import { SortSwitch } from "../Items";
 import ClientError from "../../ClientError";
@@ -29,13 +28,38 @@ export default function AdminGenre() {
 	const [page, setPage] = useState(initPage);
 
 	const [items, setItems] = useState(genre.items || []);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getItems = (sortBy: string, limit: number, page: number) => {
+		const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
 		const items =
-			genre.items?.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit) || [];
+			genre.items
+				?.sort((a, b) => {
+					if (descending) {
+						switch (specificSortBy) {
+							default:
+							case "releaseDate":
+								return b.releaseDate.getTime() - a.releaseDate.getTime();
+							case "name":
+								return b.name.localeCompare(a.name);
+							case "price":
+								return b.price - a.price;
+						}
+					} else {
+						switch (specificSortBy) {
+							default:
+							case "releaseDate":
+								return a.releaseDate.getTime() - b.releaseDate.getTime();
+							case "name":
+								return a.name.localeCompare(b.name);
+							case "price":
+								return a.price - b.price;
+						}
+					}
+				})
+				.slice((page - 1) * limit, page * limit) || [];
 		setItems(items);
-		setMaxPage(Math.ceil(Items.length / limit) || 1);
+		setMaxPage(Math.ceil((genre.items?.length || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {

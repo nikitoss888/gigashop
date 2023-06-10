@@ -33,7 +33,7 @@ export default function FiltersContent() {
 
 	return (
 		<MainBox>
-			<Typography variant='h6' component='h2' color='secondary' sx={{ display: { sm: "none", md: "block" } }}>
+			<Typography variant='h6' component='h2' color='secondary' sx={{ display: { xs: "none", md: "block" } }}>
 				Фільтри
 			</Typography>
 
@@ -125,7 +125,7 @@ export default function FiltersContent() {
 						<Controller
 							name='dateTo'
 							control={control}
-							defaultValue={new Date().toISOString().slice(0, 10)}
+							defaultValue={""}
 							render={({ field }) => (
 								<TextField
 									{...field}
@@ -172,7 +172,11 @@ export default function FiltersContent() {
 								<ChipStyle
 									{...getTagProps({ index })}
 									key={index}
-									label={<Typography variant='body2'>{option.name}</Typography>}
+									label={
+										<Typography variant='body2' color='secondary'>
+											{option.name}
+										</Typography>
+									}
 								/>
 							));
 						}}
@@ -191,8 +195,9 @@ export default function FiltersContent() {
 						options={Companies}
 						getOptionLabel={(option) => option.name}
 						isOptionEqualToValue={(option, value) => option.id === value.id}
-						onChange={(_, data: Company) => {
-							const company = { id: data.id, name: data.name };
+						onChange={(_, data?: Company) => {
+							let company = null;
+							if (data) company = { id: data.id, name: data.name };
 							setValue("publisher", company, { shouldValidate: true, shouldDirty: true });
 						}}
 						renderInput={(params) => (
@@ -229,7 +234,11 @@ export default function FiltersContent() {
 								<ChipStyle
 									{...getTagProps({ index })}
 									key={index}
-									label={<Typography variant='body2'>{option.name}</Typography>}
+									label={
+										<Typography variant='body2' color='secondary'>
+											{option.name}
+										</Typography>
+									}
 								/>
 							));
 						}}

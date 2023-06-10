@@ -1,31 +1,32 @@
 import { useState } from "react";
-import Publications, { Publication } from "../../mock/Publications";
+import { Publication } from "../../mock/Publications";
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/News/List";
-import { SortSwitch } from "../NewsList";
 import { useLoaderData } from "react-router-dom";
+import { GetPublications } from "../index";
 
 export default function AdminNews() {
 	document.title = "Новини - Адміністративна панель - gigashop";
 
-	const { data, totalCount } = useLoaderData() as {
+	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
 		data: Publication[];
 		totalCount: number;
+		initLimit?: number;
+		initPage?: number;
+		initSortBy?: string;
 	};
 
-	const [sortBy, setSortBy] = useState("createdAtAsc");
-	const [limit, setLimit] = useState(12);
-	const [page, setPage] = useState(1);
+	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
+	const [limit, setLimit] = useState(initLimit || 12);
+	const [page, setPage] = useState(initPage || 1);
 
-	const [news, setNews] = useState(
-		data.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit)
-	);
-	const [maxPage, setMaxPage] = useState(Math.ceil(totalCount || 0 / limit) || 1);
+	const [news, setNews] = useState(data);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getNews = (sortBy: string, limit: number, page: number) => {
-		const news = Publications.sort((a, b) => SortSwitch(sortBy, a, b)).slice((page - 1) * limit, page * limit);
-		setNews(news);
-		setMaxPage(Math.ceil(Publications.length / limit) || 1);
+		const { data, totalCount } = GetPublications({ admin: true, sortBy, limit, page });
+		setNews(data);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -70,4 +71,3 @@ export default function AdminNews() {
 		</Box>
 	);
 }
-export { SortSwitch };

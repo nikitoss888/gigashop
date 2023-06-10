@@ -1,4 +1,4 @@
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, FieldValues } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Box, Container } from "@mui/material";
@@ -6,63 +6,82 @@ import styled from "@emotion/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
-import { default as ItemsList, Item } from "../mock/Items";
+import { Item } from "../mock/Items";
 import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
+import { GetItems } from "./index";
 
 const Object = yup.object().shape({
 	id: yup.number(),
 	name: yup.string(),
 });
 
-const schema = yup.object().shape({
-	name: yup.string().nullable().label("Назва"),
-	priceFrom: yup
-		.number()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.min(0)
-		.max(yup.ref("priceTo"), "Початкова ціна пошуку не може бути більше кінцевої")
-		.label("Ціна від"),
-	priceTo: yup
-		.number()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.min(yup.ref("priceFrom"), "Кінцева ціна пошуку не може бути менше початкової")
-		.label("Ціна до"),
-	dateFrom: yup
-		.date()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.max(yup.ref("dateTo"), "Початкова дата пошуку не може бути пізніше кінцевої")
-		.label("Дата від"),
-	dateTo: yup
-		.date()
-		.nullable()
-		.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
-		.min(yup.ref("dateFrom"), "Кінцева дата пошуку не може бути раніше початкової")
-		.label("Дата до"),
-	genres: yup.array().of(Object).notRequired().label("Жанри"),
-	publisher: Object.notRequired().label("Видавництво"),
-	developers: yup.array().of(Object).notRequired().label("Розробники"),
-	discount: yup.boolean().notRequired().label("Зі знижкою"),
-});
+const schema = yup.object().shape(
+	{
+		name: yup.string().nullable().label("Назва"),
+		priceFrom: yup
+			.number()
+			.nullable()
+			.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+			.min(0)
+			.label("Ціна від")
+			.when(["priceTo"], {
+				is: (priceTo: number | null) => priceTo !== null,
+				then: (schema) => schema.max(yup.ref("priceTo"), "Початкова ціна пошуку не може бути більше кінцевої"),
+			}),
+		priceTo: yup
+			.number()
+			.nullable()
+			.transform((value, originalValue) => (originalValue.trim() === "" ? null : value))
+			.label("Ціна до")
+			.when(["priceFrom"], {
+				is: (priceFrom: number | null) => priceFrom !== null,
+				then: (schema) => schema.min(yup.ref("priceFrom"), "Кінцева ціна пошуку не може бути менше початкової"),
+			}),
+		dateFrom: yup
+			.date()
+			.nullable()
+			.transform((value: string, originalValue: string) => (originalValue.trim() === "" ? null : value))
+			.label("Дата від")
+			.when(["dateTo"], {
+				is: (dateTo: Date | string | null) => dateTo !== null,
+				then: (schema) => schema.max(yup.ref("dateTo"), "Початкова дата пошуку не може бути пізніше кінцевої"),
+			}),
+		dateTo: yup
+			.date()
+			.nullable()
+			.transform((value: string, originalValue: string) => (originalValue.trim() === "" ? null : value))
+			.label("Дата до")
+			.when(["dateFrom"], {
+				is: (dateFrom: Date | string | null) => dateFrom !== null,
+				then: (schema) => schema.min(yup.ref("dateFrom"), "Кінцева дата пошуку не може бути раніше початкової"),
+			}),
+		genres: yup.array().of(Object).notRequired().label("Жанри"),
+		publisher: Object.notRequired().label("Видавництво"),
+		developers: yup.array().of(Object).notRequired().label("Розробники"),
+		discount: yup.boolean().notRequired().label("Зі знижкою"),
+	},
+	[
+		["priceFrom", "priceTo"],
+		["dateFrom", "dateTo"],
+	]
+);
 
-const SortSwitch = (sortBy: string, a: Item, b: Item) => {
+const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
 		case "nameDesc":
-			return b.name.localeCompare(a.name);
+			return { sortBy: "name", descending: true };
 		case "nameAsc":
-			return a.name.localeCompare(b.name);
+			return { sortBy: "name", descending: false };
 		case "priceDesc":
-			return b.price - a.price;
+			return { sortBy: "price", descending: true };
 		case "priceAsc":
-			return a.price - b.price;
+			return { sortBy: "price", descending: false };
 		case "releaseDateDesc":
-			return b.releaseDate.getTime() - a.releaseDate.getTime();
+			return { sortBy: "releaseDate", descending: true };
 		case "releaseDateAsc":
 		default:
-			return a.releaseDate.getTime() - b.releaseDate.getTime();
+			return { sortBy: "releaseDate", descending: false };
 	}
 };
 
@@ -90,43 +109,77 @@ export default function Items() {
 		resolver: yupResolver(schema),
 	});
 
-	const [items, setItems] = useState(
-		data
-			.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((page - 1) * limit, page * limit)
-			.filter((item) => !item.hide)
-	);
+	const [items, setItems] = useState(data);
 	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
 
-	const getItems = (sortBy: string, limit: number, page: number) => {
-		const items = ItemsList.sort((a, b) => SortSwitch(sortBy, a, b))
-			.slice((page - 1) * limit, page * limit)
-			.filter((item) => !item.hide);
-		setItems(items);
-		setMaxPage(Math.ceil(ItemsList.length / limit) || 1);
+	type getItemsParams = {
+		name?: string;
+		priceFrom?: number;
+		priceTo?: number;
+		dateFrom?: Date;
+		dateTo?: Date;
+		genres?: {
+			id: number;
+			name: string;
+		}[];
+		developers?: {
+			id: number;
+			name: string;
+		}[];
+		publisher?: {
+			id: number;
+			name: string;
+		};
+		discount?: boolean;
+	};
+	const [params, setParams] = useState<getItemsParams>({});
+
+	const parseValues = (values: FieldValues): getItemsParams => {
+		const params: getItemsParams = {};
+		if (values.name) params.name = values.name;
+		if (values.priceFrom) params.priceFrom = values.priceFrom;
+		if (values.priceTo) params.priceTo = values.priceTo;
+		if (values.dateFrom) params.dateFrom = new Date(values.dateFrom);
+		if (values.dateTo) params.dateTo = new Date(values.dateTo);
+		if (values.genres) params.genres = values.genres;
+		if (values.developers) params.developers = values.developers;
+		if (values.publisher) params.publisher = values.publisher;
+		if (values.discount) params.discount = values.discount;
+		console.log({ params });
+		return params;
+	};
+
+	const getItems = (sortBy: string, limit: number, page: number, params?: getItemsParams) => {
+		const { data, totalCount } = GetItems({ admin: false, sortBy, limit, page, searchParams: params });
+		setItems(data);
+		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
-		getItems(sortBy, limit, page);
+		getItems(sortBy, limit, page, params);
 		setSortBy(sortBy);
 	};
 
 	const limitUpdate = (limit: number) => {
-		getItems(sortBy, limit, page);
+		getItems(sortBy, limit, 1, params);
 		setLimit(limit);
+		setPage(1);
 	};
 
 	const pageUpdate = (page: number) => {
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getItems(sortBy, limit, localPage);
+		getItems(sortBy, limit, localPage, params);
 		setPage(localPage);
 	};
 
-	const onSubmit = (data: any) => {
+	const onSubmit = () => {
 		try {
-			console.log(data);
+			const data = methods.getValues();
+			const params = parseValues(data);
+			setParams(params);
+			getItems(sortBy, limit, page, params);
 		} catch (err) {
 			console.log(err);
 		}
