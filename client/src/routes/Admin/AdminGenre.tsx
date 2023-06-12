@@ -1,21 +1,26 @@
 import { Box, IconButton, Tooltip } from "@mui/material";
-import { Genre } from "../../mock/Genres";
-import { Link, useLoaderData } from "react-router-dom";
+import { DeleteGenreRequest, Genre } from "../../http/Genres";
+import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import { Delete, Edit } from "@mui/icons-material";
 import { useState } from "react";
 import List from "../../components/Admin/Items/List";
 import { SortSwitch } from "../Items";
 import ClientError from "../../ClientError";
+import { DeleteItemRequest, Item } from "../../http/Items";
+import Cookies from "js-cookie";
+import { AxiosError } from "axios";
 
 export default function AdminGenre() {
-	const { genre, error, totalCount } = useLoaderData() as {
-		genre: Genre;
-		totalCount: number;
+	const { genre, error } = useLoaderData() as {
+		genre: Genre & {
+			Items?: Item[];
+		};
 		error?: ClientError;
 	};
 
 	if (error) throw error;
+	const navigate = useNavigate();
 
 	const initSortBy = "releaseDateAsc";
 	const initLimit = 12;
@@ -27,39 +32,37 @@ export default function AdminGenre() {
 	const [limit, setLimit] = useState(initLimit);
 	const [page, setPage] = useState(initPage);
 
-	const [items, setItems] = useState(genre.items || []);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
+	const [items, setItems] = useState(genre.Items || []);
+	const [maxPage, setMaxPage] = useState(Math.ceil((genre.Items?.length || 1) / limit) || 1);
 
 	const getItems = (sortBy: string, limit: number, page: number) => {
 		const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
 		const items =
-			genre.items
-				?.sort((a, b) => {
-					if (descending) {
-						switch (specificSortBy) {
-							default:
-							case "releaseDate":
-								return b.releaseDate.getTime() - a.releaseDate.getTime();
-							case "name":
-								return b.name.localeCompare(a.name);
-							case "price":
-								return b.price - a.price;
-						}
-					} else {
-						switch (specificSortBy) {
-							default:
-							case "releaseDate":
-								return a.releaseDate.getTime() - b.releaseDate.getTime();
-							case "name":
-								return a.name.localeCompare(b.name);
-							case "price":
-								return a.price - b.price;
-						}
+			genre.Items?.sort((a, b) => {
+				if (descending) {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
+						case "name":
+							return b.name.localeCompare(a.name);
+						case "price":
+							return b.price - a.price;
 					}
-				})
-				.slice((page - 1) * limit, page * limit) || [];
+				} else {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
+						case "name":
+							return a.name.localeCompare(b.name);
+						case "price":
+							return a.price - b.price;
+					}
+				}
+			}).slice((page - 1) * limit, page * limit) || [];
 		setItems(items);
-		setMaxPage(Math.ceil((genre.items?.length || 1) / limit) || 1);
+		setMaxPage(Math.max(Math.ceil((items.length || 1) / limit) || 1));
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -78,6 +81,37 @@ export default function AdminGenre() {
 		if (page > maxPage) localPage = maxPage;
 		getItems(sortBy, limit, localPage);
 		setPage(localPage);
+	};
+
+	const onDeleteThis = async () => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані");
+		const response = await DeleteGenreRequest(token, genre.id).catch((e: unknown) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (response instanceof ClientError) throw response;
+		navigate("/admin/genres");
+	};
+
+	const onDelete = async (id: number) => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(401, "Необхідно авторизуватися");
+
+		const result = await DeleteItemRequest(token, id).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		if (result) {
+			setItems(items.filter((item) => item.id !== id));
+			await getItems(sortBy, limit, page);
+		}
 	};
 
 	return (
@@ -103,7 +137,7 @@ export default function AdminGenre() {
 					</IconButton>
 				</Tooltip>
 				<Tooltip title={`Видалити жанр`}>
-					<IconButton>
+					<IconButton onClick={onDeleteThis}>
 						<Delete color='error' />
 					</IconButton>
 				</Tooltip>
@@ -116,6 +150,7 @@ export default function AdminGenre() {
 			<Typography variant='h6'>Товари:</Typography>
 			<List
 				items={items}
+				onDelete={onDelete}
 				sorting={{
 					value: sortBy,
 					setValue: sortByUpdate,

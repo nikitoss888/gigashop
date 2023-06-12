@@ -1,6 +1,6 @@
 import { Typography, Box } from "@mui/material";
 import styled from "@mui/material/styles/styled";
-import { calculateDiscount, Item } from "../../mock/Items";
+import { calculateDiscount, Item } from "../../http/Items";
 import Link from "../CardsGrid/Link";
 import Card from "../CardsGrid/Card";
 import Media from "../CardsGrid/Media";
@@ -61,7 +61,7 @@ export default function ItemCard({ item }: CardProps) {
 							)}
 						</Box>
 						<Typography variant='body1' color='secondary'>
-							{releaseDate.toLocaleDateString()}
+							{new Date(releaseDate).toLocaleDateString()}
 						</Typography>
 					</ContentBottom>
 				</Content>

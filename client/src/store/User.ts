@@ -49,9 +49,7 @@ export const LogOut = (setUser: SetterOrUpdater<UserAtom | undefined>) => {
 	return true;
 };
 
-export const LogIn = (setUser: SetterOrUpdater<UserAtom | undefined>, token?: string) => {
-	if (!token) throw new Error("No token provided");
-
+export const LogIn = (setUser: SetterOrUpdater<UserAtom | undefined>, token: string) => {
 	const decoded = jwt_decode<JwtPayload & UserAtom>(token);
 	if (decoded.exp && decoded.exp < Date.now() / 1000) throw new Error("Token expired");
 

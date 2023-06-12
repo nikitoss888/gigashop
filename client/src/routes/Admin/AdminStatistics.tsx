@@ -8,16 +8,14 @@ import {
 	Typography,
 } from "@mui/material";
 import { useLoaderData } from "react-router-dom";
-import { Item } from "../../mock/Items";
-import { ItemRate } from "../../mock/ItemsRates";
-import { PublicationComment } from "../../mock/PublicationsComments";
-import { Wishlist } from "../../mock/Wishlists";
-import { User } from "../../mock/Users";
-import { Publication } from "../../mock/Publications";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import styled from "@mui/material/styles/styled";
 import { Link } from "react-router-dom";
-import { Genre } from "../../mock/Genres";
+import { Item, ItemRate, Wishlist } from "../../http/Items";
+import { User } from "../../http/User";
+import { Publication, Comment } from "../../http/Publications";
+import { Genre } from "../../http/Genres";
+import { Company } from "../../http/Companies";
 
 const Divider = styled(MuiDivider)`
 	border: 1px solid;
@@ -39,43 +37,63 @@ const TypographyLink = styled(Typography)`
 ` as typeof Typography;
 
 export default function AdminStatistics() {
-	const { users, publications, publicationsComments, items, itemsRates, wishlists, genres } = useLoaderData() as {
-		users: User[];
-		items: Item[];
-		itemsRates: ItemRate[];
-		publications: Publication[];
-		publicationsComments: PublicationComment[];
-		wishlists: Wishlist[];
-		genres: Genre[];
-	};
+	let { Users, Items, ItemsRates, Publications, Companies, Genres, PublicationsComments, Wishlists } =
+		useLoaderData() as {
+			Users?: User[];
+			Items?: (Item & {
+				Developers: Company[];
+				Publisher: Company;
+				Genres: Genre[];
+			})[];
+			Publications?: Publication[];
+			Companies?: Company[];
+			Genres?: Genre[];
+			ItemsRates?: ItemRate[];
+			PublicationsComments?: Comment[];
+			Wishlists?: Wishlist[];
+		};
+	Users = Users || [];
+	Items = Items || [];
+	Publications = Publications || [];
+	Companies = Companies || [];
+	Genres = Genres || [];
+	ItemsRates = ItemsRates || [];
+	PublicationsComments = PublicationsComments || [];
+	Wishlists = Wishlists || [];
+
+	const now = Date.now();
 
 	// Users
-	const usersCountWeek = users.filter((user) => user.createdAt.getTime() > Date.now() - 604800000).length;
-	const usersCountMonth = users.filter((user) => user.createdAt.getTime() > Date.now() - 2592000000).length;
-	const usersCountYear = users.filter((user) => user.createdAt.getTime() > Date.now() - 31536000000).length;
-	const moderatorsCount = users.filter((user) => user.role === "moderator").length;
-	const adminsCount = users.filter((user) => user.role === "admin").length;
-	const blockedUsersCount = users.filter((user) => user.isBlocked).length;
+	const usersCountWeek = Users.filter((user) => new Date(user.createdAt).getTime() > now - 604800000).length;
+	const usersCountMonth = Users.filter((user) => new Date(user.createdAt).getTime() > now - 2592000000).length;
+	const usersCountYear = Users.filter((user) => new Date(user.createdAt).getTime() > now - 31536000000).length;
+	const moderatorsCount = Users.filter((user) => user.role === "moderator").length;
+	const adminsCount = Users.filter((user) => user.role === "admin").length;
+	const blockedUsersCount = Users.filter((user) => user.isBlocked).length;
 
 	// Items
-	const itemsWeek = items.filter((item) => item.createdAt.getTime() > Date.now() - 604800000);
-	const itemsMonth = items.filter((item) => item.createdAt.getTime() > Date.now() - 2592000000);
-	const itemsYear = items.filter((item) => item.createdAt.getTime() > Date.now() - 31536000000);
-	const itemsCount = items.length;
+	const itemsWeek = Items.filter((item) => new Date(item.createdAt).getTime() > now - 604800000);
+	const itemsMonth = Items.filter((item) => new Date(item.createdAt).getTime() > now - 2592000000);
+	const itemsYear = Items.filter((item) => new Date(item.createdAt).getTime() > now - 31536000000);
+	const itemsCount = Items.length;
 	const itemsCountWeek = itemsWeek.length;
 	const itemsCountMonth = itemsMonth.length;
 	const itemsCountYear = itemsYear.length;
 
-	const hiddenItemsCount = items.filter((item) => item.hide).length;
+	const hiddenItemsCount = Items.filter((item) => item.hide).length;
 
-	const itemsRatesCount = itemsRates.length;
-	const itemsRatesCountWeek = itemsRates.filter((rate) => rate.createdAt.getTime() > Date.now() - 604800000).length;
-	const itemsRatesCountMonth = itemsRates.filter((rate) => rate.createdAt.getTime() > Date.now() - 2592000000).length;
-	const violatingRatesCount = itemsRates.filter((rate) => rate.violation).length;
+	const itemsRatesCount = ItemsRates.length;
+	const itemsRatesCountWeek = ItemsRates.filter(
+		(rate) => new Date(rate.createdAt).getTime() > now - 604800000
+	).length;
+	const itemsRatesCountMonth = ItemsRates.filter(
+		(rate) => new Date(rate.createdAt).getTime() > now - 2592000000
+	).length;
+	const violatingRatesCount = ItemsRates.filter((rate) => rate.violation).length;
 
 	type ItemAvgRate = { item: Item; avg_rate: number };
 	const topRankedItemReducer = (acc: ItemAvgRate, item: Item) => {
-		const itemRates = itemsRates.filter((rate) => rate.itemId === item.id);
+		const itemRates = ItemsRates?.filter((rate) => rate.itemId === item.id) || [];
 		const itemAvgRate =
 			Math.round((itemRates.reduce((acc, rate) => acc + rate.rate, 0) / itemRates.length) * 10) / 10;
 
@@ -83,87 +101,116 @@ export default function AdminStatistics() {
 
 		return acc;
 	};
-	const topRankedItem = items.reduce(topRankedItemReducer, { item: items[0], avg_rate: -1 });
-	const topRankedItemCommentsCount = itemsRates.filter((rate) => rate.itemId === topRankedItem.item.id).length;
+	const topRankedItem = Items.reduce(topRankedItemReducer, {} as ItemAvgRate);
+	const topRankedItemCommentsCount = ItemsRates.filter((rate) => rate.itemId === topRankedItem.item.id).length;
 
 	type ItemWishlistedCount = Item & { wishlists: number };
 	const mostWishlistedItemReducer = (acc: ItemWishlistedCount, item: Item) => {
-		const itemWishlists = wishlists.filter((wishlist) => wishlist.itemId === item.id);
-		if (itemWishlists.length > (acc.wishlists || -1)) acc = { ...item, wishlists: itemWishlists.length };
+		const itemWishlists = Wishlists?.filter((wishlist) => wishlist.itemId === item.id) || [];
+		if (itemWishlists.length > acc.wishlists) acc = { ...item, wishlists: itemWishlists.length };
 		return acc;
 	};
-	const mostWishlistedItem = items.reduce(mostWishlistedItemReducer, { ...items[0], wishlists: -1 });
+	const mostWishlistedItem = Items.reduce(mostWishlistedItemReducer, {} as ItemWishlistedCount);
 
 	// Publications
-	const publicationsWeek = publications.filter(
-		(publication) => publication.createdAt.getTime() > Date.now() - 604800000
+	const publicationsWeek = Publications.filter(
+		(publication) => new Date(publication.createdAt).getTime() > now - 604800000
 	);
-	const publicationsMonth = publications.filter(
-		(publication) => publication.createdAt.getTime() > Date.now() - 2592000000
+	const publicationsMonth = Publications.filter(
+		(publication) => new Date(publication.createdAt).getTime() > now - 2592000000
 	);
-	const publicationsYear = publications.filter(
-		(publication) => publication.createdAt.getTime() > Date.now() - 31536000000
+	const publicationsYear = Publications.filter(
+		(publication) => new Date(publication.createdAt).getTime() > now - 31536000000
 	);
 	const publicationsCountWeek = publicationsWeek.length;
 	const publicationsCountMonth = publicationsMonth.length;
 	const publicationsCountYear = publicationsYear.length;
-	const authorsCount = publications.reduce((acc, publication) => {
+	const authorsCount = Publications.reduce((acc, publication) => {
 		if (!acc.includes(publication.userId)) acc.push(publication.userId);
 		return acc;
 	}, [] as number[]).length;
 
-	const publicationsCommentsCount = publicationsComments.length;
-	const publicationsCommentsCountWeek = publicationsComments.filter(
-		(comment) => comment.createdAt.getTime() > Date.now() - 604800000
+	const publicationsCommentsCount = PublicationsComments.length;
+	const publicationsCommentsCountWeek = PublicationsComments.filter(
+		(comment) => new Date(comment.createdAt).getTime() > now - 604800000
 	).length;
-	const publicationsCommentsCountMonth = publicationsComments.filter(
-		(comment) => comment.createdAt.getTime() > Date.now() - 2592000000
+	const publicationsCommentsCountMonth = PublicationsComments.filter(
+		(comment) => new Date(comment.createdAt).getTime() > now - 2592000000
 	).length;
 
-	const violatingPublicationsCommentsCount = publicationsComments.filter((comment) => comment.violation).length;
+	const violatingPublicationsCommentsCount = PublicationsComments.filter((comment) => comment.violation).length;
 
 	type PublicationRate = { publication: Publication; avg_rate: number };
 	const topRankedPublicationReducer = (acc: PublicationRate, publication: Publication) => {
-		const publicationRates = publicationsComments.filter((comment) => comment.publicationId === publication.id);
+		const publicationRates =
+			PublicationsComments?.filter((comment) => comment.publicationId === publication.id) || [];
 		const publicationAvgRate = publicationRates.reduce((acc, rate) => acc + rate.rate, 0) / publicationRates.length;
 
 		if (publicationAvgRate > (acc.avg_rate || -1)) acc = { publication, avg_rate: publicationAvgRate };
 
 		return acc;
 	};
-	const topRankedPublication = publications.reduce(topRankedPublicationReducer, {
-		publication: publications[0],
-		avg_rate: -1,
-	});
-	const topRankedPublicationCommentsCount = publicationsComments.filter(
+	const topRankedPublication = Publications.reduce(topRankedPublicationReducer, {} as PublicationRate);
+	const topRankedPublicationCommentsCount = PublicationsComments.filter(
 		(comment) => comment.publicationId === topRankedPublication.publication.id
 	).length;
 
-	const violatingPublicationsCount = publications.filter((publication) => publication.violation).length;
-	const hiddenPublicationsCount = publications.filter(
+	const violatingPublicationsCount = Publications.filter((publication) => publication.violation).length;
+	const hiddenPublicationsCount = Publications.filter(
 		(publication) => publication.hide && !publication.violation
 	).length;
 
-	// Genres
-	const genresCountWeek = genres.filter((genre) => genre.createdAt.getTime() > Date.now() - 604800000).length;
-	const genresCountMonth = genres.filter((genre) => genre.createdAt.getTime() > Date.now() - 2592000000).length;
-	const genresCountYear = genres.filter((genre) => genre.createdAt.getTime() > Date.now() - 31536000000).length;
+	// Companies
 
-	// count of items in each genre
+	const companiesCountWeek = Companies.filter(
+		(company) => new Date(company.createdAt).getTime() > now - 604800000
+	).length;
+	const companiesCountMonth = Companies.filter(
+		(company) => new Date(company.createdAt).getTime() > now - 2592000000
+	).length;
+	const companiesCountYear = Companies.filter(
+		(company) => new Date(company.createdAt).getTime() > now - 31536000000
+	).length;
+	const hiddenCompaniesCount = Companies.filter((company) => company.hide).length;
+
+	type CompanyItemsCount = { company: Company; count: number };
+
+	const companiesDevelopedItemsCount = Companies.map((company): CompanyItemsCount => {
+		const developedItems = Items?.filter((item) => item.Developers.includes(company)) || [];
+		return { company, count: developedItems.length };
+	});
+	const topDeveloper = companiesDevelopedItemsCount.reduce((acc, company) => {
+		if (company.count > (acc.count || -1)) acc = company;
+		return acc;
+	}, {} as CompanyItemsCount);
+
+	const companiesPublishedItemsCount = Companies.map((company): CompanyItemsCount => {
+		const publishedItems = Items?.filter((item) => item.company_publisherId === company.id) || [];
+		return { company, count: publishedItems.length };
+	});
+	const topPublisher = companiesPublishedItemsCount.reduce((acc, company) => {
+		if (company.count > (acc.count || -1)) acc = company;
+		return acc;
+	});
+	// Genres
+	const genresCountWeek = Genres.filter((genre) => new Date(genre.createdAt).getTime() > now - 604800000).length;
+	const genresCountMonth = Genres.filter((genre) => new Date(genre.createdAt).getTime() > now - 2592000000).length;
+	const genresCountYear = Genres.filter((genre) => new Date(genre.createdAt).getTime() > now - 31536000000).length;
+
 	type GenreItemsCount = { genre: Genre; count: number };
-	const genresItemsCountMapper = (items: Item[]) => {
+	const genresItemsCountMapper = (items: typeof Items) => {
 		return (genre: Genre): GenreItemsCount => {
-			const genreItems = items.filter((item) => item.genresIds?.includes(genre.id));
+			const genreItems = items?.filter((item) => item.Genres?.includes(genre)) || [];
 			return { genre, count: genreItems.length };
 		};
 	};
-	const genresItemsCount = genres.map(genresItemsCountMapper(items));
+	const genresItemsCount = Genres.map(genresItemsCountMapper(Items));
 	const topGenreItemsCount = genresItemsCount.reduce((acc, genreItemsCount) => {
 		if (genreItemsCount.count > acc.count) acc = genreItemsCount;
 		return acc;
 	}, genresItemsCount[0]);
 
-	const hiddenGenresCount = genres.filter((genre) => genre.hide).length;
+	const hiddenGenresCount = Genres.filter((genre) => genre.hide).length;
 
 	return (
 		<Box>
@@ -176,7 +223,7 @@ export default function AdminStatistics() {
 				</AccordionSummary>
 				<AccordionDetailsStyle>
 					<Box>
-						<Typography variant='h6'>Зареєстровано: {users.length}</Typography>
+						<Typography variant='h6'>Зареєстровано: {Users.length}</Typography>
 						<Typography variant='h6'>За цей тиждень: {usersCountWeek}</Typography>
 						<Typography variant='h6'>За цей місяць: {usersCountMonth}</Typography>
 						<Typography variant='h6'>За цей рік: {usersCountYear}</Typography>
@@ -229,7 +276,7 @@ export default function AdminStatistics() {
 				</AccordionSummary>
 				<AccordionDetailsStyle>
 					<Box>
-						<Typography variant='h6'>Всього публікацій: {publications.length}</Typography>
+						<Typography variant='h6'>Всього публікацій: {Publications.length}</Typography>
 						<Typography variant='h6'>За цей тиждень: {publicationsCountWeek}</Typography>
 						<Typography variant='h6'>За цей місяць: {publicationsCountMonth}</Typography>
 						<Typography variant='h6'>За цей рік: {publicationsCountYear}</Typography>
@@ -265,11 +312,35 @@ export default function AdminStatistics() {
 			</Accordion>
 			<Accordion disableGutters>
 				<AccordionSummary expandIcon={<ExpandMoreIcon color='primary' fontSize='large' />}>
+					<Typography variant='h5'>Компанії</Typography>
+				</AccordionSummary>
+				<AccordionDetailsStyle>
+					<Box>
+						<Typography variant='h6'>Всього компаній: {Companies.length}</Typography>
+						<Typography variant='h6'>За цей тиждень: {companiesCountWeek}</Typography>
+						<Typography variant='h6'>За цей місяць: {companiesCountMonth}</Typography>
+						<Typography variant='h6'>За цей рік: {companiesCountYear}</Typography>
+						<Typography variant='h6'>Всього прихованих: {hiddenCompaniesCount}</Typography>
+					</Box>
+					<Divider />
+					<Box>
+						<Typography variant='h6'>Найбільший розробник: {topDeveloper.company.name}</Typography>
+						<Typography variant='h6'>Кількість товарів: {topDeveloper.count}</Typography>
+					</Box>
+					<Divider />
+					<Box>
+						<Typography variant='h6'>Найбільший видавець: {topPublisher.company.name}</Typography>
+						<Typography variant='h6'>Кількість товарів: {topPublisher.count}</Typography>
+					</Box>
+				</AccordionDetailsStyle>
+			</Accordion>
+			<Accordion disableGutters>
+				<AccordionSummary expandIcon={<ExpandMoreIcon color='primary' fontSize='large' />}>
 					<Typography variant='h5'>Жанри</Typography>
 				</AccordionSummary>
 				<AccordionDetailsStyle>
 					<Box>
-						<Typography variant='h6'>Всього жанрів: {genres.length}</Typography>
+						<Typography variant='h6'>Всього жанрів: {Genres.length}</Typography>
 						<Typography variant='h6'>За цей тиждень: {genresCountWeek}</Typography>
 						<Typography variant='h6'>За цей місяць: {genresCountMonth}</Typography>
 						<Typography variant='h6'>За цей рік: {genresCountYear}</Typography>

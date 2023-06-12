@@ -1,11 +1,13 @@
 import { Box, FormControl, InputLabel, MenuItem, Select, List as MuiList, Divider } from "@mui/material";
-import { Genre } from "../../../mock/Genres";
+import { Genre } from "../../../http/Genres";
 import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
+import Typography from "@mui/material/Typography";
 
 type ListProps = {
 	genres?: Genre[];
+	onDelete: (id: number) => void;
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -20,7 +22,7 @@ type ListProps = {
 		maxValue: number;
 	};
 };
-export default function List({ genres, sorting, limitation, pagination }: ListProps) {
+export default function List({ genres, onDelete, sorting, limitation, pagination }: ListProps) {
 	return (
 		<Box
 			sx={{
@@ -64,14 +66,24 @@ export default function List({ genres, sorting, limitation, pagination }: ListPr
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{genres?.map((genre, index: number) => (
-					<>
-						<ListItem key={genre.id.toString(16)} genre={genre} />
-						{index !== genres.length - 1 && (
-							<Divider key={`divider-${genre.id}`} sx={{ borderColor: "primary.main" }} />
-						)}
-					</>
-				))}
+				{genres ? (
+					genres.map((genre, index: number) => (
+						<>
+							<ListItem key={genre.id.toString(16)} genre={genre} onDelete={onDelete} />
+							{index !== genres.length - 1 && (
+								<Divider key={`divider-${genre.id}`} sx={{ borderColor: "primary.main" }} />
+							)}
+						</>
+					))
+				) : (
+					<Typography
+						component='h6'
+						variant='h6'
+						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
+					>
+						Жанрів не знайдено
+					</Typography>
+				)}
 			</MuiList>
 			<Pagination data={pagination} />
 		</Box>

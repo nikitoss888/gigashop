@@ -1,5 +1,12 @@
 import { Link, useLoaderData } from "react-router-dom";
-import { Item as ItemType } from "../mock/Items";
+import {
+	Item as ItemType,
+	ItemRate,
+	DeleteItemRateRequest,
+	SetItemRateRequest,
+	ToggleWishlistItemRequest,
+	ToggleCartItemRequest,
+} from "../http/Items";
 import { Alert, AlertTitle, Typography, Box, ButtonGroup, Button, Container, Dialog, AlertColor } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import DataGroup from "../components/Common/DataGroup";
@@ -12,6 +19,12 @@ import CommentsList from "../components/Common/CommentsList";
 import ClientError from "../ClientError";
 import ItemRating from "../components/Common/ItemRating";
 import { FormEvent, useState } from "react";
+import { Company } from "../http/Companies";
+import { Genre } from "../http/Genres";
+import { User } from "../http/User";
+import { useRecoilState } from "recoil";
+import { userState } from "../store/User";
+import Cookies from "js-cookie";
 
 const CoverImage = styled("img")`
 	width: 100%;
@@ -21,12 +34,34 @@ const CoverImage = styled("img")`
 `;
 
 export default function Item() {
+	const [user, _] = useRecoilState(userState);
 	const theme = useTheme();
 
 	const { item, error } = useLoaderData() as {
-		item: ItemType;
+		item: ItemType & {
+			Publisher?: Company | null;
+			Developers?: Company[];
+			Genres?: Genre[];
+			Rates?: (ItemRate & {
+				User: User;
+			})[];
+			WishlistedUsers?: User[];
+			CartedUsers?: User[];
+		};
 		error?: ClientError;
 	};
+
+	if (error) throw error;
+
+	const publisher = item.Publisher || null;
+	const developers = item.Developers || [];
+	const genres = item.Genres || [];
+	const rates = item.Rates || [];
+	const wishlisted = item.WishlistedUsers || [];
+	const carted = item.CartedUsers || [];
+
+	const [isWishlisted, setIsWishlisted] = useState(wishlisted?.find((user) => user.id === user?.id) !== undefined);
+	const [isCarted, setIsCarted] = useState(carted?.find((user) => user.id === user?.id) !== undefined);
 
 	const [openDialog, setOpenDialog] = useState(false);
 	const [alert, setAlert] = useState<{
@@ -34,20 +69,86 @@ export default function Item() {
 		message: string;
 		severity: AlertColor | undefined;
 	}>({ title: "", message: "", severity: undefined });
-	const onWishlist = () => {
-		console.log("Added to wishlist");
-		setAlert({ title: "Успіх!", message: "Товар успішно додано до списку бажань!", severity: "success" });
+
+	const onWishlist = async () => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані!");
+
+		const result = await ToggleWishlistItemRequest(token, item.id).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return undefined;
+		});
+		if (!result) return;
+
+		setIsWishlisted(!isWishlisted);
+
+		setAlert({ title: "Успіх!", message: result.message, severity: "success" });
 		setOpenDialog(true);
 	};
 
-	const [message, setMessage] = useState("");
-	const [rating, setRating] = useState(0);
-	const onRate = (event: FormEvent) => {
-		event.preventDefault();
-		console.log("Rated");
-		setAlert({ title: "Успіх!", message: "Ваш відгук успішно додано!", severity: "success" });
+	const onCart = async () => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані!");
+
+		const result = await ToggleCartItemRequest(token, item.id).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return undefined;
+		});
+		if (!result) return;
+
+		setIsCarted(!isCarted);
+
+		setAlert({ title: "Успіх!", message: result.message, severity: "success" });
 		setOpenDialog(true);
 	};
+
+	const [userComment, setUserComment] = useState(rates?.find((rate) => rate.userId === user?.id));
+	const [message, setMessage] = useState(userComment?.content || "");
+	const [rating, setRating] = useState(userComment?.rate || 0);
+	const onRate = async (event: FormEvent) => {
+		event.preventDefault();
+
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({ title: "Помилка!", message: "Ви не авторизовані!", severity: "error" });
+			setOpenDialog(true);
+			return;
+		}
+
+		const result = await SetItemRateRequest(token, item.id, rating, message).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return undefined;
+		});
+		if (result === undefined) return;
+
+		setUserComment({ ...result.rate, User: result.user });
+
+		setAlert({ title: "Успіх!", message: result.message, severity: "success" });
+		setOpenDialog(true);
+	};
+
+	const onDelete = async () => {
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({ title: "Помилка!", message: "Ви не авторизовані!", severity: "error" });
+			setOpenDialog(true);
+			return;
+		}
+
+		const result = await DeleteItemRateRequest(token, item.id).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return false;
+		});
+		if (!result) return;
+
+		setUserComment(undefined);
+	};
+
+	const allRates = rates.filter((rate) => rate.userId !== user?.id);
 
 	if (error) throw error;
 
@@ -110,11 +211,11 @@ export default function Item() {
 						</Carousel>
 					</Box>
 					<DataGroup title='Видавець'>
-						{item.publisher ? (
+						{publisher ? (
 							<Typography
 								variant='body1'
 								component={Link}
-								to={`/shop/companies/${item.publisher.id}`}
+								to={`/shop/companies/${publisher.id}`}
 								sx={{
 									color: theme.colors.primary,
 									textDecoration: "none",
@@ -124,85 +225,103 @@ export default function Item() {
 									},
 								}}
 							>
-								{item.publisher.name}
+								{publisher.name}
 							</Typography>
 						) : (
 							<Typography variant='body1'>Не вказано</Typography>
 						)}
 					</DataGroup>
 					<DataGroup title='Розробники'>
-						{item.developers?.map((developer) => (
-							<Chip
-								key={developer.id.toString(16)}
-								component={Link}
-								to={`/shop/companies/${developer.id}`}
-								sx={{
-									color: theme.colors.secondary,
-									textDecoration: "none",
-									"&:hover": {
+						{developers && developers.length > 0 ? (
+							developers.map((developer) => (
+								<Chip
+									key={developer.id.toString(16)}
+									component={Link}
+									to={`/shop/companies/${developer.id}`}
+									sx={{
 										color: theme.colors.secondary,
-										cursor: "pointer",
-									},
-								}}
-								label={
-									<Typography variant='body2' color='secondary'>
-										{developer.name}
-									</Typography>
-								}
-							/>
-						)) || (
+										textDecoration: "none",
+										"&:hover": {
+											color: theme.colors.secondary,
+											cursor: "pointer",
+										},
+									}}
+									label={
+										<Typography variant='body2' color='secondary'>
+											{developer.name}
+										</Typography>
+									}
+								/>
+							))
+						) : (
 							<Typography variant='body1' color='secondary'>
 								Не вказано
 							</Typography>
 						)}
 					</DataGroup>
 					<DataGroup title='Жанри'>
-						{item.genres?.map((genre, index) => (
-							<Chip
-								key={index}
-								component={Link}
-								to={`/shop/genres/${genre.id}`}
-								sx={{
-									color: theme.colors.secondary,
-									textDecoration: "none",
-									"&:hover": {
+						{genres && genres.length > 0 ? (
+							genres.map((genre, index) => (
+								<Chip
+									key={index}
+									component={Link}
+									to={`/shop/genres/${genre.id}`}
+									sx={{
 										color: theme.colors.secondary,
-										cursor: "pointer",
-									},
-								}}
-								label={
-									<Typography variant='body2' color='secondary'>
-										{genre.name}
-									</Typography>
-								}
-							/>
-						)) || (
+										textDecoration: "none",
+										"&:hover": {
+											color: theme.colors.secondary,
+											cursor: "pointer",
+										},
+									}}
+									label={
+										<Typography variant='body2' color='secondary'>
+											{genre.name}
+										</Typography>
+									}
+								/>
+							))
+						) : (
 							<Typography variant='body1' color='secondary'>
 								Не вказано
 							</Typography>
 						)}
 					</DataGroup>
 					<DataGroup title='Дата випуску'>
-						<Typography variant='body1'>{item.releaseDate.toLocaleDateString() || "Не вказано"}</Typography>
+						<Typography variant='body1'>
+							{new Date(item.releaseDate).toLocaleDateString() || "Не вказано"}
+						</Typography>
 					</DataGroup>
-					{item.comments && <ItemRating comments={item.comments} />}
+					<ItemRating comments={rates} />
 					<DataGroup title='Ціна'>
 						<Typography component='p' variant='body1'>
 							{item.price ? item.price.toString() + " грн" : "Не вказано"}
 						</Typography>
 					</DataGroup>
-					<ButtonGroup>
-						<Button
-							variant='contained'
-							onClick={onWishlist}
-							sx={{
-								color: "secondary.main",
-								backgroundColor: "primary.main",
-							}}
-						>
-							Додати до списку бажань
-						</Button>
-					</ButtonGroup>
+					{user && (
+						<ButtonGroup>
+							<Button
+								variant='contained'
+								onClick={onWishlist}
+								sx={{
+									color: "secondary.main",
+									backgroundColor: isWishlisted ? "primary.main" : "accent.main",
+								}}
+							>
+								{isWishlisted ? "Видалити зі списку бажань" : "Додати до списку бажань"}
+							</Button>
+							<Button
+								variant='contained'
+								onClick={onCart}
+								sx={{
+									color: "secondary.main",
+									backgroundColor: isCarted ? "primary.main" : "accent.main",
+								}}
+							>
+								{isCarted ? "Видалити з кошика" : "Додати до кошика"}
+							</Button>
+						</ButtonGroup>
+					)}
 					<DataGroup title='Кількість' column='1/3'>
 						<Typography component='p' variant='body1'>
 							{item.amount
@@ -230,20 +349,20 @@ export default function Item() {
 							<Typography variant='body1'>Не вказано</Typography>
 						)}
 					</DataGroup>
-					{item.comments && (
-						<CommentsList
-							comments={item.comments}
-							onSubmit={onRate}
-							message={{
-								value: message,
-								setValue: setMessage,
-							}}
-							rate={{
-								value: rating,
-								setValue: setRating,
-							}}
-						/>
-					)}
+					<CommentsList
+						comments={allRates}
+						userComment={userComment}
+						onSubmit={onRate}
+						onDelete={onDelete}
+						message={{
+							value: message,
+							setValue: setMessage,
+						}}
+						rate={{
+							value: rating,
+							setValue: setRating,
+						}}
+					/>
 				</Content>
 			</Container>
 			<Dialog

@@ -1,11 +1,12 @@
 import { useLoaderData } from "react-router-dom";
 import ClientError from "../../ClientError";
-import { Item } from "../../mock/Items";
+import { CreateItemRequest, Item, ItemRate, UpdateItemRequest } from "../../http/Items";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
 	Alert,
+	AlertColor,
 	AlertTitle,
 	Autocomplete,
 	Box,
@@ -24,10 +25,12 @@ import WidgetSingle from "../../Cloudinary/WidgetSingle";
 import WidgetMultiple from "../../Cloudinary/WidgetMultiple";
 import Typography from "@mui/material/Typography";
 import SubmitButton from "../../components/Common/SubmitButton";
-import { default as MockGenres } from "../../mock/Genres";
-import { default as MockCompanies } from "../../mock/Companies";
 import Chip from "../../components/Common/Chip";
 import Checkbox from "../../components/Form/Checkbox";
+import { Company } from "../../http/Companies";
+import { Genre } from "../../http/Genres";
+import { User } from "../../http/User";
+import Cookies from "js-cookie";
 
 const FormBox = styled(Box)`
 	display: flex;
@@ -135,13 +138,28 @@ const schema = yup.object().shape({
 });
 
 export default function AdminItemForm() {
-	const { item, error } = useLoaderData() as {
-		item?: Item;
+	const { item, error, genres, companies } = useLoaderData() as {
+		item?: Item & {
+			Publisher: Company | null;
+			Developers: Company[];
+			Genres: Genre[];
+			Rates: (ItemRate & {
+				User: User;
+			})[];
+			WishlistedUsers: User[];
+		};
+		genres?: Genre[];
+		companies?: Company[];
 		error?: ClientError;
 	};
 
 	if (error) throw error;
 
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
 	const [openDialog, setOpenDialog] = useState(false);
 
 	document.title =
@@ -160,7 +178,7 @@ export default function AdminItemForm() {
 		discountSize: number | undefined;
 		hide: boolean;
 	};
-	let defaultValues: Item | FormValues = {
+	let defaultValues: FormValues = {
 		name: "",
 		description: "",
 		releaseDate: undefined,
@@ -172,7 +190,19 @@ export default function AdminItemForm() {
 		discountSize: undefined,
 		hide: false,
 	};
-	if (item) defaultValues = item;
+	if (item)
+		defaultValues = {
+			name: item.name,
+			description: item.description,
+			releaseDate: new Date(item.releaseDate),
+			price: item.price,
+			amount: item.amount,
+			discount: item.discount,
+			discountFrom: item.discountFrom !== null ? new Date(item.discountFrom) : undefined,
+			discountTo: item.discountTo !== null ? new Date(item.discountTo) : undefined,
+			discountSize: item.discountSize || undefined,
+			hide: item.hide,
+		};
 
 	const methods = useForm({
 		defaultValues,
@@ -184,10 +214,10 @@ export default function AdminItemForm() {
 	let locDiscountTo: Date | null = null;
 
 	if (item) {
-		const offset = item.releaseDate.getTimezoneOffset();
-		locReleaseDate = new Date(item.releaseDate.getTime() - offset * 60 * 1000);
-		if (item.discountFrom) locDiscountFrom = new Date(item.discountFrom.getTime() - offset * 60 * 1000);
-		if (item.discountTo) locDiscountTo = new Date(item.discountTo.getTime() - offset * 60 * 1000);
+		const offset = new Date(item.releaseDate).getTimezoneOffset();
+		locReleaseDate = new Date(new Date(item.releaseDate).getTime() - offset * 60 * 1000);
+		if (item.discountFrom) locDiscountFrom = new Date(new Date(item.discountFrom).getTime() - offset * 60 * 1000);
+		if (item.discountTo) locDiscountTo = new Date(new Date(item.discountTo).getTime() - offset * 60 * 1000);
 	}
 
 	const [localReleaseDate, setLocalReleaseDate] = useState<Date | null>(locReleaseDate);
@@ -200,30 +230,38 @@ export default function AdminItemForm() {
 			.join(";\n") || null
 	);
 
-	const Genres = MockGenres.sort((a, b) => (a.name > b.name ? 1 : -1)).map((genre) => ({
-		id: genre.id,
-		name: genre.name,
-	}));
+	const Genres =
+		genres
+			?.sort((a, b) => (a.name > b.name ? 1 : -1))
+			.map((genre) => ({
+				id: genre.id,
+				name: genre.name,
+			})) || [];
 	const [itemGenres, setItemGenres] = useState<DataObject[]>(
-		Genres.filter((genre) => item?.genresIds?.includes(genre.id)).map((genre) => ({
+		Genres.filter((genre) => item?.Genres.map((genre) => genre.id).includes(genre.id)).map((genre) => ({
 			id: genre.id,
 			name: genre.name,
 		})) || []
 	);
 
-	const Companies = MockCompanies.sort((a, b) => (a.name > b.name ? 1 : -1)).map((company) => ({
-		id: company.id,
-		name: company.name,
-	}));
-	const publisher = Companies.find((company) => company.id === item?.publisherId);
+	const Companies =
+		companies
+			?.sort((a, b) => (a.name > b.name ? 1 : -1))
+			.map((company) => ({
+				id: company.id,
+				name: company.name,
+			})) || [];
+	const publisher = Companies.find((company) => company.id === item?.company_publisherId);
 	const [itemPublisher, setItemPublisher] = useState<DataObject | null>(
 		publisher ? { id: publisher.id, name: publisher.name } : null
 	);
 	const [itemDevelopers, setItemDevelopers] = useState<DataObject[]>(
-		Companies.filter((company) => item?.developersIds?.includes(company.id)).map((company) => ({
-			id: company.id,
-			name: company.name,
-		})) || []
+		Companies.filter((company) => item?.Developers.map((company) => company.id).includes(company.id)).map(
+			(company) => ({
+				id: company.id,
+				name: company.name,
+			})
+		) || []
 	);
 
 	const [mainImage, setMainImage] = useState<string | null>(item?.mainImage || null);
@@ -244,23 +282,146 @@ export default function AdminItemForm() {
 	const removeImage = (index: number) => setImages(images.filter((_, i) => i !== index));
 	const removeImages = () => setImages([]);
 
-	const onSubmit = (hookFormData: any) => {
-		const characteristicsObject: { [key: string]: string } = {};
-		characteristics?.split(/;\n?/).forEach((characteristic) => {
-			const [key, value] = characteristic.split(": ");
-			if (key && value) characteristicsObject[key] = value;
-		});
-		console.log({
-			...hookFormData,
-			characteristics: characteristicsObject,
-			genres: itemGenres,
-			developers: itemDevelopers,
-			publisher: itemPublisher,
-			mainImage,
-			coverImage,
-			images,
-		});
-		setOpenDialog(true);
+	const onSubmit = async (hookFormData: any) => {
+		let characteristicsObject: { [key: string]: string | number | boolean } | undefined;
+
+		if (characteristics) {
+			characteristicsObject = {};
+			const characteristicsArray = characteristics.split(/;\n?/);
+			for (const characteristic of characteristicsArray) {
+				const [key, value] = characteristic.split(/:\s?/);
+				if (!key || key.length === 0 || !value || value.length === 0) continue;
+				characteristicsObject[key] = value;
+			}
+		}
+
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані");
+
+		let result: Item | void;
+		let error: ClientError | undefined;
+		if (item) {
+			result = await UpdateItemRequest(token, item.id, {
+				name: hookFormData.name,
+				description: hookFormData.description,
+				releaseDate: localReleaseDate?.toISOString().slice(0, 10),
+				price: hookFormData.price,
+				amount: hookFormData.amount,
+				discount: hookFormData.discount,
+				discountFrom: hookFormData.discount ? localDiscountFrom?.toISOString().slice(0, 10) : undefined,
+				discountTo: hookFormData.discount ? localDiscountTo?.toISOString().slice(0, 10) : undefined,
+				discountSize: hookFormData.discount ? hookFormData.discountSize : undefined,
+				mainImage: mainImage !== null ? mainImage : item.mainImage,
+				images: images.length > 0 ? images : undefined,
+				coverImage: coverImage || undefined,
+				characteristics: characteristicsObject,
+				hide: hookFormData.hide,
+				publisherId: itemPublisher?.id || undefined,
+				developersIds: itemDevelopers.map((developer) => developer.id),
+				genresIds: itemGenres.map((genre) => genre.id),
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		} else {
+			if (!localReleaseDate) {
+				setAlert({
+					severity: "error",
+					title: "Помилка",
+					message: "Дата виходу не вказана",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (!mainImage) {
+				setAlert({
+					severity: "error",
+					title: "Помилка",
+					message: "Головне зображення не завантажено",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (hookFormData.discount && localDiscountFrom === null) {
+				setAlert({
+					severity: "error",
+					title: "Помилка",
+					message: "Дата початку знижки не вказана",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (hookFormData.discount && localDiscountTo === null) {
+				setAlert({
+					severity: "error",
+					title: "Помилка",
+					message: "Дата закінчення знижки не вказана",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (hookFormData.discount && !hookFormData.discountSize) {
+				setAlert({
+					severity: "error",
+					title: "Помилка",
+					message: "Розмір знижки не вказано",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			result = await CreateItemRequest(token, {
+				name: hookFormData.name,
+				description: hookFormData.description,
+				releaseDate: localReleaseDate.toISOString().slice(0, 10),
+				price: hookFormData.price,
+				amount: hookFormData.amount,
+				discount: hookFormData.discount,
+				discountFrom:
+					hookFormData.discount && localDiscountFrom !== null
+						? localDiscountFrom.toISOString().slice(0, 10)
+						: null,
+				discountTo:
+					hookFormData.discount && localDiscountTo !== null
+						? localDiscountTo.toISOString().slice(0, 10)
+						: null,
+				discountSize: hookFormData.discount ? hookFormData.discountSize : null,
+				mainImage: mainImage,
+				images: images,
+				coverImage: coverImage,
+				characteristics: characteristicsObject || {},
+				hide: hookFormData.hide,
+				publisherId: itemPublisher?.id || null,
+				developersIds: itemDevelopers.map((developer) => developer.id),
+				genresIds: itemGenres.map((genre) => genre.id),
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		}
+		if (error && !result) {
+			setAlert({
+				severity: "error",
+				message: error.message,
+				title: `Помилка ${error.status}`,
+			});
+			setOpenDialog(true);
+		}
+
+		if (result) {
+			setAlert({
+				severity: "success",
+				title: "Успіх",
+				message: `Товар ${item ? "оновлено" : "створено"}`,
+			});
+			setOpenDialog(true);
+		}
 	};
 
 	const onReset = () => {
@@ -656,9 +817,9 @@ export default function AdminItemForm() {
 				</FormProvider>
 			</Box>
 			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-				<Alert severity='success'>
-					<AlertTitle>Успіх</AlertTitle>
-					Товар успішно {item ? "оновлено" : "додано"}!
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

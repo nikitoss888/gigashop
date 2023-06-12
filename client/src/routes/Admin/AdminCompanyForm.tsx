@@ -1,13 +1,14 @@
 import { useLoaderData } from "react-router-dom";
-import { Company } from "../../mock/Companies";
+import { Company, CreateCompanyRequest, UpdateCompanyRequest } from "../../http/Companies";
 import ClientError from "../../ClientError";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import WidgetSingle from "../../Cloudinary/WidgetSingle";
-import { Alert, AlertTitle, Box, Button, ButtonGroup, Dialog, TextField } from "@mui/material";
+import { Alert, AlertColor, AlertTitle, Box, Button, ButtonGroup, Dialog, TextField } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
 import { useState } from "react";
 import SubmitButton from "../../components/Common/SubmitButton";
+import Cookies from "js-cookie";
 
 const FormBox = styled(Box)`
 	display: flex;
@@ -33,6 +34,11 @@ export default function AdminCompanyForm() {
 
 	if (error) throw error;
 
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
 	const [openDialog, setOpenDialog] = useState(false);
 
 	document.title =
@@ -45,13 +51,19 @@ export default function AdminCompanyForm() {
 		director: string;
 		founded: Date | undefined;
 	};
-	let defaultValues: Company | CompanyForm = {
+	let defaultValues: CompanyForm = {
 		name: "",
 		description: "",
 		director: "",
 		founded: undefined,
 	};
-	if (company) defaultValues = company;
+	if (company)
+		defaultValues = {
+			name: company.name,
+			description: company.description,
+			director: company.director,
+			founded: new Date(company.founded),
+		};
 
 	const methods = useForm({
 		defaultValues,
@@ -67,9 +79,99 @@ export default function AdminCompanyForm() {
 		setImage(null);
 	};
 
-	const onSubmit = (hookFormData: any) => {
-		console.log({ ...hookFormData, image });
-		setOpenDialog(true);
+	const onSubmit = async (hookFormData: any) => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані");
+
+		let result: Company | void;
+		let error: ClientError | undefined;
+		if (company) {
+			const date = hookFormData.founded instanceof Date ? hookFormData.founded : new Date(hookFormData.founded);
+
+			result = await UpdateCompanyRequest(token, company.id, {
+				name: hookFormData.name,
+				description: hookFormData.description,
+				director: hookFormData.director,
+				image: image !== null ? image : company.image,
+				founded: date.toISOString().slice(0, 10),
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		} else {
+			if (image === null) {
+				setAlert({
+					severity: "error",
+					message: "Ви не завантажили зображення",
+					title: "Помилка",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (!hookFormData.founded || hookFormData.founded === null) {
+				setAlert({
+					severity: "error",
+					message: "Ви не вказали дату заснування",
+					title: "Помилка",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (!hookFormData.name || hookFormData.name.length === 0) {
+				setAlert({
+					severity: "error",
+					message: "Ви не вказали назву компанії",
+					title: "Помилка",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			if (!hookFormData.director || hookFormData.director.length === 0) {
+				setAlert({
+					severity: "error",
+					message: "Ви не вказали директора компанії",
+					title: "Помилка",
+				});
+				setOpenDialog(true);
+				return;
+			}
+
+			const date = hookFormData.founded instanceof Date ? hookFormData.founded : new Date(hookFormData.founded);
+
+			result = await CreateCompanyRequest(token, {
+				name: hookFormData.name,
+				description: hookFormData.description,
+				director: hookFormData.director,
+				image: image,
+				founded: date.toISOString().slice(0, 10),
+				hide: false,
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		}
+		if (error && !result) {
+			setAlert({
+				severity: "error",
+				message: error.message,
+				title: `Помилка ${error.status}`,
+			});
+			setOpenDialog(true);
+		}
+
+		if (result) {
+			setAlert({
+				severity: "success",
+				message: `Компанію ${result.name} (№${result.id}) ${company ? "оновлено" : "створено"}`,
+				title: "Успіх",
+			});
+			setOpenDialog(true);
+		}
 	};
 	const onReset = () => {
 		methods.reset();
@@ -174,9 +276,9 @@ export default function AdminCompanyForm() {
 				</FormProvider>
 			</Box>
 			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-				<Alert severity='success'>
-					<AlertTitle>Успіх</AlertTitle>
-					Компанію успішно {company ? "оновлено" : "створено"}!
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

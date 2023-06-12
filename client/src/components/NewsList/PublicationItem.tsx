@@ -1,9 +1,10 @@
-import { Publication } from "../../mock/Publications";
+import { Publication } from "../../http/Publications";
 import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
 import { Link } from "react-router-dom";
 import Chip from "../Common/Chip";
+import { User } from "../../http/User";
 
 const MiniAvatarStyle = styled("img")`
 	width: 30px;
@@ -12,17 +13,17 @@ const MiniAvatarStyle = styled("img")`
 `;
 
 type PublicationProps = {
-	item: Publication;
+	publication: Publication & { AuthoredUser: User };
 };
-export default function PublicationItem({ item }: PublicationProps) {
+export default function PublicationItem({ publication }: PublicationProps) {
 	const element = document.createElement("div");
-	element.innerHTML = item.content;
+	element.innerHTML = publication.content;
 	const cleanContent = element.textContent || element.innerText || "";
 
 	return (
 		<Box
 			component={Link}
-			to={`/news/${item.id}`}
+			to={`/news/${publication.id}`}
 			sx={{
 				backgroundColor: "secondary.main",
 				padding: "10px",
@@ -34,7 +35,7 @@ export default function PublicationItem({ item }: PublicationProps) {
 			}}
 		>
 			<Typography variant='h6' component='h2' color='primary'>
-				{item.title}
+				{publication.title}
 			</Typography>
 			<Typography
 				variant='body1'
@@ -49,7 +50,7 @@ export default function PublicationItem({ item }: PublicationProps) {
 			>
 				{cleanContent}
 			</Typography>
-			{item.tags && item.tags.length > 0 && (
+			{publication.tags.length > 0 && (
 				<Box
 					sx={{
 						display: "flex",
@@ -59,9 +60,9 @@ export default function PublicationItem({ item }: PublicationProps) {
 						marginTop: "10px",
 					}}
 				>
-					{item.tags?.map((tag) => (
+					{publication.tags.map((tag) => (
 						<Chip
-							key={`${item.id.toString(16)}-${tag}}`}
+							key={`${publication.id.toString(16)}-${tag}}`}
 							label={
 								<Typography variant='body1' color='secondary'>
 									{tag}
@@ -80,10 +81,10 @@ export default function PublicationItem({ item }: PublicationProps) {
 					marginTop: "10px",
 				}}
 			>
-				<MiniAvatarStyle src={item.user?.image} alt={item.user?.login} />
+				<MiniAvatarStyle src={publication.AuthoredUser.image} alt={publication.AuthoredUser.login} />
 				<Typography variant='body2' component='p' color='primary'>
-					{item.user?.firstName} {item.user?.lastName}
-					{item.createdAt ? `, ${item.createdAt.toLocaleDateString()}` : ""}
+					{publication.AuthoredUser.firstName} {publication.AuthoredUser.lastName}
+					{`, ${new Date(publication.createdAt).toLocaleDateString()}`}
 				</Typography>
 			</Box>
 		</Box>

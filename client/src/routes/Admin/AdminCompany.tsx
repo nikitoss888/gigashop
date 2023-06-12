@@ -1,14 +1,16 @@
 import { Box, IconButton, Tab, Tabs, Tooltip } from "@mui/material";
 import Typography from "@mui/material/Typography";
-import { Link, useLoaderData } from "react-router-dom";
-import { Company as CompanyType } from "../../mock/Companies";
+import { Link, useLoaderData, useNavigate } from "react-router-dom";
+import { Company, DeleteCompanyRequest } from "../../http/Companies";
 import ClientError from "../../ClientError";
 import { SyntheticEvent, useState } from "react";
 import { SortSwitch } from "../Items";
-import { Item } from "../../mock/Items";
+import { DeleteItemRequest, Item } from "../../http/Items";
 import { Delete, Edit } from "@mui/icons-material";
 import styled from "@mui/material/styles/styled";
 import List from "../../components/Admin/Items/List";
+import Cookies from "js-cookie";
+import { AxiosError } from "axios";
 
 function a11yProps(index: string) {
 	return {
@@ -24,14 +26,13 @@ const Image = styled("img")`
 `;
 
 export default function AdminCompany() {
-	const { company, error, developedTotalCount } = useLoaderData() as {
-		company: CompanyType;
-		developedTotalCount: number;
-		publishedTotalCount: number;
+	const { company, error } = useLoaderData() as {
+		company: Company & { ItemsDeveloped?: Item[]; ItemsPublished?: Item[] };
 		error?: ClientError;
 	};
 
 	if (error) throw error;
+	const navigate = useNavigate();
 
 	document.title = `${company.name} — Адміністративна панель — gigashop`;
 
@@ -43,8 +44,8 @@ export default function AdminCompany() {
 	const [limit, setLimit] = useState(initLimit);
 	const [page, setPage] = useState(initPage);
 
-	const developedItems = company.developed || [];
-	const publishedItems = company.published || [];
+	const [developedItems, setDevelopedItems] = useState(company.ItemsDeveloped || []);
+	const [publishedItems, setPublishedItems] = useState(company.ItemsPublished || []);
 
 	const [tab, setTab] = useState<0 | 1>(0);
 	const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
@@ -55,7 +56,7 @@ export default function AdminCompany() {
 					switch (specificSortBy) {
 						default:
 						case "releaseDate":
-							return b.releaseDate.getTime() - a.releaseDate.getTime();
+							return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
 						case "name":
 							return b.name.localeCompare(a.name);
 						case "price":
@@ -65,7 +66,7 @@ export default function AdminCompany() {
 					switch (specificSortBy) {
 						default:
 						case "releaseDate":
-							return a.releaseDate.getTime() - b.releaseDate.getTime();
+							return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
 						case "name":
 							return a.name.localeCompare(b.name);
 						case "price":
@@ -75,7 +76,7 @@ export default function AdminCompany() {
 			})
 			.slice((initPage - 1) * initLimit, initPage * initLimit)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil((developedTotalCount || 0) / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((developedItems.length || 0) / limit) || 1);
 
 	const getTabItems = (sortBy: string, limit: number, page: number, tab: number) => {
 		let items: Item[] = [];
@@ -98,7 +99,7 @@ export default function AdminCompany() {
 						switch (specificSortBy) {
 							default:
 							case "releaseDate":
-								return b.releaseDate.getTime() - a.releaseDate.getTime();
+								return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
 							case "name":
 								return b.name.localeCompare(a.name);
 							case "price":
@@ -108,7 +109,7 @@ export default function AdminCompany() {
 						switch (specificSortBy) {
 							default:
 							case "releaseDate":
-								return a.releaseDate.getTime() - b.releaseDate.getTime();
+								return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
 							case "name":
 								return a.name.localeCompare(b.name);
 							case "price":
@@ -118,7 +119,7 @@ export default function AdminCompany() {
 				})
 				.slice((page - 1) * limit, page * limit)
 		);
-		setMaxPage(Math.ceil(count / limit) || 1);
+		setMaxPage(Math.max(Math.ceil(count / limit) || 1));
 	};
 
 	const onTabChange = (_: SyntheticEvent, newValue: 0 | 1) => {
@@ -145,6 +146,36 @@ export default function AdminCompany() {
 		setPage(localPage);
 	};
 
+	const token = Cookies.get("token");
+	if (!token) throw new ClientError(403, "Ви не авторизовані");
+
+	const onDeleteThis = async () => {
+		const response = await DeleteCompanyRequest(token, company.id).catch((e: unknown) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (response instanceof ClientError) throw response;
+		navigate("/admin/companies");
+	};
+
+	const onDelete = async (id: number) => {
+		const result = await DeleteItemRequest(token, id).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		if (result) {
+			setDevelopedItems(developedItems.filter((item) => item.id !== id));
+			setPublishedItems(publishedItems.filter((item) => item.id !== id));
+			getTabItems(sortBy, limit, page, tab);
+		}
+	};
+
 	return (
 		<Box
 			sx={{
@@ -168,7 +199,7 @@ export default function AdminCompany() {
 					</IconButton>
 				</Tooltip>
 				<Tooltip title={`Видалити компанію`}>
-					<IconButton>
+					<IconButton onClick={onDeleteThis}>
 						<Delete color='error' />
 					</IconButton>
 				</Tooltip>
@@ -178,7 +209,7 @@ export default function AdminCompany() {
 				<Typography variant='h6'>Опис:</Typography>
 				<Typography variant='body1'>{company.description}</Typography>
 			</Box>
-			<Typography variant='h6'>Засновано: {company.founded.toLocaleDateString()}</Typography>
+			<Typography variant='h6'>Засновано: {new Date(company.founded).toLocaleDateString()}</Typography>
 			<Typography variant='h6'>Директор: {company.director}</Typography>
 			<Typography variant='h6'>Зображення</Typography>
 			<Box
@@ -218,6 +249,7 @@ export default function AdminCompany() {
 				</Tabs>
 				<List
 					items={tabItems}
+					onDelete={onDelete}
 					sorting={{
 						value: sortBy,
 						setValue: sortByUpdate,

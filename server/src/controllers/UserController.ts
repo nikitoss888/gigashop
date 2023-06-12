@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import User, { getUser, getUsers } from "../models/User";
 import {Op} from "sequelize";
 import ItemCart from "../models/ItemCart";
-import { ItemBought } from "../models";
+import { Item, ItemBought } from "../models";
 import { v4 as uuidv4 } from 'uuid';
 
 const USER = 'USER'
@@ -253,14 +253,22 @@ class UserController extends Controller {
             let includePublicationsParsed = super.parseBoolean(includePublications as string) || false;
             let includePublicationCommentsParsed = super.parseBoolean(includePublicationComments as string) || false;
 
-            const user = await getUser(req.user.id, includeBoughtItemsParsed, includeCartParsed,
-                includeItemsRatesParsed, includeWishlistParsed, includePublicationsParsed,
-                includePublicationCommentsParsed);
+            const { user, boughtItems } = await getUser({
+                id: req.user.id,
+                includeBoughtItems: includeBoughtItemsParsed,
+                includeCart: includeCartParsed,
+                includeItemsRates: includeItemsRatesParsed,
+                includeWishlist: includeWishlistParsed,
+                includePublications: includePublicationsParsed,
+                includePublicationComments: includePublicationCommentsParsed
+            });
             if (!user) {
                 return next(ApiError.internal('Користувача не знайдено'));
             }
 
-            return res.json(user);
+            const data = boughtItems?.map((item: any) => item.dataValues) || [];
+
+            return res.json({ ...user.dataValues, BoughtItems: data });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -276,10 +284,9 @@ class UserController extends Controller {
             if (!cart || cart.length === 0) return next(ApiError.badRequest('Кошик порожній'));
 
             const setupResult = ItemCart.update({ transactionId }, { where: { userId: reqUser.id }});
-
             if (!setupResult) return next(ApiError.internal('Помилка при встановленні транзакції'));
 
-            return res.json({message: "Транзакцію встановлено успішно"});
+            return res.json({message: "Транзакцію встановлено успішно", transactionId });
 
             // const itemsIds = cart.map((item: typeof ItemCart) => item.itemId);
             // const items = await Item.findAll({ where: { id: itemsIds }});
@@ -299,6 +306,7 @@ class UserController extends Controller {
     async buyCart(req: Request, res: Response, next: NextFunction) {
         try {
             const { transactionId } = req.params;
+            console.log({ transactionId });
 
             const alreadyBought = await ItemBought.findOne({ where: { transactionId }});
             if (alreadyBought) return next(ApiError.badRequest('Товари вже придбані'));
@@ -309,10 +317,33 @@ class UserController extends Controller {
             const userId = cart[0].userId;
             const ids = cart.map((item: typeof ItemCart) => item.itemId);
 
-            const bought = await ItemBought.create({ userId, itemId: ids });
+            const data = ids.map((id: number) => {
+                return {
+                    itemId: id,
+                    userId,
+                    transactionId
+                };
+            });
+
+            console.log({ userId, ids, data });
+
+            const bought = await ItemBought.bulkCreate(data);
             await ItemCart.destroy({where: { transactionId }});
+            await Item.decrement('amount', { where: { id: ids }});
 
             return res.json({message: 'Товари успішно придбані', bought, ok: true});
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async clearCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const reqUser = req.user;
+            await ItemCart.destroy({where: { userId: reqUser.id }});
+
+            return res.json({message: 'Кошик очищено', ok: true});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -326,9 +357,14 @@ class UserController extends Controller {
             firstName,
             lastName,
             role,
+            sortBy,
+            descending, desc,
         } = req.query;
-        const isDeleted = super.parseBoolean(req.query.isDeleted as string) || false;
-        const isBanned = super.parseBoolean(req.query.isBanned as string) || false;
+        const descendingParsed = super.parseBoolean(descending as string) || super.parseBoolean(desc as string) || false;
+        const page = Math.max(super.parseNumber(req.query.page as string) || 1, 1);
+        const limit = Math.max(super.parseNumber(req.query.limit as string) || 10, 1);
+
+        const isBlocked = super.parseBoolean(req.query.isBlocked as string);
 
         const result = await getUsers({
             login: login as string,
@@ -336,8 +372,11 @@ class UserController extends Controller {
             firstName: firstName as string,
             lastName: lastName as string,
             role: role as string,
-            isDeleted,
-            isBanned,
+            isBlocked,
+            sortBy: sortBy as string,
+            descending: descendingParsed,
+            page,
+            limit
         })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
@@ -349,6 +388,56 @@ class UserController extends Controller {
         if (!users) return next(ApiError.internal('Користувачів не знайдено'));
 
         return res.json({users, totalCount});
+    }
+
+    async toggleModerator(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            const user = await User.findOne({ where: { id }, attributes: { exclude: ['password'] }});
+            if (!user) return next(ApiError.badRequest('Користувача не знайдено'));
+
+            if (user.role.toUpperCase() === ADMIN) return next(ApiError.badRequest('Неможливо змінити роль адміністратора'));
+
+            if (user.role.toUpperCase() === MODERATOR) {
+                user.role = USER;
+            }
+            else {
+                user.role = MODERATOR;
+            }
+
+            const result = await user.save();
+            if (!result) return next(ApiError.internal('Помилка при зміні ролі'));
+
+            return res.json({message: 'Роль успішно змінено', result });
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async setRole(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            let { role } = req.body;
+
+            const user = await User.findOne({ where: { id }, attributes: { exclude: ['password'] }});
+            if (!user) return next(ApiError.badRequest('Користувача не знайдено'));
+
+            if (user.role.toUpperCase() === ADMIN) return next(ApiError.badRequest('Неможливо змінити роль адміністратора'));
+
+            if (![USER, MODERATOR].includes(role.toUpperCase())) role = USER;
+            console.log({ role, result: ![USER, MODERATOR].includes(user.role.toUpperCase()) });
+            user.role = role;
+
+            const result = await user.save();
+            if (!result) return next(ApiError.internal('Помилка при зміні ролі'));
+
+            return res.json({message: 'Роль успішно змінено', result });
+        }
+        catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
     }
 
     async test(req: Request, res: Response) {

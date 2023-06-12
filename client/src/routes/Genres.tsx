@@ -3,10 +3,13 @@ import { Box, Container } from "@mui/material";
 import SearchBar from "../components/SearchPages/SearchBar";
 import styled from "@mui/material/styles/styled";
 import AlphabetGrid from "../components/Genres/AlphabetGrid";
-import { Genre } from "../mock/Genres";
+import { Genre } from "../http/Genres";
 import { useLoaderData } from "react-router-dom";
 import { useState } from "react";
 import { GetGenres } from "./index";
+import ClientError from "../ClientError";
+import { AxiosError } from "axios";
+import { Item } from "../http/Items";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -19,21 +22,30 @@ const BoxStyle = styled(Box)`
 export default function Genres() {
 	const methods = useForm();
 
-	const { data } = useLoaderData() as {
-		data: Genre[];
+	const { data, error } = useLoaderData() as {
+		data?: (Genre & {
+			Items: Item[];
+		})[];
+		error?: ClientError;
 	};
 
-	const [genres, setGenres] = useState(data);
+	if (error) throw error;
+
+	const [genres, setGenres] = useState(data || []);
 	document.title = `Жанри — gigashop`;
 
-	const onSubmit = (data: any) => {
-		try {
-			console.log(data);
-			const { data: genres } = GetGenres({ admin: false, name: data.name });
-			setGenres(genres);
-		} catch (err) {
-			console.log(err);
-		}
+	const onSubmit = async (data: any) => {
+		console.log(data);
+		const result = await GetGenres({ admin: false, name: data.name }).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		const genres = result.data;
+		setGenres(genres || []);
 	};
 
 	const onReset = () => {

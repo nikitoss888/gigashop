@@ -5,6 +5,7 @@ import Item from "./Item";
 
 const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
+import { ItemBought } from "./index";
 
 const User = sequelize_db.define('user', {
     id: {
@@ -68,8 +69,8 @@ const User = sequelize_db.define('user', {
 });
 
 const _whereHandler = (login?: string, email?: string, firstName?: string, lastName?: string,
-                        role?: string, isDeleted = false, isBlocked = false) => {
-    let where: {login?: {}, email?: {}, firstName?: {}, lastName?: {}, role?: {}, isDeleted?: {}, isBlocked?: {}} = {};
+                        role?: string, isBlocked = false) => {
+    let where: {login?: {}, email?: {}, firstName?: {}, lastName?: {}, role?: {}, isBlocked?: {}} = {};
 
     if (login) {
         where.login = {
@@ -96,8 +97,11 @@ const _whereHandler = (login?: string, email?: string, firstName?: string, lastN
             [Op.like]: `%${role}%`
         }
     }
-    where.isDeleted = isDeleted;
-    where.isBlocked = isBlocked;
+    if (isBlocked) {
+        where.isBlocked = {
+            [Op.or]: [isBlocked, false]
+        };
+    }
 
     return where;
 }
@@ -110,16 +114,16 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         include.push({
             model: Item,
             as: 'Cart',
-            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide'],
-            through: {attributes: []}
+            through: {attributes: ["transactionId"]},
+            required: false
         });
     }
 
     if (includeBoughtItems) {
         include.push({
-            model: Item,
+            model: ItemBought,
             as: 'Bought',
-            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide']
+            required: false
         });
     }
 
@@ -127,7 +131,11 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         include.push({
             model: ItemRate,
             as: 'Rates',
-            attributes: ['itemId', 'rate', 'content', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide'],
+            include: [{
+                model: Item,
+                as: 'Item',
+            }],
+            required: false
         });
     }
 
@@ -135,7 +143,8 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         include.push({
             model: Item,
             as: 'Wishlist',
-            attributes: ['id', 'name', 'mainImage', 'releaseDate', 'price', 'hide'],
+            through: {attributes: []},
+            required: false
         });
     }
 
@@ -143,7 +152,7 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         include.push({
             model: Publication,
             as: 'Publications',
-            attributes: ['id', 'title', 'content', 'violation', 'violation_reason', 'hide']
+            required: false
         });
     }
 
@@ -151,7 +160,7 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         include.push({
             model: PublicationComment,
             as: 'CommentsList',
-            attributes: ['id', 'content', 'rate', 'createdAt', 'updatedAt', 'violation', 'violation_reason', 'hide']
+            required: false
         });
     }
 
@@ -163,13 +172,22 @@ type getUsersParams = {
     firstName?: string,
     lastName?: string,
     role?: string,
-    isDeleted?: boolean,
-    isBanned?: boolean
+    isBlocked?: boolean,
+    sortBy?: string,
+    descending?: boolean,
+    page?: number,
+    limit?: number
 }
-const getUsers = async ({login, email, firstName, lastName, role, isDeleted = false, isBanned = false}: getUsersParams) => {
-    const where = _whereHandler(login, email, firstName, lastName, role, isDeleted, isBanned);
-    const totalCount = User.count();
-    const users = User.findAll({where});
+const getUsers = async ({login, email, firstName, lastName, role, isBlocked = true, limit = 10, page = 1, sortBy = 'login', descending = false}: getUsersParams) => {
+    const where = _whereHandler(login, email, firstName, lastName, role, isBlocked);
+    const totalCount = await User.count();
+    const users = await User.findAll({
+        where,
+        limit,
+        offset: (page - 1) * limit,
+        order: [[sortBy, descending ? 'DESC' : 'ASC']],
+        attributes: {exclude: ['password']}
+    });
 
     return {
         users,
@@ -177,14 +195,32 @@ const getUsers = async ({login, email, firstName, lastName, role, isDeleted = fa
     };
 }
 
-const getUser = async (id: number, includeBoughtItems= true, includeCart = true,
-                       includeItemsRates= true,
-                       includeWishlist= true, includePublications= true,
-                       includePublicationComments= true) => {
+type getUserParams = {
+    id: number,
+    includeBoughtItems?: boolean,
+    includeCart?: boolean,
+    includeItemsRates?: boolean,
+    includeWishlist?: boolean,
+    includePublications?: boolean,
+    includePublicationComments?: boolean
+}
+const getUser = async ({ id, includeBoughtItems = false, includeCart = false, includeItemsRates = false,
+                           includeWishlist = false, includePublications = false, includePublicationComments = false }: getUserParams) => {
     let include = _includeHandler(includeBoughtItems, includeCart, includeItemsRates, includeWishlist,
         includePublications, includePublicationComments);
 
-    return User.findByPk(id, {include});
+    const user = await User.findByPk(id, { include, attributes: {exclude: ['password']} })
+    const ids = user.Bought.map((item: any) => item.itemId);
+
+    const boughtItems = await Item.findAll({
+        where: {
+            id: {
+                [Op.in]: ids
+            }
+        }
+    });
+
+    return { user, boughtItems };
 }
 
 export default User;

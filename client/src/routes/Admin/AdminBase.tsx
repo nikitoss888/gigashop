@@ -2,6 +2,9 @@ import { Accordion, AccordionSummary, Box, Container, Typography } from "@mui/ma
 import { Link as RouterLink, Outlet } from "react-router-dom";
 import styled from "@mui/material/styles/styled";
 import AccordionDetailsStyle from "../../components/Common/AccordionDetailsStyle";
+import { useRecoilState } from "recoil";
+import { userState } from "../../store/User";
+import ClientError from "../../ClientError";
 
 const AccordionLink = styled(Typography)`
 	text-decoration: none;
@@ -13,6 +16,11 @@ const AccordionLink = styled(Typography)`
 
 export default function AdminBase() {
 	document.title = "Адміністративна панель - gigashop";
+
+	const [user, _] = useRecoilState(userState);
+	if (!user || user.role !== "ADMIN") {
+		throw new ClientError(403, "Ви не маєте доступу до цієї сторінки");
+	}
 	return (
 		<Container sx={{ mt: "15px", height: "100%" }}>
 			<Box

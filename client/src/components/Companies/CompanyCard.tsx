@@ -1,4 +1,4 @@
-import { Company } from "../../mock/Companies";
+import { Company } from "../../http/Companies";
 import Card from "../CardsGrid/Card";
 import Link from "../CardsGrid/Link";
 import Logo from "../CardsGrid/Logo";
@@ -34,7 +34,7 @@ export default function CompanyCard({ company: { id, name, description, image, f
 						{description}
 					</Typography>
 					<Typography variant='body2' color='secondary'>
-						{founded.toLocaleDateString()}
+						{new Date(founded).toLocaleDateString()}
 					</Typography>
 				</Content>
 			</Link>

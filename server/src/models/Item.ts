@@ -1,4 +1,4 @@
-import {Company, Genre, User} from "./index";
+import { Company, Genre, ItemRate, User } from "./index";
 import {DataTypes, Op} from 'sequelize';
 import ApiError from "../errors/ApiError";
 const {sequelize_db} = require('../db');
@@ -191,13 +191,14 @@ const _whereHandler = (name?: string, description?: string,
             [Op.lte]: discountSizeTo
         };
     }
-
-    where.hide = hide;
+    if (!hide) {
+        where.hide = false;
+    }
 
     return where;
 }
 let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includeDevelopers: boolean,
-                       includeWishlisted: boolean, includeInCart: boolean, includeBought: boolean,
+                       includeWishlisted: boolean, includeInCart: boolean,
                        includeRated: boolean, includeHidden: boolean,
                        publisherId?: number, genresIds?: number[], developersIds?: number[]) => {
     let include: {}[] = [];
@@ -220,9 +221,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         include.push({
             model: Company,
             as: 'Publisher',
-            attributes: ['id', 'name'],
             where,
-            through: null,
             required: !!publisherId
         });
     }
@@ -231,9 +230,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         let where = {};
         let required = false;
 
-        if (!includeHidden) {
-            where = {
-                hide: false
+        where = {
+            hide: {
+                [Op.or]: [false, includeHidden]
             }
         }
         if (genresIds) {
@@ -247,7 +246,6 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         include.push({
             model: Genre,
             as: 'Genres',
-            attributes: ['id', 'name'],
             where,
             through: {
                 attributes: []
@@ -276,7 +274,6 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         include.push({
             model: Company,
             as: 'Developers',
-            attributes: ['id', 'name'],
             where,
             through: {
                 attributes: []
@@ -288,11 +285,9 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
     if (includeWishlisted) {
         include.push({
             model: User,
+            attributes: {exclude: ['password']},
             as: 'WishlistedUsers',
-            attributes: ['id', 'email', 'login'],
-            through: {
-                attributes: []
-            },
+            through: { attributes: [] },
             required: false
         });
     }
@@ -301,19 +296,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         include.push({
             model: User,
             as: 'CartedUsers',
-            attributes: ['id', 'email', 'login'],
-            through: {
-                attributes: []
-            },
-            required: false
-        });
-    }
-
-    if (includeBought) {
-        include.push({
-            model: User,
-            as: 'BoughtUsers',
-            attributes: ['id', 'email', 'login'],
+            attributes: {exclude: ['password']},
             through: {
                 attributes: []
             },
@@ -323,11 +306,20 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
 
     if (includeRated) {
         include.push({
-            model: User,
-            as: 'RatedUsers',
-            attributes: ['id', 'email', 'login'],
-            through: {
-                attributes: []
+            model: ItemRate,
+            as: 'Rates',
+            include: [{
+                model: User,
+                as: 'User',
+                attributes: {exclude: ['password']},
+            }],
+            where: {
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                },
+                violation: {
+                    [Op.or]: [false, includeHidden]
+                }
             },
             required: false
         });
@@ -365,7 +357,6 @@ type getAllItemsParams = {
     developersIds?: number[],
     includeWishlisted?: boolean,
     includeInCart?: boolean,
-    includeBought?: boolean,
     includeRated?: boolean,
     includeHidden?: boolean
 }
@@ -377,12 +368,12 @@ const getItems = async ({name, description, releaseDate, releaseDateFrom, releas
                             includeGenres = false, genresIds,
                             includeDevelopers = false, developersIds,
                             includeWishlisted = false, includeInCart = false,
-                            includeBought = false, includeRated = false, includeHidden = false}: getAllItemsParams) => {
+                            includeRated = true, includeHidden = false}: getAllItemsParams) => {
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
         discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden,
+        includeWishlisted, includeInCart, includeRated, includeHidden,
         publisherId, genresIds, developersIds);
     const totalCount = await Item.count({where: includeHidden ? {} : { hide: false }});
     const items = await Item.findAll({
@@ -401,21 +392,20 @@ type getOneItemParams = {
     includeDevelopers?: boolean,
     includeWishlisted?: boolean,
     includeInCart?: boolean,
-    includeBought?: boolean,
     includeRated?: boolean,
     includeHidden?: boolean
 }
-const getItem = async ({id, includePublisher = false, includeGenres = false, includeDevelopers = false,
-                           includeWishlisted = false, includeInCart = false,
-                           includeBought = false, includeRated = false, includeHidden = false}: getOneItemParams) => {
+const getItem = async ({id, includePublisher = true, includeGenres = true, includeDevelopers = true,
+                           includeWishlisted = false, includeInCart = false, includeRated = false, includeHidden = false}: getOneItemParams) => {
     const where = {
         id,
         hide: {
-            [Op.in]: [includeHidden, false]
+            [Op.or]: [includeHidden, false]
         }
     }
+
     const include = _includeHandler(includePublisher, includeGenres, includeDevelopers,
-        includeWishlisted, includeInCart, includeBought, includeRated, includeHidden);
+        includeWishlisted, includeInCart, includeRated, includeHidden);
 
     return Item.findOne({where, include});
 }

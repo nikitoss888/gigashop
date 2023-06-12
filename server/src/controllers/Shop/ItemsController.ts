@@ -4,7 +4,8 @@ import Item, {getItem, getItems} from "../../models/Item";
 import ApiError from "../../errors/ApiError";
 import { User, Wishlist, ItemDevelopers, Genre, ItemGenre, Company } from "../../models";
 import ItemCart from "../../models/ItemCart";
-import { getAllRates } from "../../models/ItemRate";
+import ItemRate, { getAllRates } from "../../models/ItemRate";
+import { Op } from "sequelize";
 
 type parseOutput = {
     name: string | undefined, description: string | undefined, sortBy: string | undefined,
@@ -18,8 +19,8 @@ type parseOutput = {
     includeGenres: boolean | undefined, genresIds: number[] | undefined,
     includeDevelopers: boolean | undefined, developersIds: number[] | undefined,
     includeWishlisted: boolean | undefined, includeInCart: boolean | undefined,
-    includeBought: boolean | undefined, includeRated: boolean | undefined,
-    includeHidden: boolean | undefined, hide: boolean | undefined
+    includeRated: boolean | undefined,
+    includeHidden: boolean | undefined, hide: boolean | undefined, hidden: boolean | undefined
 }
 
 class ItemsController extends Controller {
@@ -34,7 +35,7 @@ class ItemsController extends Controller {
                          includeGenres, genresIds,
                          includeDevelopers, developersIds,
                          includeWishlisted, includeInCart,
-                         includeBought, includeRated, hide}: any): parseOutput {
+                         includeRated, hidden}: any): parseOutput {
         let Controller = new ItemsController();
 
         price = Controller.parseNumber(price as string | undefined);
@@ -62,7 +63,7 @@ class ItemsController extends Controller {
             Controller.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
 
-        hide = Controller.parseBoolean(hide as boolean | string | number | undefined);
+        hidden = Controller.parseBoolean(hidden as boolean | string | number | undefined);
 
         if (includePublisher) {
             includePublisher = Controller.parseBoolean(includePublisher as boolean | string | number | undefined);
@@ -80,14 +81,17 @@ class ItemsController extends Controller {
         if (includeInCart) {
             includeInCart = Controller.parseBoolean(includeInCart as boolean | string | number | undefined);
         }
-        if (includeBought) {
-            includeBought = Controller.parseBoolean(includeBought as boolean | string | number | undefined);
-        }
         if (includeRated) {
             includeRated = Controller.parseBoolean(includeRated as boolean | string | number | undefined);
         }
 
         publisherId = Controller.parseNumber(publisherId as string | undefined);
+        if (typeof developersIds === 'string') {
+            developersIds = [developersIds];
+        }
+        if (typeof genresIds === 'string') {
+            genresIds = [genresIds];
+        }
 
         return {
             name, description, sortBy,
@@ -101,8 +105,8 @@ class ItemsController extends Controller {
             includeGenres, genresIds,
             includeDevelopers, developersIds,
             includeWishlisted, includeInCart,
-            includeBought, includeRated,
-            includeHidden: hide, hide
+            includeRated,
+            includeHidden: hidden, hide: hidden, hidden
         }
     }
 
@@ -265,7 +269,7 @@ class ItemsController extends Controller {
                 releaseDate, publisherId: company_publisherId,
                 discount, discountFrom, discountTo,
                 discountSize,
-                price, amount} = ItemsController.parseData(req.body);
+                price, amount, hide } = ItemsController.parseData(req.body);
 
             let characteristicsParsed: Object | undefined = undefined;
             if (characteristics) {
@@ -275,7 +279,7 @@ class ItemsController extends Controller {
             const item = await Item
                 .create({name, description, price, releaseDate, amount,
                     discount, discountFrom, discountTo, discountSize, mainImage, coverImage,
-                    images, characteristics: characteristicsParsed, company_publisherId})
+                    images, characteristics: characteristicsParsed, company_publisherId, hide})
                 .catch((e: unknown) => {
                     // ToDo: delete files
                     //
@@ -303,23 +307,23 @@ class ItemsController extends Controller {
             }
 
             if (!developersIds && !genresIds) {
-                return res.json({message: "Товар успішно створено", item});
+                return res.json(item);
             }
 
             let err: unknown;
-            let developersRes = developersIds ? await ItemsController.addDevelopers(item.id, developersIds)
+            developersIds ? await ItemsController.addDevelopers(item.id, developersIds)
                 .catch((e: unknown) => {
                     err = e;
                 }) : undefined;
             if (err) return next(super.exceptionHandle(err));
 
-            let genresRes = genresIds ? await ItemsController.addGenres(item.id, genresIds)
+            genresIds ? await ItemsController.addGenres(item.id, genresIds)
                 .catch((e: unknown) => {
                     err = e;
                 }) : undefined;
             if (err) return next(super.exceptionHandle(err));
 
-            return res.json({message: "Товар успішно створено", item, developers: developersRes, genres: genresRes});
+            return res.json(item);
         }
         catch (e: unknown) {
             // ToDo: delete files
@@ -346,7 +350,7 @@ class ItemsController extends Controller {
             includeGenres, genresIds,
             includeDevelopers, developersIds,
             includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden
+            includeRated, includeHidden
         } = ItemsController.parseData(req.query);
 
         const result = await getItems({
@@ -361,7 +365,7 @@ class ItemsController extends Controller {
             includeGenres, genresIds,
             includeDevelopers, developersIds,
             includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden
+            includeRated, includeHidden
         })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
@@ -370,22 +374,43 @@ class ItemsController extends Controller {
 
         const { items, totalCount } = result;
 
+        const companies = await Company.findAll({
+            where: {
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                },
+            },
+        });
+
+        const genres = await Genre.findAll({
+            where: {
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                },
+            },
+        });
+
         if (!items) return next(ApiError.notFound('Товари не знайдено'));
-        return res.json({ items, totalCount });
+        return res.json({ items, totalCount, companies, genres });
     }
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const id = (new ItemsController()).parseNumber(req.params.id as string | undefined);
         if (!id) return next(ApiError.badRequest('Неправильний id товару'));
 
-        const { includePublisher, includeGenres,
-            includeDevelopers, includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden } = ItemsController.parseData(req.query);
+        const { includePublisher,
+            includeGenres,
+            includeDevelopers,
+            includeWishlisted,
+            includeInCart,
+            includeRated
+        } = ItemsController.parseData(req.query);
+        const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined) || false;
 
         const item = await getItem({
             id, includePublisher, includeGenres,
             includeDevelopers, includeWishlisted, includeInCart,
-            includeBought, includeRated, includeHidden
+            includeRated, includeHidden
         })
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
@@ -425,8 +450,10 @@ class ItemsController extends Controller {
             if (name) item.name = name;
             if (description) item.description = description;
             if (releaseDate) item.releaseDate = releaseDate;
-            if (price) item.price = price;
-            if (amount) item.amount = amount;
+            if (price !== undefined && price >= 0) item.price = price;
+            if (amount !== undefined && amount >= 0) {
+                item.amount = amount;
+            }
             if (mainImage) item.mainImage = mainImage;
             if (images) item.images = images;
             if (coverImage) item.coverImage = coverImage;
@@ -436,11 +463,11 @@ class ItemsController extends Controller {
 
                 if (discountFrom) item.discountFrom = discount ? discountFrom : null;
                 if (discountTo) item.discountTo = discount ? discountTo : null;
-                if (discountSize) item.discountSize = discount ? discountSize : null;
+                if (discountSize !== undefined) item.discountSize = discount ? discountSize : null;
             }
 
             if (characteristicsParsed) item.characteristics = characteristicsParsed;
-            if (hide) item.hide = hide;
+            if (hide !== undefined) item.hide = hide;
             if (publisherId && await Company.findByPk(publisherId)) item.company_publisherId = publisherId;
 
             let err: unknown;
@@ -473,16 +500,16 @@ class ItemsController extends Controller {
             }
 
             if (!developersIds && !genresIds) {
-                return res.json({message: "Товар успішно відредаговано", result});
+                return res.json(result);
             }
 
-            let developersRes = developersIds ? await ItemsController.setDevelopers(id, developersIds)
+            developersIds ? await ItemsController.setDevelopers(id, developersIds)
                 .catch((e: unknown) => {
                     err = e;
                 }) : undefined;
             if (err) return next(super.exceptionHandle(err));
 
-            let genresRes = genresIds ? await ItemsController.setGenres(id, genresIds)
+            genresIds ? await ItemsController.setGenres(id, genresIds)
                 .catch((e: unknown) => {
                     err = e;
                 }) : undefined;
@@ -498,11 +525,9 @@ class ItemsController extends Controller {
             //     });
             // }
 
-            return res.json({message: "Товар успішно відредаговано", result,
-                developers: developersRes, genres: genresRes});
+            return res.json(item);
         }
         catch (e: unknown) {
-            console.log(e);
             return next(super.exceptionHandle(e));
         }
     }
@@ -543,7 +568,7 @@ class ItemsController extends Controller {
                     return next(super.exceptionHandle(e));
                 });
 
-            return res.json({"message": "Товар успішно видалено"});
+            return res.json({ ok: true });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -624,7 +649,7 @@ class ItemsController extends Controller {
 
             const wishListItem = await Wishlist.create({userId: user.id, itemId: id});
 
-            return res.json({message: 'Товар успішно додано до списку бажань', wishListItem});
+            return res.json(wishListItem);
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -647,8 +672,8 @@ class ItemsController extends Controller {
             if (!wishList)
                 return next(ApiError.badRequest('Товару немає в списку бажань'));
 
-            const wishListItem = await Wishlist.destroy({where: {userId: user.id, itemId: id}});
-            return res.json({message: 'Товар успішно видалено зі списку бажань', wishListItem});
+            await Wishlist.destroy({where: {userId: user.id, itemId: id}});
+            return res.json({ ok: true });
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -657,22 +682,23 @@ class ItemsController extends Controller {
 
     async toggleWishList(req: Request, res: Response, next: NextFunction) {
         try {
-            const {id} = req.query;
+            const {id} = req.params;
             const request_user = req.user;
 
             const item = await Item.findByPk(id);
             if (!item) return next(ApiError.notFound('Товар не знайдено'));
+            if (item.hide) return next(ApiError.badRequest('Товар не доступний'));
 
-            const user = await User.findByPk(request_user.Id);
+            const user = await User.findByPk(request_user.id);
             if (!user) return next(ApiError.notFound('Користувача не знайдено'));
 
             const wishList = await Wishlist.findOne({where: {userId: user.id, itemId: id}});
             if (wishList) {
                 await Wishlist.destroy({where: {userId: user.id, itemId: id}});
-                return res.json({message: 'Товар успішно видалено зі списку бажань'});
+                return res.json({message: 'Товар успішно видалено зі списку бажань', ok: true});
             }
             await Wishlist.create({userId: user.id, itemId: id});
-            return res.json({message: 'Товар успішно додано до списку бажань'});
+            return res.json({message: 'Товар успішно додано до списку бажань', ok: true});
         }
         catch (e: unknown) {
             return next(super.exceptionHandle(e));
@@ -681,20 +707,23 @@ class ItemsController extends Controller {
 
     async toggleCart(req: Request, res: Response, next: NextFunction) {
         try {
-            const {id} = req.query;
+            const {id} = req.params;
             const request_user = req.user;
 
             const item = await Item.findByPk(id);
             if (!item) return next(ApiError.notFound('Товар не знайдено'));
+            if (item.hide) return next(ApiError.badRequest('Товар не доступний для покупки'));
 
-            const user = await User.findByPk(request_user.Id);
+            const user = await User.findByPk(request_user.id);
             if (!user) return next(ApiError.notFound('Користувача не знайдено'));
 
             const itemCart = await ItemCart.findOne({where: {userId: user.id, itemId: id}});
             if (itemCart) {
                 await ItemCart.destroy({where: {userId: user.id, itemId: id}});
-                return res.json({message: 'Товар успішно видалено з кошика'});
+                return res.json({message: 'Товар успішно видалено з кошика', ok: true});
             }
+
+            if (item.amount <= 0) return next(ApiError.badRequest('Товар скінчився в наявності'));
             await ItemCart.create({userId: user.id, itemId: id});
             return res.json({message: 'Товар успішно додано до кошика', ok: true});
         }
@@ -708,7 +737,8 @@ class ItemsController extends Controller {
             const {
                 sortBy
             } = req.query;
-            const descending = super.parseBoolean(req.query.descending as string) || false;
+            let descending = super.parseBoolean(req.query.desc as string);
+            if (descending === undefined) descending = super.parseBoolean(req.query.descending as string) || false;
             const limit = super.parseNumber(req.query.limit as string) || 12;
             const page = super.parseNumber(req.query.page as string) || 1;
 
@@ -721,6 +751,88 @@ class ItemsController extends Controller {
             return res.json({totalCount, rates});
         }
         catch (e: unknown) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async setRate(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { content } = req.body;
+            const rate = super.parseNumber(req.body.rate as string);
+
+            if (!req.user) return next(ApiError.unauthorized('Необхідна авторизація'));
+            const user = await User.findByPk(req.user.id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const item = await Item.findByPk(id);
+            if (!item) return next(ApiError.notFound('Товар не знайдено'));
+            if (item.hide) return next(ApiError.badRequest('Товар не доступний'));
+
+            const itemRate = await ItemRate.findOne({where: {userId: req.user.id, itemId: id}});
+
+            if (!itemRate) {
+                if (!rate) return next(ApiError.badRequest('Необхідно вказати оцінку'));
+                const newRate = await ItemRate.create({userId: req.user.id, itemId: id, content, rate});
+                return res.json({message: 'Відгук успішно додано', rate: newRate, user });
+            }
+
+            if (content) itemRate.content = content;
+            if (rate) itemRate.rate = rate;
+            await itemRate.save();
+
+            return res.json({message: 'Відгук успішно оновлено', rate: itemRate, user });
+        }
+        catch (e) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async removeRate(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            if (!req.user) return next(ApiError.unauthorized('Необхідна авторизація'));
+            const user = await User.findByPk(req.user.id);
+            if (!user) return next(ApiError.notFound('Користувача не знайдено'));
+
+            const itemRate = await ItemRate.findOne({where: {userId: req.user.id, itemId: id}});
+            if (!itemRate) return next(ApiError.notFound('Відгук не знайдено'));
+
+            await ItemRate.destroy({where: {userId: req.user.id, itemId: id}});
+            return res.json({message: 'Відгук успішно видалено', ok: true });
+        }
+        catch (e) {
+            return next(super.exceptionHandle(e));
+        }
+    }
+
+    async toggleViolation(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { violation, violation_reason } = req.body;
+
+            let violationParsed = super.parseBoolean(violation as string | undefined) || false;
+
+            const rate = await ItemRate.findByPk(id);
+            if (!rate) return next(ApiError.notFound('Товар не знайдено'));
+
+            if (!violationParsed) {
+                rate.violation_reason = null;
+                rate.hide = false;
+                rate.violation = false;
+            }
+            else {
+                rate.violation_reason = violation_reason;
+                rate.hide = true;
+                rate.violation = true;
+            }
+
+            const result = await rate.save();
+
+            return res.json({message: 'Статус порушення успішно оновлено', result });
+        }
+        catch (e) {
             return next(super.exceptionHandle(e));
         }
     }

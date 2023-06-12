@@ -1,5 +1,5 @@
-import { Link, useLoaderData } from "react-router-dom";
-import { Item } from "../../mock/Items";
+import { Link, useLoaderData, useNavigate } from "react-router-dom";
+import { DeleteItemRequest, Item, ItemRate } from "../../http/Items";
 import { Box, Typography, IconButton, Tooltip } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import { Delete, Edit } from "@mui/icons-material";
@@ -7,7 +7,12 @@ import Chip from "../../components/Common/Chip";
 import ClientError from "../../ClientError";
 import List from "../../components/Admin/ItemsComments/List";
 import { useState } from "react";
-import { SortSwitch as ItemsRatesSortSwitch } from "./AdminItemsComments";
+import { SortSwitch as ItemsRatesSortSwitch } from "./AdminItemsRates";
+import { Company } from "../../http/Companies";
+import { Genre } from "../../http/Genres";
+import { User } from "../../http/User";
+import Cookies from "js-cookie";
+import { AxiosError } from "axios";
 
 const Image = styled("img")`
 	width: 100%;
@@ -16,39 +21,54 @@ const Image = styled("img")`
 `;
 
 export default function AdminItem() {
-	const { item, error } = useLoaderData() as { item: Item; error?: ClientError };
+	const { item, error } = useLoaderData() as {
+		item: Item & {
+			Publisher?: Company;
+			Developers?: Company[];
+			Genres?: Genre[];
+			Rates?: (ItemRate & {
+				User: User;
+			})[];
+			WishlistedUsers?: User[];
+		};
+		error?: ClientError;
+	};
 	if (error) throw error;
 
-	document.title = `${item.name} — Адміністративна панель — gigashop`;
+	const publisher = item.Publisher;
+	const developers = item.Developers || [];
+	const genres = item.Genres || [];
+	const rates = item.Rates || [];
 
-	const genres = item.genres || [];
-	const publisher = item.publisher || null;
-	const developers = item.developers || [];
+	const navigate = useNavigate();
+
+	document.title = `${item.name} — Адміністративна панель — gigashop`;
 
 	const [sortBy, setSortBy] = useState("createdAtAsc");
 	const [limit, setLimit] = useState(12);
 	const [page, setPage] = useState(1);
 
-	const [comments, setComments] = useState(item.comments || []);
-	const [maxPage, setMaxPage] = useState(Math.ceil((item.comments?.length || 1) / limit) || 1);
+	const [comments, setComments] = useState(rates);
+	const [maxPage, setMaxPage] = useState(Math.ceil((rates?.length || 1) / limit) || 1);
 
-	let avgRate = comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length || 0;
+	let avgRate = (comments && comments.reduce((acc, comment) => acc + comment.rate, 0) / comments.length) || 0;
 	avgRate = Math.round(avgRate * 10) / 10;
 
 	const getComments = (sortBy: string, limit: number, page: number) => {
 		const { descending } = ItemsRatesSortSwitch(sortBy);
 		const comments =
-			item.comments
+			rates
 				?.sort((a, b) => {
 					if (descending) {
-						return b.createdAt.getTime() - a.createdAt.getTime();
+						return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 					} else {
-						return a.createdAt.getTime() - b.createdAt.getTime();
+						return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 					}
 				})
 				.slice((page - 1) * limit, page * limit) || [];
+
 		setComments(comments);
-		setMaxPage(Math.ceil((item.comments?.length || 1) / limit) || 1);
+		setMaxPage(Math.ceil((rates?.length || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {
@@ -67,6 +87,20 @@ export default function AdminItem() {
 		if (page > maxPage) localPage = maxPage;
 		getComments(sortBy, limit, localPage);
 		setPage(localPage);
+	};
+
+	const onDelete = async () => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані");
+		const result = await DeleteItemRequest(token, item.id).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		if (result) navigate("/admin/items");
 	};
 
 	return (
@@ -93,7 +127,7 @@ export default function AdminItem() {
 					</IconButton>
 				</Tooltip>
 				<Tooltip title={`Видалити товар`}>
-					<IconButton>
+					<IconButton onClick={onDelete}>
 						<Delete color='error' />
 					</IconButton>
 				</Tooltip>
@@ -139,7 +173,7 @@ export default function AdminItem() {
 					gap: "10px",
 				}}
 			>
-				{genres.map((genre) => (
+				{genres?.map((genre) => (
 					<Chip
 						component={Link}
 						to={`/admin/genres/${genre.id}`}
@@ -165,7 +199,7 @@ export default function AdminItem() {
 					gap: "10px",
 				}}
 			>
-				{developers.map((developer) => (
+				{developers?.map((developer) => (
 					<Chip
 						component={Link}
 						to={`/admin/companies/${developer.id}`}
@@ -177,7 +211,7 @@ export default function AdminItem() {
 			</Box>
 			<Typography variant='h6'>Ціна: {item.price}</Typography>
 			<Typography variant='h6'>Кількість: {item.amount}</Typography>
-			<Typography variant='h6'>Дата виходу: {item.releaseDate.toLocaleDateString()}</Typography>
+			<Typography variant='h6'>Дата виходу: {new Date(item.releaseDate).toLocaleDateString()}</Typography>
 			<Typography variant='h6'>Рейтинг: {avgRate}</Typography>
 			<Typography variant='h6'>Опис: {item.description}</Typography>
 			<Box>
@@ -185,7 +219,7 @@ export default function AdminItem() {
 					Коментарі:
 				</Typography>
 				<List
-					comments={comments}
+					rates={comments}
 					sorting={{
 						value: sortBy,
 						setValue: sortByUpdate,

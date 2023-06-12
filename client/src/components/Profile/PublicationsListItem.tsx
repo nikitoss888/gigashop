@@ -1,7 +1,7 @@
 import { ListItem } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";
-import { Publication } from "../../mock/Publications";
+import { Publication } from "../../http/Publications";
 
 type ListItemProps = {
 	publication: Publication;

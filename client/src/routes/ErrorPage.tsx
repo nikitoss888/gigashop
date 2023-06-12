@@ -27,6 +27,9 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 		case "400":
 			title = "Невірний запит!";
 			break;
+		case "401":
+			title = "Необхідна авторизація!";
+			break;
 		case "404":
 			title = "Сторінку не знайдено!";
 			break;
@@ -37,6 +40,7 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 		default:
 			title = "Щось пішло не так...";
 	}
+	resetErrorBoundary?.();
 
 	return (
 		<ErrorWrapper>
@@ -53,7 +57,6 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 					},
 				}}
 				onClick={() => {
-					resetErrorBoundary?.();
 					navigate(-1);
 				}}
 			>

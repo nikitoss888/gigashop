@@ -1,4 +1,4 @@
-import { Company } from "../../mock/Companies";
+import { Company } from "../../http/Companies";
 import { Box, FormControl, InputLabel, MenuItem, Select, SxProps } from "@mui/material";
 import Grid from "../CardsGrid/Grid";
 import CompanyCard from "./CompanyCard";
@@ -7,7 +7,7 @@ import Pagination from "../Common/Pagination";
 import TopBox from "../CardsGrid/TopBox";
 
 type GridProps = {
-	companies: Company[];
+	companies?: Company[];
 	sx?: SxProps;
 	sorting: {
 		value: string;
@@ -86,10 +86,9 @@ export default function CompaniesGrid({ companies, sx, sorting, limitation, pagi
 				/>
 			</TopBox>
 			<Grid sx={sx}>
-				{companies.map((company) => (
-					<CompanyCard company={company} key={company.id.toString(16)} />
-				))}
-				{companies.length === 0 && <NotFoundBox text={"Компанії не знайдено"} />}
+				{companies &&
+					companies.map((company) => <CompanyCard company={company} key={company.id.toString(16)} />)}
+				{!companies || (companies.length === 0 && <NotFoundBox text={"Компанії не знайдено"} />)}
 			</Grid>
 			<Pagination data={pagination} />
 		</Box>

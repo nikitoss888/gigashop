@@ -1,4 +1,4 @@
-import { Item } from "../../../mock/Items";
+import { Item } from "../../../http/Items";
 import { Accordion, AccordionSummary, Box, IconButton, Tooltip } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Typography from "@mui/material/Typography";
@@ -8,8 +8,9 @@ import { Delete, Edit, RemoveRedEye } from "@mui/icons-material";
 
 type ListItemProps = {
 	item: Item;
+	onDelete: (id: number) => void;
 };
-export default function ListItem({ item }: ListItemProps) {
+export default function ListItem({ item, onDelete }: ListItemProps) {
 	return (
 		<Accordion disableGutters>
 			<AccordionSummary expandIcon={<ExpandMoreIcon color='primary' fontSize='large' />}>
@@ -35,7 +36,7 @@ export default function ListItem({ item }: ListItemProps) {
 						</IconButton>
 					</Tooltip>
 					<Tooltip title={`Видалити товар`}>
-						<IconButton>
+						<IconButton onClick={() => onDelete(item.id)}>
 							<Delete color='error' />
 						</IconButton>
 					</Tooltip>

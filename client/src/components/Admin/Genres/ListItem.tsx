@@ -1,13 +1,14 @@
 import { Box, IconButton, Tooltip } from "@mui/material";
 import Typography from "@mui/material/Typography";
-import { Genre } from "../../../mock/Genres";
+import { Genre } from "../../../http/Genres";
 import { Link } from "react-router-dom";
 import { Delete, Edit, RemoveRedEye } from "@mui/icons-material";
 
 type ListItemProps = {
 	genre: Genre;
+	onDelete: (id: number) => void;
 };
-export default function ListItem({ genre }: ListItemProps) {
+export default function ListItem({ genre, onDelete }: ListItemProps) {
 	return (
 		<Box
 			sx={{
@@ -47,7 +48,7 @@ export default function ListItem({ genre }: ListItemProps) {
 					</IconButton>
 				</Tooltip>
 				<Tooltip title={`Видалити жанр`}>
-					<IconButton>
+					<IconButton onClick={() => onDelete(genre.id)}>
 						<Delete color='error' />
 					</IconButton>
 				</Tooltip>

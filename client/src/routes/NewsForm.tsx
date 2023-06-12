@@ -1,7 +1,17 @@
 import { useLoaderData } from "react-router-dom";
 import ClientError from "../ClientError";
-import { Publication } from "../mock/Publications";
-import { Alert, AlertTitle, Box, ButtonGroup, Container, Dialog, FormControlLabel, TextField } from "@mui/material";
+import { CreatePublicationRequest, Publication, UpdatePublicationRequest } from "../http/Publications";
+import {
+	Alert,
+	AlertColor,
+	AlertTitle,
+	Box,
+	ButtonGroup,
+	Container,
+	Dialog,
+	FormControlLabel,
+	TextField,
+} from "@mui/material";
 import { FormEvent, ChangeEvent, useState, useRef } from "react";
 import Typography from "@mui/material/Typography";
 import { Editor } from "@tinymce/tinymce-react";
@@ -10,18 +20,34 @@ import { BodyFont, HeadingFont } from "../styles";
 import SubmitButton from "../components/Common/SubmitButton";
 import Button from "@mui/material/Button";
 import Checkbox from "../components/Form/Checkbox";
+import Cookies from "js-cookie";
+import { useRecoilState } from "recoil";
+import { userState } from "../store/User";
+import { User } from "../http/User";
 
 export default function NewsForm() {
 	const { publication, error } = useLoaderData() as {
-		publication?: Publication;
+		publication?: Publication & {
+			AuthoredUser: User;
+		};
 		error?: ClientError;
 	};
 
 	if (error) throw error;
 
+	const [user, _] = useRecoilState(userState);
+	if (!user) throw new ClientError(401, "Ви не авторизовані");
+
+	if (publication?.AuthoredUser.id !== user.id) throw new ClientError(403, "Ви не автор цієї публікації");
+
 	document.title =
 		(publication ? `Редагування публікації "${publication.title}"` : "Створення публікації") + " — gigashop";
 
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
 	const [openDialog, setOpenDialog] = useState(false);
 
 	const editorRef = useRef<TinyMCEEditor | null>(null);
@@ -32,14 +58,55 @@ export default function NewsForm() {
 	const [hide, setHide] = useState<boolean>(publication?.hide || false);
 	const toggleHide = () => setHide(!hide);
 
-	const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		const tagsArr = tags
-			.split(",")
-			.map((tag) => tag.trim())
-			.filter((tag) => tag.length > 0);
-		console.log({ title, content, tagsArr, hide });
-		setOpenDialog(true);
+
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(401, "Ви не авторизовані");
+
+		let result: Publication | void;
+		let error: ClientError | undefined;
+		if (publication) {
+			result = await UpdatePublicationRequest(token, publication.id, {
+				title,
+				content,
+				tags: tags.split(", "),
+				hide,
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		} else {
+			result = await CreatePublicationRequest(token, {
+				title,
+				content,
+				tags: tags.split(", "),
+				hide,
+			}).catch((err) => {
+				if (err instanceof ClientError) error = err;
+				if (err instanceof Error) error = new ClientError(500, err.message);
+				error = new ClientError(500, "Помилка сервера");
+			});
+		}
+
+		if (error && !result) {
+			setAlert({
+				severity: "error",
+				message: error.message,
+				title: `Помилка ${error.status}`,
+			});
+			setOpenDialog(true);
+		}
+
+		if (result) {
+			setAlert({
+				severity: "success",
+				title: "Успіх",
+				message: `Публікацію "${title}" ${publication ? "оновлено" : "створено"}`,
+			});
+			setOpenDialog(true);
+		}
 	};
 
 	const onReset = (event: FormEvent<HTMLFormElement>) => {
@@ -150,9 +217,9 @@ export default function NewsForm() {
 				</form>
 			</Container>
 			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-				<Alert severity='success'>
-					<AlertTitle>Успіх!</AlertTitle>
-					Публікацію успішно {publication ? "відредаговано" : "створено"}!
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

@@ -83,23 +83,27 @@ const _whereHandler = (name?: string, description?: string,
     return where;
 }
 const _includeHandler = (includeItemsDeveloped: boolean, includeItemsPublished: boolean, includeHidden: boolean) => {
-    let include: any[] = [];
+    let include: {}[] = [];
+    const where: {hide?: {}} = {};
+    if (!includeHidden) {
+        where.hide = false;
+    }
 
     if (includeItemsDeveloped) {
         include.push({
             model: Item,
             as: 'ItemsDeveloped',
-            attributes: ['id', 'name', 'mainImage', 'releaseDate'],
-            through: {attributes: []},
-            where: includeHidden ? {} : {hide: false}
+            through: {attributes: []},  // exclude junction table from result
+            where,
+            required: false
         });
     }
     if (includeItemsPublished) {
         include.push({
             model: Item,
             as: 'ItemsPublished',
-            attributes: ['id', 'name', 'mainImage', 'releaseDate'],
-            where: includeHidden ? {} : {hide: false}
+            where,
+            required: false
         });
     }
 
@@ -121,14 +125,18 @@ type getAllCompaniesParams = {
     includeHidden?: boolean
 }
 const getCompanies = async ({name, description, director, founded, foundedFrom, foundedTo, descending = false,
-                                limit = 10, page = 0, sortBy = 'name', includeItemsDeveloped = true,
-                                includeItemsPublished = true, includeHidden = false}: getAllCompaniesParams) => {
+                                limit = 10, page = 0, sortBy = 'name', includeItemsDeveloped = false,
+                                includeItemsPublished = false, includeHidden = false}: getAllCompaniesParams) => {
     const where   = _whereHandler(name, description, director, founded, foundedFrom, foundedTo, includeHidden);
     const include = _includeHandler(includeItemsDeveloped, includeItemsPublished, includeHidden);
     const totalCount = await Company.count({ where: includeHidden ? {} : { hide: false } } );
     const companies = await Company.findAll({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include
-    })
+        where,
+        limit,
+        offset: page * limit,
+        order: [[sortBy, descending ? "DESC" : "ASC"]],
+        include,
+    });
 
     return {
         companies,

@@ -19,6 +19,7 @@ const checkRoles = (roles: string[]) => {
 
             const decoded = jwt.verify(token, process.env.SECRET_KEY as string) as jwt.JwtPayload;
             if (!roles.includes(decoded.role)) return next(ApiError.forbidden('Немає доступу'));
+            req.user = decoded;
 
             next();
         }

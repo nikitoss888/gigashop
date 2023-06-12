@@ -2,10 +2,12 @@ import { Box, FormControl, InputLabel, MenuItem, Select, List as MuiList, Divide
 import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
-import { Company } from "../../../mock/Companies";
+import { Company } from "../../../http/Companies";
+import Typography from "@mui/material/Typography";
 
 type ListProps = {
 	companies?: Company[];
+	onDelete: (id: number) => void;
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -20,7 +22,7 @@ type ListProps = {
 		maxValue: number;
 	};
 };
-export default function List({ companies, sorting, limitation, pagination }: ListProps) {
+export default function List({ companies, sorting, limitation, pagination, onDelete }: ListProps) {
 	return (
 		<Box
 			sx={{
@@ -64,14 +66,24 @@ export default function List({ companies, sorting, limitation, pagination }: Lis
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{companies?.map((company, index: number) => (
-					<>
-						<ListItem key={company.id.toString(16)} company={company} />
-						{index !== companies.length - 1 && (
-							<Divider key={`divider-${company.id}`} sx={{ borderColor: "primary.main" }} />
-						)}
-					</>
-				))}
+				{companies ? (
+					companies.map((company, index: number) => (
+						<>
+							<ListItem key={company.id.toString(16)} company={company} onDelete={onDelete} />
+							{index !== companies.length - 1 && (
+								<Divider key={`divider-${company.id}`} sx={{ borderColor: "primary.main" }} />
+							)}
+						</>
+					))
+				) : (
+					<Typography
+						component='h6'
+						variant='h6'
+						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
+					>
+						Компаній не знайдено
+					</Typography>
+				)}
 			</MuiList>
 			<Pagination data={pagination} />
 		</Box>

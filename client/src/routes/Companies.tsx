@@ -1,12 +1,14 @@
 import { Box, Container } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
-import { Company } from "../mock/Companies";
+import { Company } from "../http/Companies";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import CompaniesGrid from "../components/Companies/CompaniesGrid";
 import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { GetCompanies } from "./index";
+import ClientError from "../ClientError";
+import { AxiosError } from "axios";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -33,13 +35,15 @@ const SortSwitch = (sortBy: string) => {
 export default function Companies() {
 	document.title = `Компанії — gigashop`;
 
-	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
-		data: Company[];
-		totalCount: number;
+	const { data, totalCount, initPage, initLimit, initSortBy, error } = useLoaderData() as {
+		data?: Company[];
+		totalCount?: number;
 		initLimit?: number;
 		initPage?: number;
 		initSortBy?: string;
+		error?: ClientError;
 	};
+	if (error) throw error;
 
 	const [sortBy, setSortBy] = useState(initSortBy || "nameAsc");
 	const [limit, setLimit] = useState(initLimit || 12);
@@ -47,41 +51,51 @@ export default function Companies() {
 
 	const methods = useForm();
 
-	const [companies, setCompanies] = useState(data);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [companies, setCompanies] = useState(data || []);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
-	const getCompanies = (sortBy: string, limit: number, page: number, name?: string) => {
-		const { data, totalCount } = GetCompanies({ admin: false, sortBy, limit, page, name });
+	const getCompanies = async (sortBy: string, limit: number, page: number, name?: string) => {
+		const result = await GetCompanies({ admin: false, sortBy, limit, page, name }).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		const { data, totalCount } = result;
+		if (!data) throw new ClientError(500, "Помилка сервера");
+
 		setCompanies(data);
-		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
-	const sortByUpdate = (sortBy: string) => {
+	const sortByUpdate = async (sortBy: string) => {
 		const { name } = methods.getValues();
-		getCompanies(sortBy, limit, page, name);
+		await getCompanies(sortBy, limit, page, name);
 		setSortBy(sortBy);
 	};
 
-	const limitUpdate = (limit: number) => {
+	const limitUpdate = async (limit: number) => {
 		const { name } = methods.getValues();
-		getCompanies(sortBy, limit, 1, name);
+		await getCompanies(sortBy, limit, 1, name);
 		setLimit(limit);
 		setPage(1);
 	};
 
-	const pageUpdate = (page: number) => {
+	const pageUpdate = async (page: number) => {
 		const { name } = methods.getValues();
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getCompanies(sortBy, limit, localPage, name);
+		await getCompanies(sortBy, limit, localPage, name);
 		setPage(localPage);
 	};
 
-	const onSubmit = () => {
+	const onSubmit = async () => {
 		try {
 			const { name } = methods.getValues();
-			getCompanies(sortBy, limit, page, name);
+			await getCompanies(sortBy, limit, page, name);
 			console.log(data);
 		} catch (err) {
 			console.log(err);

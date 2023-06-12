@@ -69,7 +69,7 @@ export default function LoggedInMd({ user }: LoggedInMdProps) {
 				<MenuItem onClick={() => console.log("logout")}>
 					<Typography variant='h6'>Вийти</Typography>
 				</MenuItem>
-				{["admin", "moderator"].includes(user.role) && (
+				{["admin", "moderator"].includes(user.role.toLowerCase()) && (
 					<>
 						<Divider sx={{ borderColor: "primary.main" }} />
 						<MenuItem component={Link} to='/admin'>

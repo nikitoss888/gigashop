@@ -1,4 +1,4 @@
-import { Item } from "../../mock/Items";
+import { Item } from "../../http/Items";
 import { Divider, List } from "@mui/material";
 import ItemsListItem from "./ItemsListItem";
 

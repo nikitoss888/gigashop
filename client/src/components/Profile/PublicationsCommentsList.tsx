@@ -1,13 +1,15 @@
 import { Divider, List } from "@mui/material";
 import Comment from "../Common/Comment";
 import { Link } from "react-router-dom";
-import { PublicationComment } from "../../mock/PublicationsComments";
+import { Comment as PublicationComment } from "../../http/Publications";
 import Typography from "@mui/material/Typography";
+import { User } from "../../http/User";
 
 type ItemsCartListProps = {
 	comments: PublicationComment[];
+	user: User;
 };
-export default function ItemsList({ comments }: ItemsCartListProps) {
+export default function ItemsList({ comments, user }: ItemsCartListProps) {
 	return (
 		<List
 			sx={{
@@ -20,7 +22,7 @@ export default function ItemsList({ comments }: ItemsCartListProps) {
 			{comments.map((comment, index) => (
 				<>
 					<Link to={`/news/${comment.publicationId}`} style={{ textDecoration: "none" }}>
-						<Comment comment={comment} key={comment.id.toString(16)} />
+						<Comment comment={comment} user={user} key={comment.id.toString(16)} />
 						{comment.violation && (
 							<Typography variant='body1' color='error' mt={2}>
 								Порушення: {comment.violation_reason}

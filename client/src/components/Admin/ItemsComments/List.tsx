@@ -2,10 +2,14 @@ import { Box, FormControl, InputLabel, MenuItem, Select, List as MuiList, Divide
 import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
-import { ItemRate } from "../../../mock/ItemsRates";
+import { ItemRate } from "../../../http/Items";
+import { User } from "../../../http/User";
+import Typography from "@mui/material/Typography";
 
 type ListProps = {
-	comments?: ItemRate[];
+	rates?: (ItemRate & {
+		User: User;
+	})[];
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -22,7 +26,7 @@ type ListProps = {
 	linkToItem?: boolean;
 	linkToUser?: boolean;
 };
-export default function List({ comments, sorting, limitation, pagination, linkToItem, linkToUser }: ListProps) {
+export default function List({ rates, sorting, limitation, pagination, linkToItem, linkToUser }: ListProps) {
 	return (
 		<Box
 			sx={{
@@ -66,19 +70,29 @@ export default function List({ comments, sorting, limitation, pagination, linkTo
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{comments?.map((company, index: number) => (
-					<>
-						<ListItem
-							key={company.id.toString(16)}
-							comment={company}
-							linkToItem={linkToItem}
-							linkToUser={linkToUser}
-						/>
-						{index !== comments.length - 1 && (
-							<Divider key={`divider-${company.id}`} sx={{ borderColor: "primary.main" }} />
-						)}
-					</>
-				))}
+				{rates ? (
+					rates.map((comment, index: number) => (
+						<>
+							<ListItem
+								key={comment.id.toString(16)}
+								comment={comment}
+								linkToItem={linkToItem}
+								linkToUser={linkToUser}
+							/>
+							{index !== rates.length - 1 && (
+								<Divider key={`divider-${comment.id}`} sx={{ borderColor: "primary.main" }} />
+							)}
+						</>
+					))
+				) : (
+					<Typography
+						component='h6'
+						variant='h6'
+						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
+					>
+						Коментарів не знайдено
+					</Typography>
+				)}
 			</MuiList>
 			<Pagination data={pagination} />
 		</Box>

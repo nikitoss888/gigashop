@@ -5,14 +5,16 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import styled from "@mui/material/styles/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/NewsList/Filters";
-import { Publication } from "../mock/Publications";
+import { Publication } from "../http/Publications";
+import { User } from "../http/User";
 import PublicationsList from "../components/NewsList/PublicationsList";
 import { useState } from "react";
 import Typography from "@mui/material/Typography";
 import { Link, useLoaderData } from "react-router-dom";
 import { GetPublications } from "./index";
+import ClientError from "../ClientError";
 
-const User = yup.object().shape({
+const YupUser = yup.object().shape({
 	id: yup.number().required(),
 	login: yup.string().required(),
 	firstName: yup.string().required(),
@@ -43,7 +45,7 @@ const schema = yup.object().shape(
 					schema.min(yup.ref("createdFrom"), "Кінцева дата пошуку не може бути раніше початкової"),
 			}),
 		tags: yup.array().of(yup.string()).notRequired().label("Теги"),
-		authors: yup.array().of(User).notRequired().label("Автори"),
+		authors: yup.array().of(YupUser).notRequired().label("Автори"),
 	},
 	[["createdFrom", "createdTo"]]
 );
@@ -71,13 +73,18 @@ const FormBox = styled(Box)`
 export default function NewsList() {
 	document.title = "Новини - gigashop";
 
-	const { data, totalCount, initPage, initLimit, initSortBy } = useLoaderData() as {
-		data: Publication[];
+	const { data, totalCount, initPage, initLimit, initSortBy, error } = useLoaderData() as {
+		data: (Publication & { AuthoredUser: User })[];
 		totalCount: number;
 		initLimit?: number;
 		initPage?: number;
 		initSortBy?: string;
+		error?: ClientError;
 	};
+
+	if (error) throw error;
+
+	const Authors = data.map((publication) => publication.AuthoredUser);
 
 	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
 	const [limit, setLimit] = useState(initLimit || 12);
@@ -88,7 +95,7 @@ export default function NewsList() {
 	});
 
 	const [news, setNews] = useState(data);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	type getNewsParams = {
 		title?: string;
@@ -115,28 +122,36 @@ export default function NewsList() {
 		return params;
 	};
 
-	const getNews = (sortBy: string, limit: number, page: number, params?: getNewsParams) => {
-		const { data, totalCount } = GetPublications({ admin: false, limit, page, sortBy, searchParams: params });
-		setNews(data);
-		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
+	const getNews = async (sortBy: string, limit: number, page: number, params?: getNewsParams) => {
+		const { data, totalCount, error } = await GetPublications({
+			admin: false,
+			limit,
+			page,
+			sortBy,
+			searchParams: params,
+		});
+		if (error) throw error;
+
+		setNews(data || []);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
-	const sortByUpdate = (sortBy: string) => {
-		getNews(sortBy, limit, page, params);
+	const sortByUpdate = async (sortBy: string) => {
+		await getNews(sortBy, limit, page, params);
 		setSortBy(sortBy);
 	};
 
-	const limitUpdate = (limit: number) => {
-		getNews(sortBy, limit, 1, params);
+	const limitUpdate = async (limit: number) => {
+		await getNews(sortBy, limit, 1, params);
 		setPage(1);
 		setLimit(limit);
 	};
 
-	const pageUpdate = (page: number) => {
+	const pageUpdate = async (page: number) => {
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getNews(sortBy, limit, localPage, params);
+		await getNews(sortBy, limit, localPage, params);
 		setPage(localPage);
 	};
 
@@ -187,9 +202,9 @@ export default function NewsList() {
 							</Typography>
 						</Box>
 						<SearchBar name='title' label='Заголовок' defValue='' />
-						<Filters />
+						<Filters authors={Authors} />
 						<PublicationsList
-							items={news}
+							publications={news}
 							sorting={{
 								value: sortBy,
 								setValue: sortByUpdate,

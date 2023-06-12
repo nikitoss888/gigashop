@@ -8,9 +8,10 @@ class GenresController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
             const {name, description} = req.body;
+            const hide = super.parseBoolean(req.body.hide) || false;
 
             const genre = await Genre
-                .create({name, description})
+                .create({name, description, hide})
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));
                 }
@@ -27,9 +28,16 @@ class GenresController extends Controller {
     }
 
     async getAll(req: Request, res: Response, next: NextFunction) {
-        let { name, description, desc, descending, limit, page, sortBy, hide } = req.query;
+        let { name,
+            description,
+            desc,
+            descending,
+            limit,
+            page,
+            sortBy,
+            hidden } = req.query;
 
-        const hideParsed = super.parseBoolean(hide as string | undefined) || false;
+        const hideParsed = super.parseBoolean(hidden as string | undefined) || false;
         let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
             super.parsePagination(desc as string | undefined, descending as string | undefined,
                 limit as string | undefined, page as string | undefined);
@@ -54,9 +62,10 @@ class GenresController extends Controller {
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
 
-        const hideParsed = super.parseBoolean(req.query.hide as string | undefined);
+        const includeItems = super.parseBoolean(req.query.includeItems as string | undefined);
+        const hideParsed = super.parseBoolean(req.query.includeHidden as string | undefined);
 
-        const genre = await getGenre({ id: +id, includeItems: true, includeHidden: hideParsed });
+        const genre = await getGenre({ id: id, includeItems, includeHidden: hideParsed });
         if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
         return res.json(genre);
     }
@@ -67,13 +76,20 @@ class GenresController extends Controller {
 
         let hideParsed = super.parseBoolean(hide as string | undefined);
 
-        const genre = await Genre
-            .update({name, description, hide: hideParsed}, {where: {id}})
+        const genre = await Genre.findByPk(id);
+        if (!genre) return next(ApiError.badRequest('Жанр не знайдено'));
+
+        if (name) genre.name = name;
+        if (description) genre.description = description;
+        if (hideParsed !== undefined) genre.hide = hideParsed;
+
+        const result = await genre
+            .save()
             .catch((e: unknown) => {
                 return next(super.exceptionHandle(e));
-            }
-        );
-        if (!genre) return next(ApiError.badRequest('Жанр не оновлено'));
+        });
+
+        if (!result) return next(ApiError.badRequest('Жанр не оновлено'));
         return res.json(genre);
     }
 
@@ -87,7 +103,7 @@ class GenresController extends Controller {
             }
         );
         if (!genre) return next(ApiError.badRequest('Жанр не видалено'));
-        return res.json(genre);
+        return res.json({ ok: true });
     }
 
     async test(req: Request, res: Response) {

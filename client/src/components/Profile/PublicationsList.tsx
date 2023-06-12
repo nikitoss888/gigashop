@@ -1,6 +1,6 @@
 import { Divider, List } from "@mui/material";
 import PublicationListItem from "./PublicationsListItem";
-import { Publication } from "../../mock/Publications";
+import { Publication } from "../../http/Publications";
 
 type ListProps = {
 	publications: Publication[];

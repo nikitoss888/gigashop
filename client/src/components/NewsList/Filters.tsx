@@ -3,13 +3,17 @@ import FiltersContent from "./FiltersContent";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
+import { User } from "../../http/User";
 
 const AccordionStyle = styled(Accordion)`
 	background-color: ${(props) => props.theme.colors.primary};
 	border-radius: 5px;
 `;
 
-export default function Filters() {
+type FiltersProps = {
+	authors: User[];
+};
+export default function Filters({ authors }: FiltersProps) {
 	return (
 		<AccordionStyle disableGutters>
 			<AccordionSummary
@@ -22,7 +26,7 @@ export default function Filters() {
 				</Typography>
 			</AccordionSummary>
 			<AccordionDetails sx={{ padding: 0 }}>
-				<FiltersContent />
+				<FiltersContent authors={authors} />
 			</AccordionDetails>
 		</AccordionStyle>
 	);

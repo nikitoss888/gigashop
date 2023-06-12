@@ -2,6 +2,8 @@ import ApiError from "../errors/ApiError";
 
 const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
+import Item from "./Item";
+import User from "./User";
 
 const ItemRate = sequelize_db.define('item_rate', {
     id: {
@@ -93,7 +95,22 @@ export const getAllRates = async ({descending = true, limit = 12, page = 1, sort
     if (limit < 1) throw ApiError.badRequest('Ліміт повинен бути більший за 0');
 
     const totalCount = await ItemRate.count();
-    const rates = await ItemRate.findAll({order: [[sortBy, descending ? 'DESC' : 'ASC']], limit, offset: (page - 1) * limit - limit});
+    const rates = await ItemRate.findAll({
+        order: [[sortBy, descending ? 'DESC' : 'ASC']],
+        limit,
+        offset: (page - 1) * limit,
+        include: [
+            {
+                model: Item,
+                as: 'Item'
+            },
+            {
+                model: User,
+                as: 'User',
+                attributes: {exclude: ['password']}
+            }
+        ]
+    });
 
     return {
         totalCount,

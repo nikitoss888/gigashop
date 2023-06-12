@@ -2,14 +2,15 @@ import { Accordion, AccordionSummary, Box, IconButton, Tooltip } from "@mui/mate
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";
 import { Delete, Edit, RemoveRedEye } from "@mui/icons-material";
-import { Company } from "../../../mock/Companies";
+import { Company } from "../../../http/Companies";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AccordionDetailsStyle from "../../Common/AccordionDetailsStyle";
 
 type ListItemProps = {
 	company: Company;
+	onDelete: (id: number) => void;
 };
-export default function ListItem({ company }: ListItemProps) {
+export default function ListItem({ company, onDelete }: ListItemProps) {
 	return (
 		<Accordion disableGutters>
 			<AccordionSummary expandIcon={<ExpandMoreIcon color='primary' fontSize='large' />}>
@@ -35,7 +36,7 @@ export default function ListItem({ company }: ListItemProps) {
 						</IconButton>
 					</Tooltip>
 					<Tooltip title={`Видалити компанію`}>
-						<IconButton>
+						<IconButton onClick={() => onDelete(company.id)}>
 							<Delete color='error' />
 						</IconButton>
 					</Tooltip>

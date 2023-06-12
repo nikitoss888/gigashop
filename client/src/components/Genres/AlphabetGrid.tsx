@@ -1,4 +1,4 @@
-import { Genre } from "../../mock/Genres";
+import { Genre } from "../../http/Genres";
 import { Box, Typography } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import GenresList from "./GenresList";
@@ -11,7 +11,9 @@ const Grid = styled(Box)`
 	grid-gap: 10px 20px;
 `;
 
-const split = (genres: Genre[]) => {
+const split = (genres?: Genre[]) => {
+	if (!genres) return undefined;
+
 	const dict = genres.reduce((acc, genre) => {
 		const char = genre.name[0].toUpperCase();
 		if (acc[char]) {
@@ -26,23 +28,22 @@ const split = (genres: Genre[]) => {
 };
 
 type GridProps = {
-	genres: Genre[];
+	genres?: Genre[];
 };
 export default function AlphabetGrid({ genres }: GridProps) {
 	const splitGenres = split(genres);
 
 	return (
 		<Grid>
-			{splitGenres.map((group) => (
-				<GenresList genres={group} key={group[0]} />
-			))}
-			{splitGenres.length === 0 && (
-				<Box sx={{ gridColumn: "1 / -1" }}>
-					<Typography variant='h5' textAlign='center'>
-						Жанри не знайдено
-					</Typography>
-				</Box>
-			)}
+			{splitGenres && splitGenres.map((group) => <GenresList genres={group} key={group[0]} />)}
+			{!splitGenres ||
+				(splitGenres.length === 0 && (
+					<Box sx={{ gridColumn: "1 / -1" }}>
+						<Typography variant='h5' textAlign='center'>
+							Жанри не знайдено
+						</Typography>
+					</Box>
+				))}
 		</Grid>
 	);
 }

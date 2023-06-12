@@ -5,10 +5,10 @@ import ErrorPage from "./ErrorPage";
 
 export default function RootPage() {
 	return (
-		<ErrorBoundary FallbackComponent={ErrorPage}>
-			<Layout>
+		<Layout>
+			<ErrorBoundary FallbackComponent={ErrorPage}>
 				<Outlet />
-			</Layout>
-		</ErrorBoundary>
+			</ErrorBoundary>
+		</Layout>
 	);
 }

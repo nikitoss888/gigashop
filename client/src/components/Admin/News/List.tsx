@@ -1,11 +1,14 @@
 import { List as MuiList, Box } from "@mui/material";
 import ListItem from "./ListItem";
-import { Publication } from "../../../mock/Publications";
+import { Publication } from "../../../http/Publications";
 import NewsTopBox from "../../NewsList/NewsTopBox";
 import Pagination from "../../Common/Pagination";
+import { User } from "../../../http/User";
+import Typography from "@mui/material/Typography";
 
 type ListProps = {
-	news?: Publication[];
+	news?: (Publication & { AuthoredUser: User })[];
+	onDelete: (id: number) => void;
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -20,7 +23,7 @@ type ListProps = {
 		maxValue: number;
 	};
 };
-export default function List({ news, sorting, limitation, pagination }: ListProps) {
+export default function List({ news, sorting, limitation, pagination, onDelete }: ListProps) {
 	return (
 		<Box
 			sx={{
@@ -32,9 +35,17 @@ export default function List({ news, sorting, limitation, pagination }: ListProp
 			<NewsTopBox sorting={sorting} limitation={limitation} />
 			<Pagination data={pagination} />
 			<MuiList>
-				{news?.map((item) => (
-					<ListItem key={item.id.toString(16)} publication={item} />
-				))}
+				{news ? (
+					news.map((item) => <ListItem key={item.id.toString(16)} publication={item} onDelete={onDelete} />)
+				) : (
+					<Typography
+						component='h6'
+						variant='h6'
+						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
+					>
+						Публікацій не знайдено
+					</Typography>
+				)}
 			</MuiList>
 			<Pagination data={pagination} />
 		</Box>

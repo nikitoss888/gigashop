@@ -1,9 +1,11 @@
 import { useLoaderData } from "react-router-dom";
-import { PublicationComment } from "../../mock/PublicationsComments";
+import { Comment, Publication } from "../../http/Publications";
 import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import List from "../../components/Admin/PublicationsComments/List";
 import { GetPublicationsComments } from "../index";
+import ClientError from "../../ClientError";
+import { User } from "../../http/User";
 
 const SortSwitch = (sortBy: string) => {
 	switch (sortBy) {
@@ -18,24 +20,29 @@ const SortSwitch = (sortBy: string) => {
 export default function AdminNewsComments() {
 	document.title = "Коментарі до новин - Адміністративна панель - gigashop";
 
-	const { data, totalCount, initPage, initSortBy, initLimit } = useLoaderData() as {
-		data: PublicationComment[];
-		totalCount: number;
+	const { data, totalCount, initPage, initSortBy, initLimit, error } = useLoaderData() as {
+		data?: (Comment & { User: User; Publication: Publication })[];
+		totalCount?: number;
 		initLimit?: number;
 		initPage?: number;
 		initSortBy?: string;
+		error?: ClientError;
 	};
+
+	if (error) throw error;
 
 	const [sortBy, setSortBy] = useState(initSortBy || "createdAtAsc");
 	const [limit, setLimit] = useState(initLimit || 12);
 	const [page, setPage] = useState(initPage || 1);
 
-	const [comments, setComments] = useState(data);
+	const [comments, setComments] = useState(data || []);
 	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
-	const getComments = (sortBy: string, limit: number, page: number) => {
-		const { data, totalCount } = GetPublicationsComments({ sortBy, limit, page });
-		setComments(data);
+	const getComments = async (sortBy: string, limit: number, page: number) => {
+		const { data, totalCount, error } = await GetPublicationsComments({ limit, page, sortBy });
+		if (error) throw error;
+
+		setComments(data || []);
 		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 

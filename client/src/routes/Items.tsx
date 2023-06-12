@@ -6,10 +6,13 @@ import styled from "@emotion/styled";
 import SearchBar from "../components/SearchPages/SearchBar";
 import Filters from "../components/Items/Filters";
 import ItemsGrid from "../components/Items/ItemsGrid";
-import { Item } from "../mock/Items";
+import { Item } from "../http/Items";
 import { useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { GetItems } from "./index";
+import ClientError from "../ClientError";
+import { Company } from "../http/Companies";
+import { Genre } from "../http/Genres";
 
 const Object = yup.object().shape({
 	id: yup.number(),
@@ -93,13 +96,17 @@ const FormBox = styled(Box)`
 
 export default function Items() {
 	document.title = "Товари — gigashop";
-	const { data, totalCount, initPage, initSortBy, initLimit } = useLoaderData() as {
-		data: Item[];
-		totalCount: number;
+	const { data, totalCount, initPage, initSortBy, initLimit, error, companies, genres } = useLoaderData() as {
+		data?: Item[];
+		totalCount?: number;
 		initLimit?: number;
 		initPage?: number;
 		initSortBy?: string;
+		error?: ClientError;
+		companies: Company[];
+		genres: Genre[];
 	};
+	if (error) throw error;
 
 	const [sortBy, setSortBy] = useState(initSortBy || "releaseDateAsc");
 	const [limit, setLimit] = useState(initLimit || 12);
@@ -109,8 +116,8 @@ export default function Items() {
 		resolver: yupResolver(schema),
 	});
 
-	const [items, setItems] = useState(data);
-	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 0) / limit) || 1);
+	const [items, setItems] = useState(data || []);
+	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	type getItemsParams = {
 		name?: string;
@@ -149,37 +156,39 @@ export default function Items() {
 		return params;
 	};
 
-	const getItems = (sortBy: string, limit: number, page: number, params?: getItemsParams) => {
-		const { data, totalCount } = GetItems({ admin: false, sortBy, limit, page, searchParams: params });
+	const getItems = async (sortBy: string, limit: number, page: number, params?: getItemsParams) => {
+		const { data, totalCount, error } = await GetItems({ admin: false, sortBy, limit, page, searchParams: params });
+		if (error) throw error;
+
 		setItems(data);
-		setMaxPage(Math.ceil((totalCount || 0) / limit) || 1);
+		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 
-	const sortByUpdate = (sortBy: string) => {
-		getItems(sortBy, limit, page, params);
+	const sortByUpdate = async (sortBy: string) => {
+		await getItems(sortBy, limit, page, params);
 		setSortBy(sortBy);
 	};
 
-	const limitUpdate = (limit: number) => {
-		getItems(sortBy, limit, 1, params);
+	const limitUpdate = async (limit: number) => {
+		await getItems(sortBy, limit, 1, params);
 		setLimit(limit);
 		setPage(1);
 	};
 
-	const pageUpdate = (page: number) => {
+	const pageUpdate = async (page: number) => {
 		let localPage = page;
 		if (page < 1) localPage = 1;
 		if (page > maxPage) localPage = maxPage;
-		getItems(sortBy, limit, localPage, params);
+		await getItems(sortBy, limit, localPage, params);
 		setPage(localPage);
 	};
 
-	const onSubmit = () => {
+	const onSubmit = async () => {
 		try {
 			const data = methods.getValues();
 			const params = parseValues(data);
 			setParams(params);
-			getItems(sortBy, limit, page, params);
+			await getItems(sortBy, limit, page, params);
 		} catch (err) {
 			console.log(err);
 		}
@@ -199,7 +208,7 @@ export default function Items() {
 						}}
 					>
 						<SearchBar name='name' label='Назва' defValue='' />
-						<Filters />
+						<Filters companies={companies} genres={genres} />
 						<ItemsGrid
 							items={items}
 							sorting={{

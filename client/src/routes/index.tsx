@@ -1,7 +1,5 @@
 import { createBrowserRouter, Params, RouterProvider } from "react-router-dom";
 import RootPage from "./RootPage";
-// import { useRecoilState } from "recoil";
-// import { userState } from "../store/User";
 import Items, { SortSwitch as ItemsSortSwitch } from "./Items";
 import Item from "./Item";
 import Genres from "./Genres";
@@ -21,35 +19,32 @@ import AdminItemForm from "./Admin/AdminItemForm";
 import NewsForm from "./NewsForm";
 import AdminNews from "./Admin/AdminNews";
 import AdminNewsItem from "./Admin/AdminNewsItem";
-import AdminNewsForm from "./Admin/AdminNewsForm";
 import AdminGenres, { SortSwitch as GenresSortSwitch } from "./Admin/AdminGenres";
 import AdminGenre from "./Admin/AdminGenre";
 import Cart from "./Cart";
-import { default as GenresList } from "../mock/Genres";
-import { calculateDiscount, default as ItemsList } from "../mock/Items";
-import { default as CompaniesList } from "../mock/Companies";
-import { default as PublicationsList } from "../mock/Publications";
-import { default as PublicationsCommentsList } from "../mock/PublicationsComments";
-import { default as ItemsRatesList } from "../mock/ItemsRates";
-import Wishlists from "../mock/Wishlists";
 import ClientError from "../ClientError";
 import AdminGenreForm from "./Admin/AdminGenreForm";
 import AdminCompanies from "./Admin/AdminCompanies";
 import AdminCompanyForm from "./Admin/AdminCompanyForm";
 import AdminNewsComments, { SortSwitch as PublicationsCommentsSortSwitch } from "./Admin/AdminNewsComments";
-import Users from "../mock/Users";
-import AdminItemsComments, { SortSwitch as ItemsRatesSortSwitch } from "./Admin/AdminItemsComments";
+import AdminItemsComments, { SortSwitch as ItemsRatesSortSwitch } from "./Admin/AdminItemsRates";
 import AdminUsers, { SortSwitch as UsersSortSwitch } from "./Admin/AdminUsers";
 import Home from "./Home";
 import AdminCompany from "./Admin/AdminCompany";
 import Profile from "./Profile";
-import ItemCart from "../mock/ItemCart";
 import AdminStatistics from "./Admin/AdminStatistics";
 import CartSuccess from "./CartSuccess";
-import { ProfileRequest } from "../http/User";
+import { GetAllUsersRequest, ProfileRequest, SetUpCartRequest } from "../http/User";
 import Cookies from "js-cookie";
+import { calculateDiscount, GetAllItemsParams, GetAllItemsRequest, GetItemRequest } from "../http/Items";
+import { AxiosError } from "axios";
+import { GetAllGenresRequest, GetGenreRequest } from "../http/Genres";
+import { GetAllPublicationsRequest, GetPublicationRequest } from "../http/Publications";
+import { GetAllCompaniesRequest, GetCompanyRequest } from "../http/Companies";
+import { GetAllItemsRatesRequest, GetAllPublicationsCommentsRequest } from "../http/Comments";
+import { GetStatisticsDataRequest } from "../http/Moderation";
 
-const SearchItem = (params: Params<string>, allComments?: boolean) => {
+const SearchItem = async (params: Params<string>, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID товару") };
@@ -57,23 +52,13 @@ const SearchItem = (params: Params<string>, allComments?: boolean) => {
 		const parsed = parseInt(id);
 		if (isNaN(parsed)) return { error: new ClientError(400, "ID товару не є числом") };
 
-		const item = ItemsList.find((item) => item.id === parsed);
-		if (!item) return { error: new ClientError(404, "Товар за даним ID не знайдено") };
-
-		let comments = ItemsRatesList.filter((comment) => comment.itemId === item.id);
-		if (!allComments) comments = comments.filter((comment) => !comment.violation && !comment.hide);
-		comments.forEach((comment) => {
-			comment.user = Users.find((user) => user.id === comment.userId);
+		const item = await GetItemRequest(parsed, admin).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
 		});
-		item.comments = comments;
-
-		const developers = CompaniesList.filter((company) => item.developersIds?.includes(company.id));
-		const publisher = CompaniesList.find((company) => company.id === item.publisherId);
-		const genres = GenresList.filter((genre) => item.genresIds?.includes(genre.id));
-
-		item.developers = developers;
-		item.publisher = publisher;
-		item.genres = genres;
+		if (item instanceof ClientError) return { error: item };
 
 		return { item };
 	} catch (error) {
@@ -81,7 +66,7 @@ const SearchItem = (params: Params<string>, allComments?: boolean) => {
 	}
 };
 
-const SearchGenre = (params: Params<string>, admin?: boolean) => {
+const SearchGenre = async (params: Params<string>, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID жанру") };
@@ -89,22 +74,23 @@ const SearchGenre = (params: Params<string>, admin?: boolean) => {
 		const parsed = parseInt(id);
 		if (isNaN(parsed)) return { error: new ClientError(400, "ID жанру не є числом") };
 
-		const genre = GenresList.find((genre) => genre.id === parsed);
-		if (!genre) return { error: new ClientError(404, "Жанр за даним ID не знайдено") };
+		const result = await GetGenreRequest(parsed, admin).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) return { error: result };
 
-		let items = ItemsList.filter((item) => item.genresIds?.includes(genre.id));
-		if (!admin) items = items.filter((item) => !item.hide);
-		const totalCount = items.length;
+		const genre = result;
 
-		genre.items = items;
-
-		return { genre, totalCount };
+		return { genre };
 	} catch (error) {
 		return { error: new ClientError(500, "Помилка сервера") };
 	}
 };
 
-const SearchPublication = (params: Params<string>, admin?: boolean) => {
+const SearchPublication = async (params: Params<string>, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID публікації") };
@@ -112,18 +98,15 @@ const SearchPublication = (params: Params<string>, admin?: boolean) => {
 		const parsed = parseInt(id);
 		if (isNaN(parsed)) return { error: new ClientError(400, "ID публікації не є числом") };
 
-		const publication = PublicationsList.find((publication) => publication.id === parsed);
-		if (!publication) return { error: new ClientError(404, "Публікацію за даним ID не знайдено") };
-
-		const user = Users.find((user) => user.id === publication.userId);
-		publication.user = user;
-
-		let comments = PublicationsCommentsList.filter((comment) => comment.publicationId === parsed);
-		if (!admin) comments = comments.filter((comment) => !comment.violation && !comment.hide);
-		comments.forEach((comment) => {
-			comment.user = Users.find((user) => user.id === comment.userId);
+		const result = await GetPublicationRequest(parsed, admin).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
 		});
-		publication.comments = comments;
+		if (result instanceof ClientError) return { error: result };
+
+		const publication = result;
 
 		return { publication };
 	} catch (error) {
@@ -131,7 +114,7 @@ const SearchPublication = (params: Params<string>, admin?: boolean) => {
 	}
 };
 
-const SearchCompany = (params: Params<string>, admin?: boolean) => {
+const SearchCompany = async (params: Params<string>, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID компанії") };
@@ -139,23 +122,18 @@ const SearchCompany = (params: Params<string>, admin?: boolean) => {
 		const parsed = parseInt(id);
 		if (isNaN(parsed)) return { error: new ClientError(400, "ID компанії не є числом") };
 
-		const company = CompaniesList.find((company) => company.id === parsed);
-		if (!company) return { error: new ClientError(404, "Компанію за даним ID не знайдено") };
+		const result = await GetCompanyRequest(parsed, admin).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) return { error: result };
 
-		let developed = ItemsList.filter((item) => item.developersIds?.includes(company.id));
-		if (!admin) developed = developed.filter((item) => !item.hide);
-		const developedTotalCount = developed.length;
-		company.developed = developed;
-
-		let published = ItemsList.filter((item) => item.publisherId === company.id);
-		if (!admin) published = published.filter((item) => !item.hide);
-		const publishedTotalCount = published.length;
-		company.published = published;
+		const company = result;
 
 		return {
 			company,
-			developedTotalCount,
-			publishedTotalCount,
 		};
 	} catch (error) {
 		return { error: new ClientError(500, "Помилка сервера") };
@@ -166,37 +144,26 @@ const SearchProfile = async () => {
 	const token = Cookies.get("token");
 	if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
 
-	try {
-		const result = await ProfileRequest(token);
-		if (result) console.log(result);
-	} catch (e) {
+	const result = await ProfileRequest(token).catch((e) => {
 		if (e instanceof ClientError) {
-			if (e.status === 401) return { error: new ClientError(401, "Необхідно авторизуватися") };
-			if (e.status === 403) return { error: new ClientError(403, "Необхідно авторизуватися") };
+			if (e.status === 401) return new ClientError(401, "Необхідно авторизуватися");
+			if (e.status === 403) return new ClientError(403, "Необхідно авторизуватися");
 		}
-		if (e instanceof Error) throw new ClientError(500, "Помилка сервера");
-	}
-	const user = Users[0];
-
-	const itemCarts = ItemCart.filter((item) => item.userId === user.id);
-	const cart = ItemsList.filter((item) => itemCarts.map((itemCart) => itemCart.itemId).includes(item.id));
-
-	const wishlists = Wishlists.filter((item) => item.userId === user.id);
-	const wishlist = ItemsList.filter((item) => wishlists.map((wishlist) => wishlist.itemId).includes(item.id));
-
-	const publications = PublicationsList.filter((publication) => publication.userId === user.id);
-
-	const publicationsComments = PublicationsCommentsList.filter((comment) => comment.userId === user.id);
-	publicationsComments.forEach((comment) => {
-		comment.user = user;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		return new ClientError(500, "Помилка сервера");
 	});
+	if (result instanceof ClientError) return { error: result };
+	const user = result;
 
-	const itemsRates = ItemsRatesList.filter((rate) => rate.userId === user.id);
-	itemsRates.forEach((rate) => {
-		rate.user = user;
-	});
+	const cart = user.Cart;
+	const boughtData = user.Bought;
+	const boughtItems = user.BoughtItems;
+	const wishlist = user.Wishlist;
+	const publications = user.Publications;
+	const publicationsComments = user.CommentsList;
+	const itemsRates = user.Rates;
 
-	return { user, cart, wishlist, publications, publicationsComments, itemsRates };
+	return { user, cart, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates };
 };
 
 type GetItemsParams = {
@@ -225,82 +192,53 @@ type GetItemsParams = {
 		discount?: boolean;
 	};
 };
-export const GetItems = (params: GetItemsParams) => {
+export const GetItems = async (params: GetItemsParams) => {
 	const { admin = false, limit = 12, page = 1, sortBy = "nameAsc", searchParams = undefined } = params;
-	let data = ItemsList;
-	if (!admin) data = data.filter((item) => !item.hide && !item.deletedAt);
+	const { sortBy: specificSortBy, descending } = ItemsSortSwitch(sortBy);
+
+	const requestParams: GetAllItemsParams = {
+		sortBy: specificSortBy,
+		desc: descending,
+		page,
+		limit,
+		hidden: admin ? undefined : false,
+
+		name: searchParams?.name,
+		priceFrom: searchParams?.priceFrom,
+		priceTo: searchParams?.priceTo,
+		releaseDateFrom: searchParams?.dateFrom?.toISOString().slice(0, 10),
+		releaseDateTo: searchParams?.dateTo?.toISOString().slice(0, 10),
+		discount: searchParams?.discount,
+		includeGenres: !!searchParams?.genres,
+		genresIds: searchParams?.genres?.map((genre) => genre.id),
+		includeDevelopers: !!searchParams?.developers,
+		developersIds: searchParams?.developers?.map((developer) => developer.id),
+		includePublisher: !!searchParams?.publisher,
+		publisherId: searchParams?.publisher?.id,
+	};
+	const result = await GetAllItemsRequest(requestParams);
+	if (!result) return { error: new ClientError(500, "Помилка сервера") };
+
+	let data = result.items;
+	const totalCount = result.totalCount;
+	const companies = result.companies;
+	const genres = result.genres;
+
 	if (searchParams) {
 		data = data.filter((item) => {
 			const { finalPrice } = calculateDiscount(item);
 			let pass = true;
-			if (searchParams.name) {
-				pass = pass && item.name.toLowerCase().includes(searchParams.name.toLowerCase());
-			}
 			if (searchParams.priceFrom) {
 				pass = pass && finalPrice >= searchParams.priceFrom;
 			}
 			if (searchParams.priceTo) {
 				pass = pass && finalPrice <= searchParams.priceTo;
 			}
-			if (searchParams.dateFrom) {
-				const itemReleaseDateLocal = new Date(item.releaseDate.toLocaleDateString());
-				const searchParamLocal = new Date(searchParams.dateFrom.toLocaleDateString());
-				pass = pass && itemReleaseDateLocal.getTime() >= searchParamLocal.getTime();
-			}
-			if (searchParams.dateTo) {
-				const itemReleaseDateLocal = new Date(item.releaseDate.toLocaleDateString());
-				const searchParamLocal = new Date(searchParams.dateTo.toLocaleDateString());
-				pass = pass && itemReleaseDateLocal.getTime() <= searchParamLocal.getTime();
-			}
-			if (searchParams.genres && item.genresIds && searchParams.genres.length > 0) {
-				const genres = searchParams.genres.map((genre) => genre.id);
-				const itemGenres = item.genresIds;
-				pass = pass && itemGenres.some((itemGenre) => genres.includes(itemGenre));
-			}
-			if (searchParams.developers && item.developersIds && searchParams.developers.length > 0) {
-				const developers = searchParams.developers.map((developer) => developer.id);
-				const itemDevelopers = item.developersIds;
-				pass = pass && itemDevelopers.some((itemDeveloper) => developers.includes(itemDeveloper));
-			}
-			if (searchParams.publisher) {
-				pass = pass && item.publisherId === searchParams.publisher.id;
-			}
-			if (searchParams.discount) {
-				pass = pass && item.discount;
-			}
 			return pass;
 		});
 	}
-	const totalCount = data.length;
-	const { sortBy: specificSortBy, descending } = ItemsSortSwitch(sortBy);
-	data = data
-		.sort((a, b) => {
-			if (descending) {
-				switch (specificSortBy) {
-					default:
-					case "releaseDate":
-						return b.releaseDate.getTime() - a.releaseDate.getTime();
-					case "name":
-						return b.name.localeCompare(a.name);
-					case "price":
-						return b.price - a.price;
-				}
-			} else {
-				switch (specificSortBy) {
-					default:
-					case "releaseDate":
-						return a.releaseDate.getTime() - b.releaseDate.getTime();
-					case "name":
-						return a.name.localeCompare(b.name);
-					case "price":
-						return a.price - b.price;
-				}
-			}
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
-	console.log({ data, page, limit, sortBy });
 
-	return { data, totalCount, limit, page, sortBy };
+	return { data, totalCount, limit, page, sortBy, companies, genres };
 };
 
 type GetGenresParams = {
@@ -310,23 +248,30 @@ type GetGenresParams = {
 	sortBy?: string;
 	name?: string;
 };
-export const GetGenres = (params: GetGenresParams) => {
+export const GetGenres = async (params: GetGenresParams) => {
 	const { admin = false, limit = 12, page = 1, sortBy = "nameAsc", name = "" } = params;
-	let data = GenresList;
-	if (!admin) data = data.filter((genre) => !genre.hide && !genre.deletedAt);
-	if (name) data = data.filter((genre) => genre.name.toLowerCase().includes(name.toLowerCase()));
-	const totalCount = data.length;
-	if (admin) {
-		const { descending } = GenresSortSwitch(sortBy);
-		data = data
-			.sort((a, b) => {
-				if (descending) return b.name.localeCompare(a.name);
-				else return a.name.localeCompare(b.name);
-			})
-			.slice((page - 1) * limit, (page - 1) * limit + limit);
-	} else data = data.sort((a, b) => a.name.localeCompare(b.name));
+	const { descending } = GenresSortSwitch(sortBy);
 
-	return { data, totalCount, limit, page, sortBy };
+	const data = await GetAllGenresRequest({
+		sortBy: "name",
+		desc: descending,
+		page,
+		limit,
+		hidden: admin,
+		admin,
+		name,
+	}).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
+	});
+	if (data instanceof ClientError) return { error: data };
+
+	const genres = data.genres;
+	const totalCount = data.totalCount;
+
+	return { data: genres, totalCount, limit, page, sortBy };
 };
 
 type GetCompaniesParams = {
@@ -337,35 +282,27 @@ type GetCompaniesParams = {
 	descending?: boolean;
 	name?: string;
 };
-export const GetCompanies = (params: GetCompaniesParams) => {
+export const GetCompanies = async (params: GetCompaniesParams) => {
 	const { admin = false, limit = 12, page = 1, sortBy = "nameAsc", name = "" } = params;
-	let data = CompaniesList;
-	if (!admin) data = data.filter((company) => !company.hide && !company.deletedAt);
-	if (name) data = data.filter((company) => company.name.toLowerCase().includes(name.toLowerCase()));
-	const totalCount = data.length;
 	const { sortBy: specificSortBy, descending } = CompaniesSortSwitch(sortBy);
-	data = data
-		.sort((a, b) => {
-			if (descending) {
-				switch (specificSortBy) {
-					default:
-					case "founded":
-						return b.founded.getTime() - a.founded.getTime();
-					case "name":
-						return b.name.localeCompare(a.name);
-				}
-			} else {
-				switch (specificSortBy) {
-					default:
-					case "founded":
-						return a.founded.getTime() - b.founded.getTime();
-					case "name":
-						return a.name.localeCompare(b.name);
-						return 0;
-				}
-			}
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
+
+	const result = await GetAllCompaniesRequest({
+		name,
+		sortBy: specificSortBy,
+		desc: descending,
+		page,
+		limit,
+		hidden: admin,
+	}).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
+	});
+	if (result instanceof ClientError) return { error: result };
+
+	const data = result.companies;
+	const totalCount = result.totalCount;
 
 	return { data, totalCount, limit, page, sortBy };
 };
@@ -388,66 +325,45 @@ type GetPublicationsParams = {
 		}[];
 	};
 };
-export const GetPublications = (params: GetPublicationsParams) => {
+export const GetPublications = async (params: GetPublicationsParams) => {
 	const { admin = false, limit = 12, page = 1, sortBy = "createdAtAsc", searchParams = undefined } = params;
-	let data = PublicationsList;
-	if (!admin) data = data.filter((news) => !news.hide && !news.deletedAt);
-	if (searchParams) {
-		data = data.filter((news) => {
-			let pass = true;
-			if (searchParams.title) {
-				pass = pass && news.title.toLowerCase().includes(searchParams.title.toLowerCase());
-			}
-			if (searchParams.dateFrom) {
-				const newsDateLocal = new Date(news.createdAt.toLocaleDateString());
-				const searchParamsDateLocal = new Date(searchParams.dateFrom.toLocaleDateString());
-				pass = pass && newsDateLocal.getTime() >= searchParamsDateLocal.getTime();
-			}
-			if (searchParams.dateTo) {
-				const newsDateLocale = new Date(news.createdAt.toLocaleDateString());
-				const searchParamsDateLocale = new Date(searchParams.dateTo.toLocaleDateString());
-				pass = pass && newsDateLocale.getTime() <= searchParamsDateLocale.getTime();
-			}
-			if (searchParams.tags && searchParams.tags.length > 0) {
-				const tags = searchParams.tags;
-				const itemTags = news.tags;
-				if (!itemTags || itemTags.length === 0) pass = false;
-				else pass = pass && itemTags.some((itemTag) => tags.includes(itemTag));
-			}
-			if (searchParams.authors && searchParams.authors.length > 0) {
-				const authors = searchParams.authors.map((author) => author.id);
-				pass = pass && authors.includes(news.userId);
-			}
-			return pass;
-		});
-	}
-	const totalCount = data.length;
 	const { sortBy: specificSortBy, descending } = PublicationsSortSwitch(sortBy);
-	data = data
-		.sort((a, b) => {
-			if (descending) {
-				switch (specificSortBy) {
-					default:
-					case "createdAt":
-						return b.createdAt.getTime() - a.createdAt.getTime();
-					case "title":
-						return b.title.localeCompare(a.title);
-				}
-			} else {
-				switch (specificSortBy) {
-					default:
-					case "createdAt":
-						return a.createdAt.getTime() - b.createdAt.getTime();
-					case "title":
-						return a.title.localeCompare(b.title);
-				}
-			}
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
-	data.forEach((news) => {
-		const user = Users.find((user) => user.id === news.userId);
-		if (user) news.user = user;
+
+	const result = await GetAllPublicationsRequest({
+		admin,
+		limit,
+		page,
+		sortBy: specificSortBy,
+		desc: descending,
+
+		title: searchParams?.title,
+		dateFrom: searchParams?.dateFrom,
+		dateTo: searchParams?.dateTo,
+	}).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
 	});
+	if (result instanceof ClientError) return { error: result };
+
+	const data = result.publications.filter((publication) => {
+		let pass = true;
+		if (searchParams?.dateFrom) {
+			pass = pass && new Date(publication.createdAt).getTime() >= new Date(searchParams.dateFrom).getTime();
+		}
+		if (searchParams?.dateTo) {
+			pass = pass && new Date(publication.createdAt).getTime() <= new Date(searchParams.dateTo).getTime();
+		}
+		if (searchParams?.tags) {
+			pass = pass && searchParams.tags.every((tag) => publication.tags.includes(tag));
+		}
+		if (searchParams?.authors) {
+			pass = pass && searchParams.authors.some((author) => publication.userId === author.id);
+		}
+		return pass;
+	});
+	const totalCount = result.totalCount;
 
 	return { data, totalCount, limit, page, sortBy };
 };
@@ -457,35 +373,27 @@ type GetUsersParams = {
 	page?: number;
 	sortBy?: string;
 };
-export const GetUsers = (params: GetUsersParams) => {
+export const GetUsers = async (params: GetUsersParams) => {
+	const token = Cookies.get("token");
+	if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
+
 	const { limit = 12, page = 1, sortBy = "createdAtAsc" } = params;
-	const users = Users;
-	const totalCount = users.length;
-
 	const { sortBy: specificSortBy, descending } = UsersSortSwitch(sortBy);
-	const data = users
-		.sort((a, b) => {
-			if (descending) {
-				switch (specificSortBy) {
-					default:
-					case "createdAt":
-						return b.createdAt.getTime() - a.createdAt.getTime();
-					case "login":
-						return b.login.localeCompare(a.login);
-				}
-			} else {
-				switch (specificSortBy) {
-					default:
-					case "createdAt":
-						return a.createdAt.getTime() - b.createdAt.getTime();
-					case "login":
-						return a.login.localeCompare(b.login);
-				}
-			}
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
 
-	return { data, totalCount, limit, page, sortBy };
+	const result = await GetAllUsersRequest(token, limit, page, specificSortBy, descending).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
+	});
+	if (result instanceof ClientError) return { error: result };
+
+	if (!result.data.users) return { error: new ClientError(500, "Не вдалося отримати користувачів") };
+
+	const users = result.data.users;
+	const totalCount = result.data.totalCount;
+
+	return { data: users, totalCount, limit, page, sortBy };
 };
 
 type GetPublicationsCommentsParams = {
@@ -493,26 +401,27 @@ type GetPublicationsCommentsParams = {
 	page?: number;
 	sortBy?: string;
 };
-export const GetPublicationsComments = (params: GetPublicationsCommentsParams) => {
+export const GetPublicationsComments = async (params: GetPublicationsCommentsParams) => {
 	const { limit = 12, page = 1, sortBy = "createdAtAsc" } = params;
-	const comments = PublicationsCommentsList;
-	const totalCount = comments.length;
-
 	const { descending } = PublicationsCommentsSortSwitch(sortBy);
-	const data = comments
-		.sort((a, b) => {
-			if (descending) return b.createdAt.getTime() - a.createdAt.getTime();
-			else return a.createdAt.getTime() - b.createdAt.getTime();
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
-	data.forEach((comment) => {
-		const user = Users.find((user) => user.id === comment.userId);
-		if (user) comment.user = user;
-		const publication = PublicationsList.find((publication) => publication.id === comment.publicationId);
-		if (publication) comment.publication = publication;
-	});
 
-	return { data, totalCount, limit, page, sortBy };
+	const result = await GetAllPublicationsCommentsRequest({
+		limit,
+		page,
+		sortBy: "createdAt",
+		descending,
+	}).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
+	});
+	if (result instanceof ClientError) return { error: result };
+
+	const comments = result.comments;
+	const totalCount = result.totalCount;
+
+	return { data: comments, totalCount, limit, page, sortBy };
 };
 
 type GetItemsRatesParams = {
@@ -520,46 +429,45 @@ type GetItemsRatesParams = {
 	page?: number;
 	sortBy?: string;
 };
-export const GetItemsRates = (params: GetItemsRatesParams) => {
+export const GetItemsRates = async (params: GetItemsRatesParams) => {
 	const { limit = 12, page = 1, sortBy = "createdAtAsc" } = params;
-	const rates = ItemsRatesList;
-	const totalCount = rates.length;
-
 	const { descending } = ItemsRatesSortSwitch(sortBy);
 
-	const data = rates
-		.sort((a, b) => {
-			if (descending) return b.createdAt.getTime() - a.createdAt.getTime();
-			else return a.createdAt.getTime() - b.createdAt.getTime();
-		})
-		.slice((page - 1) * limit, (page - 1) * limit + limit);
-
-	data.forEach((rate) => {
-		const user = Users.find((user) => user.id === rate.userId);
-		if (user) rate.user = user;
-		const item = ItemsList.find((item) => item.id === rate.itemId);
-		if (item) rate.item = item;
+	const result = await GetAllItemsRatesRequest({
+		limit,
+		page,
+		sortBy: "createdAt",
+		descending,
+	}).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
 	});
+	if (result instanceof ClientError) return { error: result };
+
+	const data = result.rates;
+	const totalCount = result.totalCount;
 
 	return { data, totalCount, limit, page, sortBy };
 };
 
-const GetStatistics = () => {
-	const data = {
-		users: Users,
-		items: ItemsList,
-		publications: PublicationsList,
-		companies: CompaniesList,
-		genres: GenresList,
-		itemsRates: ItemsRatesList,
-		publicationsComments: PublicationsCommentsList,
-		wishlists: Wishlists,
-	};
-	return data;
+const GetStatistics = async () => {
+	const token = Cookies.get("token");
+	if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
+
+	const result = await GetStatisticsDataRequest(token).catch((e) => {
+		if (e instanceof ClientError) return e;
+		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+		if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+		return new ClientError(500, "Помилка сервера");
+	});
+	if (result instanceof ClientError) return { error: result };
+
+	return result;
 };
 
 export default function Router() {
-	// const [user, _] = useRecoilState(userState);
 	const router = createBrowserRouter([
 		{
 			path: "",
@@ -584,33 +492,50 @@ export default function Router() {
 						{
 							path: "/profile",
 							element: <Profile />,
-							loader: () => {
+							loader: async () => {
 								console.log("profile loader");
-								return SearchProfile();
+								return await SearchProfile();
 							},
 						},
 						{
 							path: "/cart",
 							element: <Cart />,
-							loader: () => {
+							loader: async () => {
 								console.log("cart loader");
-								return SearchProfile();
+								const userData = await SearchProfile();
+								if (userData.error) return { error: userData.error };
+
+								const token = Cookies.get("token");
+								if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
+
+								const { user, cart } = userData;
+								const result = await SetUpCartRequest(token).catch((e) => {
+									if (e instanceof ClientError) return e;
+									if (e instanceof Error)
+										return new ClientError(500, "Помилка сервера: " + e.message);
+									if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+									return new ClientError(500, "Помилка сервера");
+								});
+								if (result instanceof ClientError) return { error: result };
+
+								return { user, cart, transactionId: result.transactionId };
 							},
 						},
 						{
 							path: "/cart/success",
 							element: <CartSuccess />,
-							loader: () => {
+							loader: async () => {
 								console.log("cart loader");
-								return SearchProfile();
+								return await SearchProfile();
 							},
 						},
 						{
 							path: "/shop/items",
 							element: <Items />,
-							loader: () => {
+							loader: async () => {
 								console.log("items loader");
-								const { data, totalCount, limit, page, sortBy } = GetItems({});
+								const { data, totalCount, limit, page, sortBy, error, companies, genres } =
+									await GetItems({});
 
 								return {
 									data,
@@ -618,6 +543,9 @@ export default function Router() {
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
+									companies,
+									genres,
 								};
 							},
 						},
@@ -632,10 +560,10 @@ export default function Router() {
 						{
 							path: "/shop/genres",
 							element: <Genres />,
-							loader: () => {
+							loader: async () => {
 								console.log("genres loader");
-								const { data } = GetGenres({});
-								return { data };
+								const { data, error } = await GetGenres({});
+								return { data, error };
 							},
 						},
 						{
@@ -649,15 +577,16 @@ export default function Router() {
 						{
 							path: "/shop/companies",
 							element: <Companies />,
-							loader: () => {
+							loader: async () => {
 								console.log("companies loader");
-								const { data, totalCount, limit, page, sortBy } = GetCompanies({});
+								const { data, totalCount, limit, page, sortBy, error } = await GetCompanies({});
 								return {
 									data,
 									totalCount,
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
 								};
 							},
 						},
@@ -672,9 +601,9 @@ export default function Router() {
 						{
 							path: "/news",
 							element: <NewsList />,
-							loader: () => {
+							loader: async () => {
 								console.log("news loader");
-								const { data, totalCount, limit, page, sortBy } = GetPublications({});
+								const { data, totalCount, limit, page, sortBy } = await GetPublications({});
 								return {
 									data,
 									totalCount,
@@ -721,33 +650,35 @@ export default function Router() {
 						{
 							path: "/admin/statistics",
 							element: <AdminStatistics />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin statistics loader");
-								const data = GetStatistics();
-								return data;
+								return await GetStatistics();
 							},
 						},
 						{
 							path: "/admin/users",
 							element: <AdminUsers />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin users loader");
-								const { data, totalCount, limit, page, sortBy } = GetUsers({});
+								const { data, totalCount, limit, page, sortBy, error } = await GetUsers({});
 								return {
 									data,
 									totalCount,
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
 								};
 							},
 						},
 						{
 							path: "/admin/items",
 							element: <AdminItems />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin items loader");
-								const { data, totalCount, limit, page, sortBy } = GetItems({ admin: true });
+								const { data, totalCount, limit, page, sortBy, error } = await GetItems({
+									admin: true,
+								});
 
 								return {
 									data,
@@ -755,6 +686,7 @@ export default function Router() {
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
 								};
 							},
 						},
@@ -769,30 +701,48 @@ export default function Router() {
 						{
 							path: "/admin/items/create",
 							element: <AdminItemForm />,
-							loader: () => {
-								return { item: undefined };
+							loader: async () => {
+								const genres = await GetGenres({ admin: true });
+								if (genres.error) return { error: genres.error };
+
+								const companies = await GetCompanies({ admin: true });
+								if (companies.error) return { error: companies.error };
+
+								return { item: undefined, genres: genres.data, companies: companies.data };
 							},
 						},
 						{
 							path: "/admin/items/:id/edit",
 							element: <AdminItemForm />,
-							loader: ({ params }) => {
+							loader: async ({ params }) => {
 								console.log("admin item edit loader");
-								return SearchItem(params);
+								const itemData = await SearchItem(params, true);
+								if (itemData.error) return { error: itemData.error };
+
+								const genres = await GetGenres({ admin: true });
+								if (genres.error) return { error: genres.error };
+
+								const companies = await GetCompanies({ admin: true });
+								if (companies.error) return { error: companies.error };
+
+								return { item: itemData.item, genres: genres.data, companies: companies.data };
 							},
 						},
 						{
 							path: "/admin/genres",
 							element: <AdminGenres />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin genres loader");
-								const { data, totalCount, sortBy, limit, page } = GetGenres({ admin: true });
+								const { data, totalCount, sortBy, limit, page, error } = await GetGenres({
+									admin: true,
+								});
 								return {
 									data,
 									totalCount,
 									initSortBy: sortBy,
 									initLimit: limit,
 									initPage: page,
+									error,
 								};
 							},
 						},
@@ -822,15 +772,18 @@ export default function Router() {
 						{
 							path: "/admin/companies",
 							element: <AdminCompanies />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin companies loader");
-								const { data, totalCount, sortBy, limit, page } = GetCompanies({ admin: true });
+								const { data, totalCount, sortBy, limit, page, error } = await GetCompanies({
+									admin: true,
+								});
 								return {
 									data,
 									totalCount,
 									initSortBy: sortBy,
 									initLimit: limit,
 									initPage: page,
+									error,
 								};
 							},
 						},
@@ -860,15 +813,18 @@ export default function Router() {
 						{
 							path: "/admin/news",
 							element: <AdminNews />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin news loader");
-								const { data, totalCount, sortBy, limit, page } = GetPublications({ admin: true });
+								const { data, totalCount, sortBy, limit, page, error } = await GetPublications({
+									admin: true,
+								});
 								return {
 									data,
 									totalCount,
 									initSortBy: sortBy,
 									initLimit: limit,
 									initPage: page,
+									error,
 								};
 							},
 						},
@@ -881,47 +837,36 @@ export default function Router() {
 							},
 						},
 						{
-							path: "/admin/news/create",
-							element: <AdminNewsForm />,
-							loader: () => {
-								return { publication: undefined };
-							},
-						},
-						{
-							path: "/admin/news/:id/edit",
-							element: <AdminNewsForm />,
-							loader: ({ params }) => {
-								console.log("admin news edit loader");
-								return SearchPublication(params);
-							},
-						},
-						{
 							path: "/admin/comments/news",
 							element: <AdminNewsComments />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin news comments loader");
-								const { data, totalCount, limit, page, sortBy } = GetPublicationsComments({});
+								const { data, totalCount, limit, page, sortBy, error } = await GetPublicationsComments(
+									{}
+								);
 								return {
 									data,
 									totalCount,
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
 								};
 							},
 						},
 						{
 							path: "/admin/comments/items",
 							element: <AdminItemsComments />,
-							loader: () => {
+							loader: async () => {
 								console.log("admin items comments loader");
-								const { data, totalCount, limit, page, sortBy } = GetItemsRates({});
+								const { data, totalCount, limit, page, sortBy, error } = await GetItemsRates({});
 								return {
 									data,
 									totalCount,
 									initLimit: limit,
 									initPage: page,
 									initSortBy: sortBy,
+									error,
 								};
 							},
 						},

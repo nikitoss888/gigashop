@@ -1,4 +1,4 @@
-import { Genre } from "../../mock/Genres";
+import { Genre } from "../../http/Genres";
 import { Box, List, ListItem, ListItemButton } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";

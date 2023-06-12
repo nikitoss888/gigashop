@@ -1,5 +1,5 @@
 import { useLoaderData } from "react-router-dom";
-import { Publication } from "../mock/Publications";
+import { Publication, Comment, SetCommentRequest, DeleteCommentRequest } from "../http/Publications";
 import ClientError from "../ClientError";
 import { Container, Box, Dialog, Alert, AlertTitle, AlertColor } from "@mui/material";
 import Author from "../components/NewsItem/Author";
@@ -10,14 +10,28 @@ import parse from "html-react-parser";
 import ItemRating from "../components/Common/ItemRating";
 import CommentsList from "../components/Common/CommentsList";
 import { FormEvent, useLayoutEffect, useRef, useState } from "react";
+import { User } from "../http/User";
+import { useRecoilState } from "recoil";
+import { userState } from "../store/User";
+import Cookies from "js-cookie";
 
 export default function NewsItem() {
+	const [user, _] = useRecoilState(userState);
+
 	const { publication, error } = useLoaderData() as {
-		publication: Publication;
-		error: ClientError;
+		publication: Publication & {
+			CommentsList?: (Comment & {
+				User: User;
+			})[];
+			AuthoredUser: User;
+		};
+		error?: ClientError;
 	};
 
 	if (error) throw error;
+
+	const allComments =
+		publication.CommentsList?.filter((comment) => comment.User.id !== publication.AuthoredUser.id) || [];
 
 	if (publication.violation)
 		throw new ClientError(
@@ -34,12 +48,54 @@ export default function NewsItem() {
 		severity: AlertColor | undefined;
 	}>({ title: "", message: "", severity: undefined });
 
+	const [userComment, setUserComment] = useState(
+		publication.CommentsList?.find((comment) => comment.User.id === user?.id)
+	);
 	const [message, setMessage] = useState("");
 	const [rating, setRating] = useState(0);
-	const onRate = (event: FormEvent) => {
+	const onRate = async (event: FormEvent) => {
 		event.preventDefault();
-		console.log("Rated");
-		setAlert({ title: "Успіх!", message: "Ваш відгук успішно додано!", severity: "success" });
+
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({ title: "Помилка!", message: "Ви не авторизовані!", severity: "error" });
+			setOpenDialog(true);
+			return;
+		}
+
+		const result = await SetCommentRequest(token, publication.id, { content: message, rate: rating }).catch(
+			(error) => {
+				setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+				setOpenDialog(true);
+				return undefined;
+			}
+		);
+		if (!result) return;
+
+		setUserComment({ ...result.comment, User: result.user });
+
+		setAlert({ title: "Успіх!", message: result.message, severity: "success" });
+		setOpenDialog(true);
+	};
+
+	const onDelete = async () => {
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({ title: "Помилка!", message: "Ви не авторизовані!", severity: "error" });
+			setOpenDialog(true);
+			return;
+		}
+
+		const result = await DeleteCommentRequest(token, publication.id).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return undefined;
+		});
+		if (!result) return;
+
+		setUserComment(undefined);
+
+		setAlert({ title: "Успіх!", message: result.message, severity: "success" });
 		setOpenDialog(true);
 	};
 
@@ -54,7 +110,7 @@ export default function NewsItem() {
 	}, []);
 
 	document.title =
-		(publication.user && `${publication.user?.firstName} ${publication.user?.lastName} / `) +
+		`${publication.AuthoredUser.firstName} ${publication.AuthoredUser.lastName} / ` +
 		`${publication.title} — gigashop`;
 
 	const cleanContent = DOMPurify.sanitize(publication.content, {
@@ -71,13 +127,13 @@ export default function NewsItem() {
 						gap: "15px",
 					}}
 				>
-					{publication.user && <Author user={publication.user} publicationId={publication.id} />}
+					<Author user={publication.AuthoredUser} publicationId={publication.id} />
 					<Box>
 						<Typography variant='h3' textAlign='center'>
 							{publication.title}
 						</Typography>
 						<Typography variant='subtitle1' textAlign='center'>
-							{publication.createdAt.toLocaleDateString()}
+							{new Date(publication.createdAt).toLocaleDateString()}
 						</Typography>
 					</Box>
 					{publication.tags && (
@@ -89,15 +145,15 @@ export default function NewsItem() {
 					{publication.tags && contentHeight > 600 && (
 						<Typography variant='h6'>Теги: {publication.tags.map((tag) => tag).join(", ")}</Typography>
 					)}
-					{publication.comments && <ItemRating comments={publication.comments} />}
-					{publication.comments && (
-						<CommentsList
-							comments={publication.comments}
-							onSubmit={onRate}
-							message={{ value: message, setValue: setMessage }}
-							rate={{ value: rating, setValue: setRating }}
-						/>
-					)}
+					<ItemRating comments={publication.CommentsList} />
+					<CommentsList
+						comments={allComments}
+						userComment={userComment}
+						onSubmit={onRate}
+						onDelete={onDelete}
+						message={{ value: message, setValue: setMessage }}
+						rate={{ value: rating, setValue: setRating }}
+					/>
 				</Box>
 			</Container>
 			<Dialog

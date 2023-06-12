@@ -2,6 +2,8 @@ import ApiError from "../errors/ApiError";
 
 const {sequelize_db} = require('../db');
 import {DataTypes, Op} from 'sequelize';
+import { Publication } from "./index";
+import User from "./User";
 
 const PublicationComment = sequelize_db.define('publication_comment', {
     id: {
@@ -94,7 +96,22 @@ export const getAllComments = async ({descending = true, limit = 12, page = 1, s
     if (limit < 1) throw ApiError.badRequest('Ліміт повинен бути більший за 0');
 
     const totalCount = await PublicationComment.count();
-    const comments = await PublicationComment.findAll({order: [[sortBy, descending ? 'DESC' : 'ASC']], limit, offset: (page - 1) * limit});
+    const comments = await PublicationComment.findAll({
+        order: [[sortBy, descending ? 'DESC' : 'ASC']],
+        limit,
+        offset: (page - 1) * limit,
+        include: [
+            {
+                model: Publication,
+                as: 'Publication',
+            },
+            {
+                model: User,
+                as: 'User',
+                attributes: {exclude: ['password']}
+            }
+        ]
+    });
 
     return {
         totalCount,

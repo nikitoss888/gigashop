@@ -1,20 +1,27 @@
 import { useLoaderData } from "react-router-dom";
-import { User } from "../mock/Users";
-import { calculateDiscount, Item } from "../mock/Items";
+import { ClearCartRequest, User } from "../http/User";
+import { calculateDiscount, Item } from "../http/Items";
 import { useState } from "react";
 import { Box, Container, Divider, List, Typography } from "@mui/material";
 import CartItem from "../components/Cart/CartItem";
 import Button from "@mui/material/Button";
 import { LiqPayPay } from "react-liqpay";
-import { v4 as uuidv4 } from "uuid";
+import Cookies from "js-cookie";
+import ClientError from "../ClientError";
 
 export default function Cart() {
 	document.title = "Кошик — gigashop";
-	const { user, cart } = useLoaderData() as {
-		user: User;
-		cart: Item[];
+	const { user, cart, error, transactionId } = useLoaderData() as {
+		user?: User;
+		cart?: Item[];
+		transactionId: string;
+		error?: ClientError;
 	};
-	const [cartState, setCartState] = useState(cart);
+
+	if (!user) throw new ClientError(401, "Необхідно авторизуватися");
+	if (error) throw error;
+
+	const [cartState, setCartState] = useState(cart || []);
 	const removeFromCart = (itemId: number) => {
 		setCartState(cartState.filter((cartItem) => cartItem.id !== itemId));
 	};
@@ -24,8 +31,17 @@ export default function Cart() {
 		return sum + finalPrice;
 	}, 0);
 
-	const onReset = () => {
-		setCartState([]);
+	const onReset = async () => {
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(401, "Необхідно авторизуватися");
+
+		const result = await ClearCartRequest(token).catch((error) => {
+			if (error instanceof ClientError) return error;
+			return new ClientError(500, "Помилка сервера");
+		});
+		if (result instanceof ClientError) throw result;
+
+		if (result.ok) setCartState([]);
 	};
 
 	const publicKey = process.env.REACT_APP_LIQPAY_TEST_PUBLIC_KEY || "";
@@ -33,7 +49,6 @@ export default function Cart() {
 	const amount = total.toString();
 	const currency = "UAH";
 	const description = "Оплата товарів";
-	const transactionId = uuidv4();
 	const result_url = (process.env.REACT_APP_NGROK_CLIENT_URL || "http://localhost:3000") + "/cart/success";
 	const server_url =
 		(process.env.REACT_APP_NGROK_SERVER_URL || "http://localhost:5000") + `/api/user/cart/success/${transactionId}`;

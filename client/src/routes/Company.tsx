@@ -1,6 +1,6 @@
 import { useLoaderData } from "react-router-dom";
-import { Company as CompanyType } from "../mock/Companies";
-import { Item } from "../mock/Items";
+import { Company as CompanyType } from "../http/Companies";
+import { Item } from "../http/Items";
 import { Box, Container, Tab, Tabs } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import LogoImage from "../components/Company/LogoImage";
@@ -19,10 +19,11 @@ function a11yProps(index: string) {
 }
 
 export default function Company() {
-	const { company, error, developedTotalCount } = useLoaderData() as {
-		company: CompanyType;
-		developedTotalCount: number;
-		publishedTotalCount: number;
+	const { company, error } = useLoaderData() as {
+		company: CompanyType & {
+			ItemsDeveloped?: Item[];
+			ItemsPublished?: Item[];
+		};
 		error?: ClientError;
 	};
 
@@ -38,8 +39,8 @@ export default function Company() {
 	const [limit, setLimit] = useState(initLimit);
 	const [page, setPage] = useState(initPage);
 
-	const developedItems = company.developed || [];
-	const publishedItems = company.published || [];
+	const developedItems = company.ItemsDeveloped || [];
+	const publishedItems = company.ItemsPublished || [];
 
 	const [tab, setTab] = useState<0 | 1>(0);
 	const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
@@ -50,7 +51,7 @@ export default function Company() {
 					switch (specificSortBy) {
 						default:
 						case "releaseDate":
-							return b.releaseDate.getTime() - a.releaseDate.getTime();
+							return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
 						case "name":
 							return b.name.localeCompare(a.name);
 						case "price":
@@ -60,7 +61,7 @@ export default function Company() {
 					switch (specificSortBy) {
 						default:
 						case "releaseDate":
-							return a.releaseDate.getTime() - b.releaseDate.getTime();
+							return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
 						case "name":
 							return a.name.localeCompare(b.name);
 						case "price":
@@ -70,7 +71,7 @@ export default function Company() {
 			})
 			.slice((initPage - 1) * initLimit, initPage * initLimit)
 	);
-	const [maxPage, setMaxPage] = useState(Math.ceil((developedTotalCount || 0) / limit) || 1);
+	const [maxPage, setMaxPage] = useState(Math.ceil((developedItems.length || 0) / limit) || 1);
 
 	const getTabItems = (sortBy: string, limit: number, page: number, tab: number) => {
 		let items: Item[] = [];
@@ -93,7 +94,7 @@ export default function Company() {
 						switch (specificSortBy) {
 							default:
 							case "releaseDate":
-								return b.releaseDate.getTime() - a.releaseDate.getTime();
+								return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
 							case "name":
 								return b.name.localeCompare(a.name);
 							case "price":
@@ -103,7 +104,7 @@ export default function Company() {
 						switch (specificSortBy) {
 							default:
 							case "releaseDate":
-								return a.releaseDate.getTime() - b.releaseDate.getTime();
+								return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
 							case "name":
 								return a.name.localeCompare(b.name);
 							case "price":
@@ -171,7 +172,9 @@ export default function Company() {
 					<LogoImage src={company.image} alt={company.name} />
 				</Box>
 				<DataGroup title='Дата заснування' column='2 / 3'>
-					<Typography variant='body1'>{company.founded?.toLocaleDateString() || "Не вказано"}</Typography>
+					<Typography variant='body1'>
+						{new Date(company.founded).toLocaleDateString() || "Не вказано"}
+					</Typography>
 				</DataGroup>
 				<DataGroup title='Директор' column='2 / 3'>
 					<Typography variant='body1'>{company.director || "Не вказано"}</Typography>

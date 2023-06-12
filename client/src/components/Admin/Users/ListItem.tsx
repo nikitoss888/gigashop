@@ -2,9 +2,10 @@ import {
 	Accordion,
 	AccordionSummary,
 	Alert,
+	AlertColor,
+	AlertTitle,
 	Box,
 	Dialog,
-	FormControlLabel,
 	IconButton,
 	MenuItem,
 	Select,
@@ -16,32 +17,56 @@ import Typography from "@mui/material/Typography";
 import AccordionDetailsStyle from "../../Common/AccordionDetailsStyle";
 import { Link } from "react-router-dom";
 import { RemoveRedEye } from "@mui/icons-material";
-import { User } from "../../../mock/Users";
+import { User } from "../../../http/User";
 import { useState } from "react";
-import Checkbox from "../../Form/Checkbox";
-import SubmitButton from "../../Common/SubmitButton";
+import Cookies from "js-cookie";
+import { SetRoleRequest } from "../../../http/Moderation";
 
 type ListItemProps = {
 	user: User;
 };
 export default function ListItem({ user }: ListItemProps) {
 	const [role, setRole] = useState(user.role);
-	const [isBlocked, setIsBlocked] = useState(user.isBlocked);
-	const [openAlert, setOpenAlert] = useState(false);
-	const changeRole = (event: SelectChangeEvent<string>) => {
-		setRole(event.target.value);
-	};
 
-	const toggleBlock = () => {
-		setIsBlocked(!isBlocked);
-	};
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
+	const [openDialog, setOpenDialog] = useState(false);
 
-	const submit = () => {
-		setOpenAlert(true);
-		console.log({
-			role,
-			isBlocked,
+	const changeRole = async (event: SelectChangeEvent<string>) => {
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({
+				title: "Помилка",
+				message: "Ви не авторизовані",
+				severity: "error",
+			});
+			setOpenDialog(true);
+			return;
+		}
+
+		const result = await SetRoleRequest(token, user.id, event.target.value as "MODERATOR" | "USER").catch(
+			(error) => {
+				setAlert({
+					title: "Помилка",
+					message: error.message,
+					severity: "error",
+				});
+				setOpenDialog(true);
+				return undefined;
+			}
+		);
+		if (!result) return;
+
+		setAlert({
+			title: "Успіх",
+			message: result.message,
+			severity: "success",
 		});
+		setOpenDialog(true);
+		setRole(result.result.role);
 	};
 
 	return (
@@ -80,25 +105,17 @@ export default function ListItem({ user }: ListItemProps) {
 								label='Роль'
 								sx={{ minWidth: "100px" }}
 							>
-								<MenuItem value='moderator'>Модератор</MenuItem>
-								<MenuItem value='user'>Користувач</MenuItem>
+								<MenuItem value='MODERATOR'>Модератор</MenuItem>
+								<MenuItem value='USER'>Користувач</MenuItem>
 							</Select>
 						)}
 					</Box>
-					{role !== "admin" && (
-						<>
-							<FormControlLabel
-								control={<Checkbox id='block' checked={isBlocked} onChange={toggleBlock} />}
-								label='Заблокувати?'
-							/>
-							<SubmitButton onClick={submit}>Зберегти</SubmitButton>
-						</>
-					)}
 				</AccordionDetailsStyle>
 			</Accordion>
-			<Dialog open={openAlert} onClose={() => setOpenAlert(false)}>
-				<Alert onClose={() => setOpenAlert(false)} severity='success'>
-					Роль користувача успішно змінено!
+			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

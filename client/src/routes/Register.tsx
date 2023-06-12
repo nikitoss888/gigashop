@@ -99,22 +99,19 @@ export default function Register() {
 			firstName: data.firstName,
 			lastName: data.lastName,
 			image: localImage,
-		});
-		if (result && result.data.token) {
-			try {
-				const logInResult = LogIn(setUser, result.data.token);
-				if (!logInResult) throw new ClientError(500, "Помилка авторизації");
-				navigate(-1);
-			} catch (e) {
-				if (e instanceof Error) {
-					throw new ClientError(500, e.message);
-				}
-				if (e instanceof ClientError) {
-					throw e;
-				}
-				console.error({ error: e });
+		}).catch((e) => {
+			if (e instanceof ClientError) {
+				return e;
 			}
+			return new ClientError(500, "Помилка реєстрації");
+		});
+		if (result instanceof ClientError) {
+			throw result;
 		}
+
+		const logInResult = LogIn(setUser, result.token);
+		if (!logInResult) throw new ClientError(500, "Помилка авторизації");
+		navigate("/");
 	};
 
 	const onReset = () => {

@@ -12,6 +12,9 @@ itemsRouter.delete('/:id', checkWorker, ItemsController.delete);
 itemsRouter.post('/:id/toggleWishlist', auth, ItemsController.toggleWishList);
 itemsRouter.post('/:id/toggleCart', auth, ItemsController.toggleCart);
 
+itemsRouter.post('/:id/rate', auth, ItemsController.setRate);
+itemsRouter.delete('/:id/rate', auth, ItemsController.removeRate);
+
 itemsRouter.post('/:id/developers', checkWorker, ItemsController.addDevelopers);
 itemsRouter.delete('/:id/developers', checkWorker, ItemsController.removeDevelopers);
 itemsRouter.post('/:id/genres', checkWorker, ItemsController.addGenres);

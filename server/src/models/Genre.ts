@@ -47,14 +47,18 @@ const _whereHandler = (includeHidden: boolean, name?: string, description?: stri
 }
 const _includeHandler = (includeItems: boolean, includeHidden: boolean) => {
     let include: {}[] = [];
+    const where: {hide?: {}} = {};
+    if (!includeHidden) {
+        where.hide = false;
+    }
 
     if (includeItems) {
         include.push({
             model: Item,
             as: 'Items',
-            attributes: ['id', 'name', 'description', 'mainImage', 'releaseDate'],
             through: {attributes: []},
-            where: includeHidden ? {} : {hide: false}
+            where,
+            required: false
         });
     }
 
@@ -70,12 +74,15 @@ type getAllGenresParams = {
     includeItems?: boolean,
     includeHidden?: boolean
 }
-const getGenres = async ({name, description, descending = false, limit = 10, page = 0, sortBy = 'name', includeItems = true, includeHidden = false}: getAllGenresParams) => {
+const getGenres = async ({name, description, descending = false, limit = 10, page = 0, sortBy = 'name', includeItems = false, includeHidden = false}: getAllGenresParams) => {
     const where   = _whereHandler(includeHidden, name, description);
     const include = _includeHandler(includeItems, includeHidden);
     const totalCount = await Genre.count({ where: includeHidden ? {} : { hide: false } } );
-    const genres = Genre.findAll({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include
+    const genres = await Genre.findAll({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]]
+    });
+    console.log({
+        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include, genres
     });
 
     return {
@@ -84,19 +91,19 @@ const getGenres = async ({name, description, descending = false, limit = 10, pag
     };
 }
 type getOneGenreParams = {
-    id: number,
+    id: number | string,
     includeItems?: boolean,
     includeHidden?: boolean
 }
 const getGenre = async ({id, includeItems = true, includeHidden = false}: getOneGenreParams) => {
-    const where   = {
-        id,
-        hide: {
-            [Op.in]: [includeHidden, false]
-        }
+    console.log({id, includeItems, includeHidden})
+    const where: {id: number | string, hide?: boolean}   = {id};
+    if (!includeHidden) {
+        where.hide = false;
     }
+
     const include = _includeHandler(includeItems, includeHidden);
-    return Genre.findOne(id, {where, include});
+    return Genre.findOne({ where, include });
 }
 
 export default Genre;

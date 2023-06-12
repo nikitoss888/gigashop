@@ -9,7 +9,6 @@ import ItemDevelopers from "./ItemDevelopers";
 import Company from "./Company";
 import Genre from "./Genre";
 import Publication from "./Publication";
-import PublicationTag from "./PublicationTag";
 import PublicationComment from "./PublicationComment";
 
 function initModels() {
@@ -19,8 +18,8 @@ function initModels() {
     User.belongsToMany(Item, {through: Wishlist, foreignKey: 'userId', as: 'Wishlist', onDelete: 'CASCADE'});
     Item.belongsToMany(User, {through: Wishlist, foreignKey: 'itemId', as: 'WishlistedUsers', onDelete: 'CASCADE'});
 
-    User.belongsToMany(Item, {through: ItemBought, foreignKey: 'userId', as: 'Bought'});
-    Item.belongsToMany(User, {through: ItemBought, foreignKey: 'itemId', as: 'BoughtUsers'});
+    User.hasMany(ItemBought, {foreignKey: 'userId', as: 'Bought', onDelete: 'CASCADE'});
+    ItemBought.belongsTo(User, {foreignKey: 'userId', as: 'User', onDelete: 'CASCADE'});
 
     Company.hasMany(Item, {foreignKey: 'company_publisherId', as: 'ItemsPublished', onDelete: 'CASCADE'});
     Item.belongsTo(Company, {foreignKey: 'company_publisherId', as: 'Publisher', onDelete: 'CASCADE'});
@@ -41,9 +40,6 @@ function initModels() {
     PublicationComment.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});
     Publication.hasMany(PublicationComment, {foreignKey: 'publicationId', as: 'CommentsList', onDelete: 'CASCADE'});
 
-    Publication.hasMany(PublicationTag, {foreignKey: 'publicationId', as: 'Tags', onDelete: 'CASCADE'});
-    PublicationTag.belongsTo(Publication, {foreignKey: 'publicationId', as: 'Publication', onDelete: 'CASCADE'});
-
     User.hasMany(Publication, {foreignKey: 'userId', as: 'Publications'});
     Publication.belongsTo(User, {foreignKey: 'userId', as: 'AuthoredUser'});
 }
@@ -60,6 +56,5 @@ export {
     Company,
     Genre,
     Publication,
-    PublicationTag,
     PublicationComment,
 };

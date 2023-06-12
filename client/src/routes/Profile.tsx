@@ -1,4 +1,3 @@
-import { User } from "../mock/Users";
 import { Box, Container, Divider, Tab, Tabs, Avatar } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { SyntheticEvent, useState } from "react";
@@ -8,11 +7,12 @@ import ItemsList from "../components/Profile/ItemsList";
 import PublicationsList from "../components/Profile/PublicationsList";
 import ItemsRatesList from "../components/Profile/ItemsRatesList";
 import PublicationsCommentsList from "../components/Profile/PublicationsCommentsList";
-import { Item } from "../mock/Items";
-import { Publication } from "../mock/Publications";
-import { ItemRate } from "../mock/ItemsRates";
-import { PublicationComment } from "../mock/PublicationsComments";
+import { Item, ItemBought } from "../http/Items";
+import { ItemRate } from "../http/Items";
 import ClientError from "../ClientError";
+import { User } from "../http/User";
+import { Comment, Publication } from "../http/Publications";
+import BoughtItemsList from "../components/Profile/BoughtItemsList";
 function a11yProps(index: number) {
 	return {
 		id: `profile-tab-${index}`,
@@ -21,16 +21,29 @@ function a11yProps(index: number) {
 }
 
 export default function Profile() {
-	const { user, wishlist, publications, publicationsComments, itemsRates } = useLoaderData() as {
-		user: User;
-		wishlist: Item[];
-		publications: Publication[];
-		publicationsComments: PublicationComment[];
-		itemsRates: ItemRate[];
-		error?: ClientError;
-	};
+	const { user, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates, error } =
+		useLoaderData() as {
+			user?: User;
+			boughtData?: ItemBought[];
+			boughtItems?: Item[];
+			wishlist?: Item[];
+			publications?: Publication[];
+			publicationsComments?: Comment[];
+			itemsRates?: ItemRate[];
+			error?: ClientError;
+		};
+
+	if (error) throw error;
+	if (!user) throw new ClientError(404, "Користувач не знайдений");
 
 	document.title = `Профіль користувача ${user.login} — gigashop`;
+
+	const BoughtItems =
+		boughtData?.map((item) => {
+			const itemData = boughtItems?.find((i) => i.id === item.itemId);
+			if (!itemData) return null;
+			return { ...itemData, item_bought: item } as Item & { item_bought: ItemBought };
+		}) || [];
 
 	const [tab, setTab] = useState(0);
 	const tabChange = (_: SyntheticEvent, newValue: number) => {
@@ -107,6 +120,7 @@ export default function Profile() {
 						<Tab label='Публікації' {...a11yProps(1)} />
 						<Tab label='Коментарі до публікацій' {...a11yProps(2)} />
 						<Tab label='Відгуки до товарів' {...a11yProps(3)} />
+						<Tab label='Історія покупок' {...a11yProps(4)} />
 					</Tabs>
 				</Box>
 				<TabPanel index={0} value={tab}>
@@ -125,16 +139,23 @@ export default function Profile() {
 				</TabPanel>
 				<TabPanel index={2} value={tab}>
 					{publicationsComments && publicationsComments.length > 0 ? (
-						<PublicationsCommentsList comments={publicationsComments} />
+						<PublicationsCommentsList comments={publicationsComments} user={user} />
 					) : (
 						<Typography variant='h5'>Коментарі до публікацій відсутні</Typography>
 					)}
 				</TabPanel>
 				<TabPanel index={3} value={tab}>
 					{itemsRates && itemsRates.length > 0 ? (
-						<ItemsRatesList rates={itemsRates} />
+						<ItemsRatesList rates={itemsRates} user={user} />
 					) : (
 						<Typography variant='h5'>Відгуки до товарів відсутні</Typography>
+					)}
+				</TabPanel>
+				<TabPanel index={4} value={tab}>
+					{BoughtItems && BoughtItems.length > 0 ? (
+						<BoughtItemsList items={BoughtItems} />
+					) : (
+						<Typography variant='h5'>Історія покупок порожня</Typography>
 					)}
 				</TabPanel>
 			</Box>

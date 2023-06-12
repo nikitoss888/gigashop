@@ -1,12 +1,14 @@
-import { Genre } from "../../mock/Genres";
+import { CreateGenreRequest, Genre, UpdateGenreRequest } from "../../http/Genres";
 import ClientError from "../../ClientError";
 import { useLoaderData } from "react-router-dom";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import { Alert, AlertTitle, Box, Button, ButtonGroup, Dialog, TextField } from "@mui/material";
+import { Alert, AlertColor, AlertTitle, Box, Button, ButtonGroup, Dialog, TextField } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import styled from "@mui/material/styles/styled";
 import SubmitButton from "../../components/Common/SubmitButton";
 import { useState } from "react";
+import { Item } from "../../http/Items";
+import Cookies from "js-cookie";
 
 const FormBox = styled(Box)`
 	display: flex;
@@ -21,12 +23,19 @@ const InputBox = styled(Box)`
 
 export default function AdminGenreForm() {
 	const { genre, error } = useLoaderData() as {
-		genre?: Genre;
+		genre?: Genre & {
+			Items?: Item[];
+		};
 		error?: ClientError;
 	};
 
 	if (error) throw error;
 
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
 	const [openDialog, setOpenDialog] = useState(false);
 
 	document.title =
@@ -47,9 +56,48 @@ export default function AdminGenreForm() {
 		defaultValues,
 	});
 
-	const onSubmit = (data: any) => {
+	const onSubmit = async (data: any) => {
 		console.log(data);
-		setOpenDialog(true);
+		const token = Cookies.get("token");
+		if (!token) throw new ClientError(403, "Ви не авторизовані");
+
+		let result: Genre | void;
+		let error: ClientError | undefined;
+		if (genre) {
+			result = await UpdateGenreRequest(token, genre.id, {
+				name: data.name,
+				description: data.description,
+			}).catch((err) => {
+				if (err instanceof ClientError) throw err;
+				if (err instanceof Error) throw new ClientError(500, err.message);
+				error = err;
+			});
+		} else {
+			result = await CreateGenreRequest(token, { name: data.name, description: data.description }).catch(
+				(err) => {
+					if (err instanceof ClientError) throw err;
+					if (err instanceof Error) throw new ClientError(500, err.message);
+					error = err;
+				}
+			);
+		}
+		if (error) {
+			setAlert({
+				title: "Помилка",
+				message: error.message,
+				severity: "error",
+			});
+			setOpenDialog(true);
+		}
+
+		if (result) {
+			setAlert({
+				title: "Успіх",
+				message: `Жанр ${result.name} (№${result.id}) успішно ${genre ? "оновлено" : "створено"}`,
+				severity: "success",
+			});
+			setOpenDialog(true);
+		}
 	};
 
 	const onReset = () => {
@@ -121,9 +169,9 @@ export default function AdminGenreForm() {
 				</FormProvider>
 			</Box>
 			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-				<Alert severity='success' onClose={() => setOpenDialog(false)}>
-					<AlertTitle>Успіх</AlertTitle>
-					Жанр успішно {genre ? "оновлено" : "створено"}!
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

@@ -72,7 +72,7 @@ export default function LoggedInXs({ user }: LoggedInXsProps) {
 				>
 					Вийти
 				</Typography>
-				{["admin", "manager"].includes(user.role) && (
+				{["admin", "manager"].includes(user.role.toLowerCase()) && (
 					<>
 						<Divider
 							sx={{

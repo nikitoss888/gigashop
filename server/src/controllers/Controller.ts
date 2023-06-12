@@ -1,6 +1,8 @@
+import type {NextFunction, Request, Response} from 'express';
 import { ValidationError as SequelizeValidationError } from "sequelize";
 import ApiError from "../errors/ApiError";
 import path from "path";
+import { Company, Genre, Item, ItemRate, Publication, PublicationComment, User, Wishlist } from "../models";
 
 export default class Controller {
     protected exceptionHandle(error: unknown): ApiError {
@@ -35,7 +37,7 @@ export default class Controller {
     }
 
     protected parseNumber(number: string | undefined): number | undefined {
-        if (!number) return undefined;
+        if (number === undefined) return undefined;
         return Number(number);
     }
 
@@ -61,4 +63,53 @@ export default class Controller {
 
         return { descending: descendingParsed, limit: limitParsed, page: pageParsed - 1 };
     }
+
+    async statistics(_: Request, res: Response, next: NextFunction) {
+        try {
+            const Users = await User.findAll();
+            const Items = await Item.findAll({
+                include: [
+                    {
+                        model: Company,
+                        as: 'Developers',
+                        through: { attributes: [] },
+                    },
+                    {
+                        model: Company,
+                        as: 'Publisher',
+                    },
+                    {
+                        model: Genre,
+                        as: 'Genres',
+                        through: { attributes: [] },
+                    },
+                ],
+            });
+            const Publications = await Publication.findAll();
+            const Companies = await Company.findAll();
+            const Genres = await Genre.findAll();
+            const ItemsRates = await ItemRate.findAll();
+            const PublicationsComments = await PublicationComment.findAll();
+            const Wishlists = await Wishlist.findAll();
+
+            return res.json({
+                Users,
+                Items,
+                Publications,
+                Companies,
+                Genres,
+                ItemsRates,
+                PublicationsComments,
+                Wishlists
+            });
+        }
+        catch (e) {
+            return next(this.exceptionHandle(e));
+        }
+    }
+}
+const controller = new Controller();
+
+export {
+    controller
 }

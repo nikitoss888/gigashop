@@ -1,5 +1,5 @@
 import { useLoaderData } from "react-router-dom";
-import { Genre as GenreType } from "../mock/Genres";
+import { Genre as GenreType } from "../http/Genres";
 import { Container } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import ItemsGrid from "../components/Items/ItemsGrid";
@@ -7,6 +7,7 @@ import styled from "@mui/material/styles/styled";
 import ClientError from "../ClientError";
 import { useState } from "react";
 import { SortSwitch } from "./Items";
+import { Item } from "../http/Items";
 
 const ContainerStyle = styled(Container)`
 	display: flex;
@@ -19,13 +20,16 @@ const ContainerStyle = styled(Container)`
 `;
 
 export default function Genre() {
-	const { genre, error, totalCount } = useLoaderData() as {
-		genre: GenreType;
-		totalCount: number;
+	const { genre, error } = useLoaderData() as {
+		genre: GenreType & {
+			Items?: Item[];
+		};
 		error?: ClientError;
 	};
 
 	if (error) throw error;
+
+	const totalCount = genre.Items?.length || 0;
 
 	const initSortBy = "releaseDateAsc";
 	const initLimit = 12;
@@ -37,39 +41,37 @@ export default function Genre() {
 
 	document.title = `Жанр "${genre.name}" — gigashop`;
 
-	const [items, setItems] = useState(genre.items || []);
+	const [items, setItems] = useState(genre.Items || []);
 	const [maxPage, setMaxPage] = useState(Math.ceil((totalCount || 1) / limit) || 1);
 
 	const getItems = (sortBy: string, limit: number, page: number) => {
 		const { sortBy: specificSortBy, descending } = SortSwitch(sortBy);
 		const items =
-			genre.items
-				?.sort((a, b) => {
-					if (descending) {
-						switch (specificSortBy) {
-							default:
-							case "releaseDate":
-								return b.releaseDate.getTime() - a.releaseDate.getTime();
-							case "name":
-								return b.name.localeCompare(a.name);
-							case "price":
-								return b.price - a.price;
-						}
-					} else {
-						switch (specificSortBy) {
-							default:
-							case "releaseDate":
-								return a.releaseDate.getTime() - b.releaseDate.getTime();
-							case "name":
-								return a.name.localeCompare(b.name);
-							case "price":
-								return a.price - b.price;
-						}
+			genre.Items?.sort((a, b) => {
+				if (descending) {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
+						case "name":
+							return b.name.localeCompare(a.name);
+						case "price":
+							return b.price - a.price;
 					}
-				})
-				.slice((page - 1) * limit, page * limit) || [];
+				} else {
+					switch (specificSortBy) {
+						default:
+						case "releaseDate":
+							return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
+						case "name":
+							return a.name.localeCompare(b.name);
+						case "price":
+							return a.price - b.price;
+					}
+				}
+			}).slice((page - 1) * limit, page * limit) || [];
 		setItems(items);
-		setMaxPage(Math.ceil((genre.items?.length || 1) / limit) || 1);
+		setMaxPage(Math.ceil((genre.Items?.length || 1) / limit) || 1);
 	};
 
 	const sortByUpdate = (sortBy: string) => {

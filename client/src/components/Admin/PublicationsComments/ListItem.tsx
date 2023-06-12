@@ -2,6 +2,7 @@ import {
 	Accordion,
 	AccordionSummary,
 	Alert,
+	AlertColor,
 	AlertTitle,
 	Box,
 	Dialog,
@@ -14,34 +15,70 @@ import { Link } from "react-router-dom";
 import { Error, SettingsBackupRestore } from "@mui/icons-material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AccordionDetailsStyle from "../../Common/AccordionDetailsStyle";
-import { PublicationComment } from "../../../mock/PublicationsComments";
+import { Comment, Publication } from "../../../http/Publications";
 import { useState } from "react";
 import SubmitButton from "../../Common/SubmitButton";
+import { User } from "../../../http/User";
+import Cookies from "js-cookie";
+import ClientError from "../../../ClientError";
+import { AxiosError } from "axios";
+import { SetCommentViolationRequest } from "../../../http/Moderation";
 
 type ListItemProps = {
-	comment: PublicationComment;
+	comment: Comment & { User: User; Publication: Publication };
 	linkToPublication?: boolean;
 	linkToUser?: boolean;
 };
 export default function ListItem({ comment, linkToPublication, linkToUser }: ListItemProps) {
-	const [hide, _] = useState(comment.hide || false);
+	const [hide, setHide] = useState(comment.hide || false);
 	const [violation, setViolation] = useState(comment.violation || false);
 	const [violationReason, setViolationReason] = useState<string>(comment.violation_reason || "");
 	const [violationSet, setViolationSet] = useState(true);
-	const [alertOpen, setAlertOpen] = useState(false);
+
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
+	const [openDialog, setOpenDialog] = useState(false);
+
+	const token = Cookies.get("token");
+	if (!token) throw new ClientError(403, "Ви не авторизовані");
 
 	const toggleViolation = () => {
-		console.log({ violation: !violation });
 		setViolation(!violation);
+		setViolationSet(false);
 	};
 
-	const sendViolation = () => {
-		setViolationSet(true);
-		console.log({
-			violation,
-			violation_reason: violation ? violationReason : null,
+	const sendViolation = async () => {
+		const result = await SetCommentViolationRequest(token, comment.id, {
+			violation: violation,
+			violation_reason: violationReason,
+		}).catch((e) => {
+			if (e instanceof ClientError) return e;
+			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
+			if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
+			return new ClientError(500, "Помилка сервера");
 		});
-		setAlertOpen(true);
+
+		if (result instanceof ClientError) {
+			setAlert({
+				title: "Помилка",
+				message: result.message,
+				severity: "error",
+			});
+			setOpenDialog(true);
+			return;
+		}
+
+		setAlert({
+			title: "Успіх",
+			message: result.message,
+			severity: "success",
+		});
+		setOpenDialog(true);
+		setViolation(result.result.violation);
+		setHide(result.result.hide);
 	};
 
 	return (
@@ -73,33 +110,35 @@ export default function ListItem({ comment, linkToPublication, linkToUser }: Lis
 							</Tooltip>
 						)}
 					</Box>
-					{violation && (
-						<Box
-							sx={{
-								display: "flex",
-								flexDirection: "column",
-							}}
-						>
-							<Typography variant='h6' color='accent.main'>
-								Зміст порушення:
-							</Typography>
-							<TextField
-								name='violation_reason'
-								id='violation_reason'
-								value={violationReason}
-								onChange={(e) => {
-									setViolationReason(e.target.value);
-									setViolationSet(false);
-								}}
-								sx={{
-									mb: 1,
-								}}
-							/>
-							<SubmitButton onClick={sendViolation} disabled={violationSet}>
-								Зберегти
-							</SubmitButton>
-						</Box>
-					)}
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+						}}
+					>
+						{violation && (
+							<>
+								<Typography variant='h6' color='accent.main'>
+									Зміст порушення:
+								</Typography>
+								<TextField
+									name='violation_reason'
+									id='violation_reason'
+									value={violationReason}
+									onChange={(e) => {
+										setViolationReason(e.target.value);
+										setViolationSet(false);
+									}}
+									sx={{
+										mb: 1,
+									}}
+								/>
+							</>
+						)}
+						<SubmitButton onClick={sendViolation} disabled={violationSet}>
+							Зберегти
+						</SubmitButton>
+					</Box>
 					<Typography
 						variant='h6'
 						{...(linkToUser && {
@@ -110,7 +149,7 @@ export default function ListItem({ comment, linkToPublication, linkToUser }: Lis
 							color: "primary.main",
 						}}
 					>
-						Автор: {comment.user?.firstName} {comment.user?.lastName} ({comment.user?.login})
+						Автор: {comment.User.firstName} {comment.User.lastName} ({comment.User.login})
 					</Typography>
 					<Typography
 						variant='h6'
@@ -122,7 +161,7 @@ export default function ListItem({ comment, linkToPublication, linkToUser }: Lis
 							color: "primary.main",
 						}}
 					>
-						Публікація: {comment.publication?.title}
+						Публікація: {comment.Publication.title}
 					</Typography>
 					<Box>
 						<Typography variant='h6'>Створено:</Typography>
@@ -145,10 +184,10 @@ export default function ListItem({ comment, linkToPublication, linkToUser }: Lis
 					<Typography variant='h6'>Приховано?: {hide ? "Так" : "Ні"}</Typography>
 				</AccordionDetailsStyle>
 			</Accordion>
-			<Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
-				<Alert severity='success' onClose={() => setAlertOpen(false)}>
-					<AlertTitle>Успіх</AlertTitle>
-					Порушення до коментаря #{comment.id} публікації #{comment.publicationId} змінено!
+			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
 				</Alert>
 			</Dialog>
 		</>

@@ -6,8 +6,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import Button from "@mui/material/Button";
 import ClearIcon from "@mui/icons-material/Clear";
 import styled from "@mui/material/styles/styled";
-import { default as MockGenres, Genre } from "../../mock/Genres";
-import { default as MockCompanies, Company } from "../../mock/Companies";
+import { Genre } from "../../http/Genres";
+import { Company } from "../../http/Companies";
 import SubmitButton from "../Common/SubmitButton";
 import Checkbox from "../Form/Checkbox";
 
@@ -20,10 +20,14 @@ const FormHelperTextStyle = styled(FormHelperText)`
 	color: ${(props) => props.theme.colors.secondary};
 `;
 
-const Genres = MockGenres.sort((a, b) => (a.name > b.name ? 1 : -1));
-const Companies = MockCompanies.sort((a, b) => (a.name > b.name ? 1 : -1));
+type FiltersContentProps = {
+	companies: Company[];
+	genres: Genre[];
+};
+export default function FiltersContent({ companies, genres }: FiltersContentProps) {
+	const Genres = genres.sort((a, b) => (a.name > b.name ? 1 : -1));
+	const Companies = companies.sort((a, b) => (a.name > b.name ? 1 : -1));
 
-export default function FiltersContent() {
 	const {
 		control,
 		setValue,

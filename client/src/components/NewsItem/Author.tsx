@@ -1,5 +1,5 @@
 import { Box, IconButton, Tooltip } from "@mui/material";
-import { User } from "../../mock/Users";
+import { User } from "../../http/User";
 import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";

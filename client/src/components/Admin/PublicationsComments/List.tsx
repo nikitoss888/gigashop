@@ -2,10 +2,12 @@ import { Box, FormControl, InputLabel, MenuItem, Select, List as MuiList, Divide
 import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
-import { PublicationComment } from "../../../mock/PublicationsComments";
+import { Comment, Publication } from "../../../http/Publications";
+import { User } from "../../../http/User";
+import Typography from "@mui/material/Typography";
 
 type ListProps = {
-	comments?: PublicationComment[];
+	comments?: (Comment & { User: User; Publication: Publication })[];
 	sorting: {
 		value: string;
 		setValue: (sortBy: string) => void;
@@ -66,19 +68,29 @@ export default function List({ comments, sorting, limitation, pagination, linkTo
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{comments?.map((company, index: number) => (
-					<>
-						<ListItem
-							key={company.id.toString(16)}
-							comment={company}
-							linkToPublication={linkToPublication}
-							linkToUser={linkToUser}
-						/>
-						{index !== comments.length - 1 && (
-							<Divider key={`divider-${company.id}`} sx={{ borderColor: "primary.main" }} />
-						)}
-					</>
-				))}
+				{comments ? (
+					comments.map((company, index: number) => (
+						<>
+							<ListItem
+								key={company.id.toString(16)}
+								comment={company}
+								linkToPublication={linkToPublication}
+								linkToUser={linkToUser}
+							/>
+							{index !== comments.length - 1 && (
+								<Divider key={`divider-${company.id}`} sx={{ borderColor: "primary.main" }} />
+							)}
+						</>
+					))
+				) : (
+					<Typography
+						component='h6'
+						variant='h6'
+						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
+					>
+						Коментарів не знайдено
+					</Typography>
+				)}
 			</MuiList>
 			<Pagination data={pagination} />
 		</Box>

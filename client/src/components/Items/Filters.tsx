@@ -3,17 +3,23 @@ import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FiltersContent from "./FiltersContent";
+import { Company } from "../../http/Companies";
+import { Genre } from "../../http/Genres";
 
 const AccordionStyle = styled(Accordion)`
 	background-color: ${(props) => props.theme.colors.primary};
 	border-radius: 5px;
 `;
 
-export default function Filters() {
+type FiltersProps = {
+	companies: Company[];
+	genres: Genre[];
+};
+export default function Filters({ companies, genres }: FiltersProps) {
 	return (
 		<>
 			<Box sx={{ gridRow: 2, display: { xs: "none", md: "block" } }} p={0} m={0}>
-				<FiltersContent />
+				<FiltersContent companies={companies} genres={genres} />
 			</Box>
 			<AccordionStyle sx={{ display: { md: "none" } }} disableGutters>
 				<AccordionSummary
@@ -26,7 +32,7 @@ export default function Filters() {
 					</Typography>
 				</AccordionSummary>
 				<AccordionDetails sx={{ padding: 0 }}>
-					<FiltersContent />
+					<FiltersContent companies={companies} genres={genres} />
 				</AccordionDetails>
 			</AccordionStyle>
 		</>

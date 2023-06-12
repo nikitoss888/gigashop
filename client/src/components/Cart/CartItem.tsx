@@ -1,4 +1,4 @@
-import { calculateDiscount, Item } from "../../mock/Items";
+import { calculateDiscount, Item } from "../../http/Items";
 import { Box, IconButton, ListItem, Typography } from "@mui/material";
 import { Close } from "@mui/icons-material";
 

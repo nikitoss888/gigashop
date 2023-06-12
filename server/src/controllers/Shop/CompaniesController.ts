@@ -6,11 +6,12 @@ import {Company, getCompanies, getCompany} from "../../models/Company";
 class CompaniesController extends Controller {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const {name, description, director, founded, image} = req.body;
-            let foundedParsed = super.parseDate(founded);
+            const {name, description, director, image} = req.body;
+            const founded = super.parseDate(req.body.founded);
+            const hide = super.parseBoolean(req.body.hide) || false;
 
             const company = await Company
-                .create({name, description, director, image, founded: foundedParsed})
+                .create({ name, description, director, image, founded, hide })
                 .catch((e: unknown) => {
                     // super.deleteFile(COMPANIES_DIR, imageName);
                     return next(super.exceptionHandle(e));
@@ -33,16 +34,17 @@ class CompaniesController extends Controller {
             name,
             description,
             director,
-            founded,
             desc,
             descending,
             limit,
             page,
             sortBy,
-            hide } = req.query;
+            includeHidden } = req.query;
 
-        const foundedParsed = super.parseDate(founded as string | undefined);
-        const hideParsed = super.parseBoolean(hide as string | undefined) || false;
+        const founded = super.parseDate(req.query.founded as string | undefined);
+        const foundedFrom = super.parseDate(req.query.foundedFrom as string | undefined);
+        const foundedTo = super.parseDate(req.query.foundedTo as string | undefined);
+        const hideParsed = super.parseBoolean(includeHidden as string | undefined) || false;
 
         let {descending: descendingParsed, limit: limitParsed, page: pageParsed} =
             super.parsePagination(desc as string | undefined, descending as string | undefined,
@@ -50,7 +52,7 @@ class CompaniesController extends Controller {
 
         const result = await getCompanies({
             name: name as string | undefined, description: description as string | undefined,
-            director: director as string | undefined, founded: foundedParsed,
+            director: director as string | undefined, founded, foundedFrom, foundedTo,
             descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
             includeHidden: hideParsed
         })
@@ -67,8 +69,8 @@ class CompaniesController extends Controller {
 
     async getOne(req: Request, res: Response, next: NextFunction) {
         const { id } = req.params;
-        const includeItemsDeveloped = super.parseBoolean(req.query.includeDeveloped as string | undefined) || true;
-        const includeItemsPublished = super.parseBoolean(req.query.includePublished as string | undefined) || true;
+        const includeItemsDeveloped = super.parseBoolean(req.query.includeDeveloped as string | undefined);
+        const includeItemsPublished = super.parseBoolean(req.query.includePublished as string | undefined);
         const includeHidden = super.parseBoolean(req.query.includeHidden as string | undefined) || false;
 
         const company = await getCompany({
@@ -98,7 +100,8 @@ class CompaniesController extends Controller {
         if (description) company.description = description;
         if (director) company.director = director;
         if (founded) company.founded = foundedParsed;
-        if (hide) company.hide = hideParsed;
+        if (hide !== undefined) company.hide = hideParsed;
+        console.log({ hide, hideParsed });
         if (image) company.image = image;
 
         let result = await company.save()
@@ -138,7 +141,7 @@ class CompaniesController extends Controller {
         // ToDo: delete files
         //
         // super.deleteFile(COMPANIES_DIR, image);
-        return res.json(result);
+        return res.json({ ok: true });
     }
 
     async test(req: Request, res: Response) {

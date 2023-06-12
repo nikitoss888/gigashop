@@ -6,9 +6,9 @@ import styled from "@mui/material/styles/styled";
 import Button from "@mui/material/Button";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
-import Publications from "../../mock/Publications";
-import Users, { User } from "../../mock/Users";
+import { User } from "../../http/User";
 import SubmitButton from "../Common/SubmitButton";
+import { ChangeEvent } from "react";
 
 const FormHelperTextStyle = styled(FormHelperText)`
 	color: ${(props) => props.theme.colors.secondary};
@@ -19,7 +19,10 @@ const ChipStyle = styled(Chip)`
 	color: ${(props) => props.theme.colors.secondary};
 `;
 
-export default function FiltersContent() {
+type FiltersContentProps = {
+	authors: User[];
+};
+export default function FiltersContent({ authors }: FiltersContentProps) {
 	const {
 		control,
 		setValue,
@@ -27,12 +30,19 @@ export default function FiltersContent() {
 		formState: { errors },
 	} = useFormContext();
 
-	const onTagsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+	const onTagsChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const tags = event.target.value.split(/[ ,]+/);
 		setValue("tags", tags, { shouldValidate: true, shouldDirty: true });
 	};
 
-	const Authors = Users.filter((user) => Publications.some((publication) => publication.userId === user.id));
+	const Authors = authors.map((author) => {
+		return {
+			id: author.id,
+			login: author.login,
+			firstName: author.firstName,
+			lastName: author.lastName,
+		};
+	});
 
 	return (
 		<MainBox>
