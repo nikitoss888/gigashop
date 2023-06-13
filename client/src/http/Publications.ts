@@ -1,5 +1,6 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { User } from "./User";
+import axiosInstance from "./axiosInstance";
 
 export type Publication = {
 	id: number;
@@ -36,8 +37,10 @@ type GetAllPublicationsParams = {
 	desc?: boolean;
 
 	title?: string;
-	dateFrom?: Date;
-	dateTo?: Date;
+	createdFrom?: Date;
+	createdTo?: Date;
+	tags?: string[];
+	authorsIds?: number[];
 };
 type GetAllPublicationsReturn = {
 	publications: (Publication & {
@@ -46,16 +49,19 @@ type GetAllPublicationsReturn = {
 	totalCount: number;
 };
 export const GetAllPublicationsRequest = async (params: GetAllPublicationsParams) => {
-	return await axios
-		.get<GetAllPublicationsReturn>(`/api/news`, {
+	return await axiosInstance
+		.get<GetAllPublicationsReturn>(`/news`, {
 			params: {
 				title: params.title,
-				dateFrom: params.dateFrom?.toISOString().slice(0, 10),
-				dateTo: params.dateTo?.toISOString().slice(0, 10),
+				createdFrom: params.createdFrom?.toISOString(),
+				createdTo: params.createdTo?.toISOString(),
 				limit: params.limit,
 				page: params.page,
 				sortBy: params.sortBy,
-				includeHidden: params.admin,
+				hidden: params.admin,
+				desc: params.desc,
+				tags: params.tags,
+				authorsIds: params.authorsIds,
 			},
 		})
 		.then((res) => {
@@ -73,8 +79,8 @@ type GetPublicationReturn = Publication & {
 	AuthoredUser: User;
 };
 export const GetPublicationRequest = async (id: number, admin?: boolean) => {
-	return await axios
-		.get<GetPublicationReturn>(`/api/news/${id}`, {
+	return await axiosInstance
+		.get<GetPublicationReturn>(`/news/${id}`, {
 			params: {
 				includeComments: true,
 				includeHidden: admin,
@@ -97,8 +103,8 @@ type CreatePublicationParams = {
 };
 type CreatePublicationReturn = Publication;
 export const CreatePublicationRequest = async (token: string, params: CreatePublicationParams) => {
-	return await axios
-		.post<CreatePublicationReturn>(`/api/news`, params, {
+	return await axiosInstance
+		.post<CreatePublicationReturn>(`/news`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -119,8 +125,8 @@ type UpdatePublicationParams = {
 };
 type UpdatePublicationReturn = Publication;
 export const UpdatePublicationRequest = async (token: string, id: number, params: UpdatePublicationParams) => {
-	return await axios
-		.patch<UpdatePublicationReturn>(`/api/news/${id}`, params, {
+	return await axiosInstance
+		.patch<UpdatePublicationReturn>(`/news/${id}`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -134,8 +140,8 @@ export const UpdatePublicationRequest = async (token: string, id: number, params
 };
 
 export const DeletePublicationRequest = async (token: string, id: number) => {
-	return await axios
-		.delete<{ ok: boolean }>(`/api/news/${id}`, {
+	return await axiosInstance
+		.delete<{ ok: boolean }>(`/news/${id}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -153,8 +159,8 @@ type SetCommentParams = {
 	rate: number;
 };
 export const SetCommentRequest = async (token: string, id: number, params: SetCommentParams) => {
-	return await axios
-		.post<{ message: string; comment: Comment; user: User }>(`/api/news/${id}/comment`, params, {
+	return await axiosInstance
+		.post<{ message: string; comment: Comment; user: User }>(`/news/${id}/comment`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -168,8 +174,8 @@ export const SetCommentRequest = async (token: string, id: number, params: SetCo
 };
 
 export const DeleteCommentRequest = async (token: string, id: number) => {
-	return await axios
-		.delete<{ message: string; ok: boolean }>(`/api/news/${id}/comment`, {
+	return await axiosInstance
+		.delete<{ message: string; ok: boolean }>(`/news/${id}/comment`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

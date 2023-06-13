@@ -18,9 +18,9 @@ declare module "@mui/material/styles" {
 			heading?: string;
 		};
 		colors: {
-			primary?: string;
-			secondary?: string;
-			accent?: string;
+			primary: string;
+			secondary: string;
+			accent: string;
 			accentLight?: string;
 			accentLighter?: string;
 			inputPlaceholder?: string;
@@ -47,14 +47,14 @@ declare module "@mui/material/styles" {
 		lighter?: string;
 	}
 	interface Palette extends BasePalette {
-		accent?: PaletteColorOptions;
+		accent: PaletteColorOptions;
 		inputs?: {
 			background?: string;
 			color?: string;
 		};
 	}
 	interface PaletteOptions extends BasePaletteOptions {
-		accent?: PaletteColorOptions;
+		accent: PaletteColorOptions;
 		inputs?: {
 			background?: string;
 			color?: string;

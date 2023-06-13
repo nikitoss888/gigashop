@@ -45,7 +45,14 @@ class NewsController extends Controller {
             const { title, content,
                 createdAt, createdFrom, createdTo,
                 desc, descending, limit,
-                page, sortBy, hidden } = req.query;
+                page, sortBy, hidden
+            } = req.query;
+
+            let { tags } = req.query;
+            if (tags && typeof tags === 'string') tags = [tags];
+
+            let { authorsIds } = req.query;
+            if (authorsIds && typeof authorsIds === 'string') authorsIds = [authorsIds];
 
             const createdAtParsed = super.parseDate(createdAt as string | undefined);
             const createdFromParsed = super.parseDate(createdFrom as string | undefined);
@@ -60,7 +67,7 @@ class NewsController extends Controller {
                 title: title as string | undefined, content: content as string | undefined,
                 createdAt: createdAtParsed, createdFrom: createdFromParsed, createdTo: createdToParsed,
                 descending: descendingParsed, limit: limitParsed, page: pageParsed, sortBy: sortBy as string | undefined,
-                includeHidden: hideParsed
+                includeHidden: hideParsed, tags: tags as string[] | undefined, authorsIds: authorsIds as number[] | undefined
             })
                 .catch((e: unknown) => {
                     return next(super.exceptionHandle(e));

@@ -1,5 +1,11 @@
-import { useLoaderData } from "react-router-dom";
-import { Publication, Comment, SetCommentRequest, DeleteCommentRequest } from "../http/Publications";
+import { useLoaderData, useNavigate } from "react-router-dom";
+import {
+	Publication,
+	Comment,
+	SetCommentRequest,
+	DeleteCommentRequest,
+	DeletePublicationRequest,
+} from "../http/Publications";
 import ClientError from "../ClientError";
 import { Container, Box, Dialog, Alert, AlertTitle, AlertColor } from "@mui/material";
 import Author from "../components/NewsItem/Author";
@@ -17,6 +23,7 @@ import Cookies from "js-cookie";
 
 export default function NewsItem() {
 	const [user, _] = useRecoilState(userState);
+	const navigate = useNavigate();
 
 	const { publication, error } = useLoaderData() as {
 		publication: Publication & {
@@ -99,6 +106,25 @@ export default function NewsItem() {
 		setOpenDialog(true);
 	};
 
+	const onDeleteThis = async () => {
+		const token = Cookies.get("token");
+		if (!token) {
+			setAlert({ title: "Помилка!", message: "Ви не авторизовані!", severity: "error" });
+			setOpenDialog(true);
+			return;
+		}
+
+		const response = await DeletePublicationRequest(token, publication.id).catch((error) => {
+			setAlert({ title: "Помилка!", message: error.message, severity: "error" });
+			setOpenDialog(true);
+			return undefined;
+		});
+		if (!response) return;
+		else {
+			navigate("/news");
+		}
+	};
+
 	const [contentHeight, setContentHeight] = useState<number>(0);
 	const ref = useRef<any>(null);
 
@@ -127,7 +153,12 @@ export default function NewsItem() {
 						gap: "15px",
 					}}
 				>
-					<Author user={publication.AuthoredUser} publicationId={publication.id} />
+					<Author
+						author={publication.AuthoredUser}
+						user={user}
+						publicationId={publication.id}
+						onDelete={onDeleteThis}
+					/>
 					<Box>
 						<Typography variant='h3' textAlign='center'>
 							{publication.title}
@@ -148,6 +179,7 @@ export default function NewsItem() {
 					<ItemRating comments={publication.CommentsList} />
 					<CommentsList
 						comments={allComments}
+						authorId={publication.AuthoredUser.id}
 						userComment={userComment}
 						onSubmit={onRate}
 						onDelete={onDelete}

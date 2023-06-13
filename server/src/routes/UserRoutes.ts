@@ -9,7 +9,7 @@ userRouter.get('/test', UserController.test);
 userRouter.post('/register', UserController.register);
 userRouter.post('/createModerator', checkAdmin, UserController.createModerator);
 userRouter.post('/toggleModerator/:id', checkAdmin, UserController.toggleModerator);
-userRouter.post('/setRole/:id', checkAdmin, UserController.setRole);
+userRouter.patch('/setRole/:id', checkAdmin, UserController.setRole);
 
 userRouter.post('/login', UserController.login);
 userRouter.patch('/update', auth, UserController.update);

@@ -65,7 +65,7 @@ const Item = sequelize_db.define('item', {
     },
     characteristics: {
         type: DataTypes.JSON,
-        allowNull: false,
+        allowNull: true,
         defaultValue: {}
     },
     hide: {
@@ -87,7 +87,7 @@ const _whereHandler = (name?: string, description?: string,
     let where: {name?: {}, description?: {}, releaseDate?: {}, releaseDateFrom?: {}, releaseDateTo?: {},
         price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
         amount?: {}, amountFrom?: {}, amountTo?: {},
-        discountSize?: {}, company_publisherId?: {}, hide?: boolean} = {};
+        discountSize?: {}, company_publisherId?: {}, hide?: {}} = {};
 
     if (name) {
         where.name = {
@@ -191,8 +191,8 @@ const _whereHandler = (name?: string, description?: string,
             [Op.lte]: discountSizeTo
         };
     }
-    if (!hide) {
-        where.hide = false;
+    where.hide = {
+        [Op.or]: [false, hide]
     }
 
     return where;
@@ -379,6 +379,10 @@ const getItems = async ({name, description, releaseDate, releaseDateFrom, releas
     const items = await Item.findAll({
         where, limit, offset: limit * page, order: [[sortBy, descending ? "DESC" : "ASC"]], include
     });
+
+    console.log({
+        where, limit, offset: limit * page, order: [[sortBy, descending ? "DESC" : "ASC"]], include
+    })
 
     return {
         items,

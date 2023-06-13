@@ -24,6 +24,7 @@ import Cookies from "js-cookie";
 import { useRecoilState } from "recoil";
 import { userState } from "../store/User";
 import { User } from "../http/User";
+import DOMPurify from "dompurify";
 
 export default function NewsForm() {
 	const { publication, error } = useLoaderData() as {
@@ -38,7 +39,8 @@ export default function NewsForm() {
 	const [user, _] = useRecoilState(userState);
 	if (!user) throw new ClientError(401, "Ви не авторизовані");
 
-	if (publication?.AuthoredUser.id !== user.id) throw new ClientError(403, "Ви не автор цієї публікації");
+	if (publication && publication.AuthoredUser.id !== user.id)
+		throw new ClientError(403, "Ви не автор цієї публікації");
 
 	document.title =
 		(publication ? `Редагування публікації "${publication.title}"` : "Створення публікації") + " — gigashop";
@@ -64,13 +66,25 @@ export default function NewsForm() {
 		const token = Cookies.get("token");
 		if (!token) throw new ClientError(401, "Ви не авторизовані");
 
+		const cleanTitle = title.trim();
+		if (cleanTitle.length < 3) {
+			setAlert({
+				severity: "error",
+				message: "Заголовок повинен містити хоча б 3 символи",
+				title: "Помилка",
+			});
+			setOpenDialog(true);
+			return;
+		}
+		const cleanTags = tags.split(/,\s*/).filter((tag) => tag !== "");
+
 		let result: Publication | void;
 		let error: ClientError | undefined;
 		if (publication) {
 			result = await UpdatePublicationRequest(token, publication.id, {
-				title,
+				title: cleanTitle,
 				content,
-				tags: tags.split(", "),
+				tags: cleanTags,
 				hide,
 			}).catch((err) => {
 				if (err instanceof ClientError) error = err;
@@ -79,9 +93,9 @@ export default function NewsForm() {
 			});
 		} else {
 			result = await CreatePublicationRequest(token, {
-				title,
+				title: cleanTitle,
 				content,
-				tags: tags.split(", "),
+				tags: cleanTags,
 				hide,
 			}).catch((err) => {
 				if (err instanceof ClientError) error = err;
@@ -120,7 +134,10 @@ export default function NewsForm() {
 		setTitle(event.target.value);
 	};
 	const onContentChange = () => {
-		if (editorRef.current) setContent(editorRef.current.getContent());
+		if (editorRef.current) {
+			const content = DOMPurify.sanitize(editorRef.current.getContent());
+			setContent(content);
+		}
 	};
 	const onTagsChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setTags(event.target.value);

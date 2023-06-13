@@ -1,19 +1,20 @@
-import axios, { type AxiosError } from "axios";
+import { type AxiosError } from "axios";
 import { ItemRate, ItemBought, Item } from "./Items";
 import { Comment, Publication } from "./Publications";
+import axiosInstance from "./axiosInstance";
 
 export type LoginResults = {
 	message?: string;
 	token: string;
 };
 export const LogInRequest = async (credentials: string, password: string) => {
-	return await axios
-		.post<LoginResults>(`/api/user/login`, {
+	return await axiosInstance
+		.post<LoginResults>(`/user/login`, {
 			credentials,
 			password,
 		})
-		.catch((err: AxiosError) => {
-			throw new Error(err.message);
+		.then((res) => {
+			return res.data;
 		});
 };
 
@@ -26,21 +27,27 @@ export type RegisterParams = {
 	image: string;
 };
 export const RegisterRequest = async ({ login, email, password, firstName, lastName, image }: RegisterParams) => {
-	return await axios
-		.post<{ message: string; token: string }>(`/api/user/register`, {
-			email,
-			login,
-			firstName,
-			lastName,
-			password,
-			image,
-		})
-		.then((res) => {
-			return res.data;
-		})
-		.catch((err: AxiosError) => {
-			throw new Error(err.message);
-		});
+	try {
+		const res = await axiosInstance
+			.post<{ message: string; token: string }>(`/user/register`, {
+				email,
+				login,
+				firstName,
+				lastName,
+				password,
+				image,
+			})
+			.then((res) => {
+				return res.data;
+			});
+
+		console.log({ res });
+		return res;
+	} catch (err) {
+		console.log({ err });
+		if (err instanceof Error) throw err;
+		throw new Error();
+	}
 };
 
 export type User = {
@@ -68,8 +75,8 @@ export type Profile = User & {
 	BoughtItems: Item[];
 };
 export const ProfileRequest = async (token: string) => {
-	return await axios
-		.get<Profile>(`/api/user/profile`, {
+	return await axiosInstance
+		.get<Profile>(`/user/profile`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -78,6 +85,8 @@ export const ProfileRequest = async (token: string) => {
 				includeWishlist: true,
 				includePublications: true,
 				includePublicationComments: true,
+				includeBought: true,
+				includeCart: true,
 			},
 		})
 		.then((res) => {
@@ -89,8 +98,8 @@ export const ProfileRequest = async (token: string) => {
 };
 
 export const GetAllUsersRequest = async (token: string, limit: number, page: number, sortBy: string, desc: boolean) => {
-	return await axios
-		.get<{ users: User[]; totalCount: number; message?: string }>(`/api/user/all`, {
+	return await axiosInstance
+		.get<{ users: User[]; totalCount: number; message?: string }>(`/user/all`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -107,8 +116,8 @@ export const GetAllUsersRequest = async (token: string, limit: number, page: num
 };
 
 export const ClearCartRequest = async (token: string) => {
-	return await axios
-		.delete<{ message: string; ok: boolean }>(`/api/user/cart`, {
+	return await axiosInstance
+		.delete<{ message: string; ok: boolean }>(`/user/cart`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -122,9 +131,9 @@ export const ClearCartRequest = async (token: string) => {
 };
 
 export const SetUpCartRequest = async (token: string) => {
-	return await axios
+	return await axiosInstance
 		.post<{ message: string; transactionId: string }>(
-			`/api/user/cart/setup`,
+			`/user/cart/setup`,
 			{},
 			{
 				headers: {

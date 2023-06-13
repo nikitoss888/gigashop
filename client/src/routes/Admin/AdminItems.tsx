@@ -31,7 +31,7 @@ export default function AdminItems() {
 	const getItems = async (sortBy: string, limit: number, page: number) => {
 		const { data, totalCount, error } = await GetItems({ admin: true, sortBy, limit, page });
 		if (error) throw error;
-		setItems(data);
+		setItems(data || []);
 		setMaxPage(Math.ceil((totalCount || 1) / limit) || 1);
 	};
 

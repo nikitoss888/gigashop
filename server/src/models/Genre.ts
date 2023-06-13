@@ -11,7 +11,6 @@ const Genre = sequelize_db.define('genre', {
     },
     name: {
         type: DataTypes.STRING,
-        unique: true,
         allowNull: false
     },
     description: {
@@ -79,10 +78,7 @@ const getGenres = async ({name, description, descending = false, limit = 10, pag
     const include = _includeHandler(includeItems, includeHidden);
     const totalCount = await Genre.count({ where: includeHidden ? {} : { hide: false } } );
     const genres = await Genre.findAll({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]]
-    });
-    console.log({
-        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include, genres
+        where, limit, offset: page * limit, order: [[sortBy, descending ? "DESC" : "ASC"]], include
     });
 
     return {
@@ -96,7 +92,6 @@ type getOneGenreParams = {
     includeHidden?: boolean
 }
 const getGenre = async ({id, includeItems = true, includeHidden = false}: getOneGenreParams) => {
-    console.log({id, includeItems, includeHidden})
     const where: {id: number | string, hide?: boolean}   = {id};
     if (!includeHidden) {
         where.hide = false;

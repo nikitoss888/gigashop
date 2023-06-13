@@ -40,18 +40,31 @@ const Publication = sequelize_db.define('publication', {
 });
 
 const _whereHandler = (title?: string, content?: string,
-                            createdAt?: Date, createdFrom?: Date, createdTo?: Date,
-                            includeHidden = false, violation = false, violationReason?: string) => {
-    let where: {title?: {}, content?: {}, createdAt?: {}, hide?: {}, violation?: {}, violationReason?: {}} = {};
+                       createdAt?: Date, createdFrom?: Date, createdTo?: Date,
+                       includeHidden = false, tags?: string[],
+                       violation = false, violationReason?: string) => {
+    let where: {title?: {}, content?: {}, createdAt?: {}, hide?: {}, violation?: {}, violationReason?: {}, tags?: {}} = {};
+
+    console.log({
+        title,
+        content,
+        createdAt,
+        createdFrom,
+        createdTo,
+        includeHidden,
+        violation,
+        violationReason,
+        tags,
+    })
 
     if (title) {
         where.title = {
-            [Op.like]: `%${title}%`
+            [Op.iLike]: `%${title}%`
         };
     }
     if (content) {
         where.content = {
-            [Op.like]: `%${content}%`
+            [Op.iLike]: `%${content}%`
         };
     }
     if (!includeHidden) {
@@ -64,7 +77,7 @@ const _whereHandler = (title?: string, content?: string,
         };
     }
     if (createdAt) {
-        where.createdAt = createdAt;
+        where.createdAt = sequelize_db.where(sequelize_db.fn('date', sequelize_db.col('createdAt')), createdAt);
     }
     if (createdFrom) {
         where.createdAt = {
@@ -73,16 +86,23 @@ const _whereHandler = (title?: string, content?: string,
         };
     }
     if (createdTo) {
+        createdTo.setDate(createdTo.getDate() + 1);
         where.createdAt = {
             ...where.createdAt,
             [Op.lte]: createdTo
+        };
+    }
+    if (tags && tags.length > 0) {
+        console.log(tags)
+        where.tags = {
+            [Op.contains]: tags
         };
     }
 
     return where;
 }
 const _includeHandler = (includeComments: boolean, includeViolations: boolean,
-                         includeHidden: boolean) => {
+                         includeHidden: boolean, authorsIds?: number[]) => {
     let include: {}[] = [];
 
     include.push({
@@ -119,6 +139,19 @@ const _includeHandler = (includeComments: boolean, includeViolations: boolean,
         });
     }
 
+    if (authorsIds && authorsIds.length > 0) {
+        include.push({
+            model: User,
+            as: 'AuthoredUser',
+            attributes: {exclude: ['password']},
+            where: {
+                id: {
+                    [Op.in]: authorsIds
+                }
+            }
+        });
+    }
+
     return include;
 }
 type getAllPublicationsParams = {
@@ -131,18 +164,32 @@ type getAllPublicationsParams = {
     limit?: number,
     page?: number,
     sortBy?: string,
-    includeTags?: boolean,
+    tags?: string[],
+    authorsIds?: number[],
     includeComments?: boolean,
     includeViolations?: boolean,
     includeHidden?: boolean,
     violationReason?: string
 }
 const getPublications = async ({title, content, createdAt, createdFrom, createdTo, descending = false,
-                                   limit = 10, page = 0, sortBy = 'createdAt',
+                                   limit = 10, page = 0, sortBy = 'createdAt', tags = [], authorsIds = [],
                                    includeComments = true, includeViolations = false, includeHidden = false,
                                    violationReason}: getAllPublicationsParams) => {
-    const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, includeViolations, violationReason);
-    const include = _includeHandler(includeComments, includeViolations, includeHidden);
+    console.log({
+        title,
+        content,
+        createdAt,
+        createdFrom,
+        createdTo,
+        descending,
+        limit,
+        page,
+        sortBy,
+        tags,
+        authorsIds,
+    });
+    const where   = _whereHandler(title, content, createdAt, createdFrom, createdTo, includeHidden, tags, includeViolations, violationReason);
+    const include = _includeHandler(includeComments, includeViolations, includeHidden, authorsIds);
     const totalCount = await Publication.count({where: includeHidden ? {} : { hide: false }});
     const publications = await Publication.findAll({
         where, limit, offset: page * limit, order: [[sortBy, descending ? 'DESC' : 'ASC']], include
@@ -161,14 +208,8 @@ type getOnePublicationParams = {
 }
 const getPublication = async ({id, includeComments = true, includeViolations = false,
                                   includeHidden = false}: getOnePublicationParams) => {
-    const where = {
-        id,
-        hide: {
-            [Op.in]: [includeHidden, false]
-        },
-    }
     const include = _includeHandler(includeComments, includeViolations, includeHidden);
-    return await Publication.findOne({where, include});
+    return await Publication.findByPk(id, {include});
 }
 
 export default Publication;

@@ -13,6 +13,8 @@ import Typography from "@mui/material/Typography";
 import { Link, useLoaderData } from "react-router-dom";
 import { GetPublications } from "./index";
 import ClientError from "../ClientError";
+import { useRecoilState } from "recoil";
+import { userState } from "../store/User";
 
 const YupUser = yup.object().shape({
 	id: yup.number().required(),
@@ -72,6 +74,7 @@ const FormBox = styled(Box)`
 
 export default function NewsList() {
 	document.title = "Новини - gigashop";
+	const [user, _] = useRecoilState(userState);
 
 	const { data, totalCount, initPage, initLimit, initSortBy, error } = useLoaderData() as {
 		data: (Publication & { AuthoredUser: User })[];
@@ -99,8 +102,8 @@ export default function NewsList() {
 
 	type getNewsParams = {
 		title?: string;
-		dateFrom?: Date;
-		dateTo?: Date;
+		createdFrom?: Date;
+		createdTo?: Date;
 		tags?: string[];
 		authors?: {
 			id: number;
@@ -114,11 +117,10 @@ export default function NewsList() {
 	const parseValues = (values: FieldValues): getNewsParams => {
 		const params: getNewsParams = {};
 		if (values.title) params.title = values.title;
-		if (values.createdFrom) params.dateFrom = new Date(values.createdFrom);
-		if (values.createdTo) params.dateTo = new Date(values.createdTo);
-		if (values.tags) params.tags = values.tags;
+		if (values.createdFrom) params.createdFrom = new Date(values.createdFrom);
+		if (values.createdTo) params.createdTo = new Date(values.createdTo);
+		if (values.tags) params.tags = values.tags.filter((tag: string) => tag !== "");
 		if (values.authors) params.authors = values.authors;
-		console.log({ params });
 		return params;
 	};
 
@@ -179,28 +181,30 @@ export default function NewsList() {
 			<FormProvider {...methods}>
 				<form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
 					<FormBox>
-						<Box
-							sx={{
-								display: "flex",
-								justifyContent: "space-around",
-								alignItems: "center",
-							}}
-						>
-							<Typography
-								variant='h5'
-								component={Link}
-								to='/news/create'
+						{user && (
+							<Box
 								sx={{
-									textDecoration: "none",
-									color: "primary.main",
-									"&:hover": {
-										textDecoration: "underline",
-									},
+									display: "flex",
+									justifyContent: "space-around",
+									alignItems: "center",
 								}}
 							>
-								Створити новину
-							</Typography>
-						</Box>
+								<Typography
+									variant='h5'
+									component={Link}
+									to='/news/create'
+									sx={{
+										textDecoration: "none",
+										color: "primary.main",
+										"&:hover": {
+											textDecoration: "underline",
+										},
+									}}
+								>
+									Створити новину
+								</Typography>
+							</Box>
+						)}
 						<SearchBar name='title' label='Заголовок' defValue='' />
 						<Filters authors={Authors} />
 						<PublicationsList

@@ -49,7 +49,7 @@ export default function AdminCompanyForm() {
 		name: string;
 		description: string;
 		director: string;
-		founded: Date | undefined;
+		founded: Date | string | undefined;
 	};
 	let defaultValues: CompanyForm = {
 		name: "",
@@ -57,13 +57,15 @@ export default function AdminCompanyForm() {
 		director: "",
 		founded: undefined,
 	};
-	if (company)
+	if (company) {
 		defaultValues = {
 			name: company.name,
 			description: company.description,
 			director: company.director,
-			founded: new Date(company.founded),
+			founded: new Date(company.founded).toISOString().slice(0, 10),
 		};
+	}
+	console.log({ company, defaultValues });
 
 	const methods = useForm({
 		defaultValues,
@@ -221,6 +223,26 @@ export default function AdminCompanyForm() {
 											variant='outlined'
 											error={!!errors.director}
 											helperText={errors.director?.message}
+										/>
+									)}
+								/>
+							</InputBox>
+							<InputBox>
+								<Typography variant='h6' component='label' htmlFor='founded'>
+									Дата заснування
+								</Typography>
+								<Controller
+									name='founded'
+									control={methods.control}
+									render={({ field, formState: { errors } }) => (
+										<TextField
+											{...field}
+											id='founded'
+											placeholder='Дата заснування'
+											variant='outlined'
+											type='date'
+											error={!!errors.founded}
+											helperText={errors.founded?.message}
 										/>
 									)}
 								/>

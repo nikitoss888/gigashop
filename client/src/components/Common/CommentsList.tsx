@@ -18,6 +18,7 @@ const Form = styled("form")`
 type CommentsProps = {
 	comments?: ((ItemRate & { User: User }) | (PublicationComment & { User: User }))[];
 	userComment?: (ItemRate & { User: User }) | (PublicationComment & { User: User });
+	authorId?: number;
 	onSubmit: (event: FormEvent) => void;
 	onDelete: () => void;
 	message: {
@@ -29,7 +30,15 @@ type CommentsProps = {
 		setValue: (rate: number) => void;
 	};
 };
-export default function CommentsList({ comments, userComment, onSubmit, onDelete, message, rate }: CommentsProps) {
+export default function CommentsList({
+	comments,
+	userComment,
+	authorId,
+	onSubmit,
+	onDelete,
+	message,
+	rate,
+}: CommentsProps) {
 	const [user, _] = useRecoilState(userState);
 
 	return (
@@ -53,13 +62,21 @@ export default function CommentsList({ comments, userComment, onSubmit, onDelete
 			>
 				Коментарі:
 			</Typography>
-			{user && (
+			{user && user.id !== authorId && (
 				<Form onSubmit={onSubmit}>
 					<CommentInput message={message} rate={rate} />
 				</Form>
 			)}
 			{user && userComment && (
-				<>
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "start",
+						gap: "1rem",
+						width: "100%",
+					}}
+				>
 					<Typography
 						component='h6'
 						variant='h6'
@@ -86,8 +103,8 @@ export default function CommentsList({ comments, userComment, onSubmit, onDelete
 							<Delete sx={{ color: "accent.main" }} />
 						</IconButton>
 					</Box>
-					<Divider sx={{ border: "2px solid", borderColor: "primary.main" }} />
-				</>
+					<Divider sx={{ borderColor: "primary.main", width: "100%" }} />
+				</Box>
 			)}
 			{comments && comments.map((comment) => <Comment key={comment.id} comment={comment} user={comment.User} />)}
 		</Box>

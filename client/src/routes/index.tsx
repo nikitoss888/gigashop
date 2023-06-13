@@ -4,7 +4,6 @@ import Items, { SortSwitch as ItemsSortSwitch } from "./Items";
 import Item from "./Item";
 import Genres from "./Genres";
 import Genre from "./Genre";
-import ErrorPage from "./ErrorPage";
 import Companies, { SortSwitch as CompaniesSortSwitch } from "./Companies";
 import Company from "./Company";
 import NewsList, { SortSwitch as PublicationsSortSwitch } from "./NewsList";
@@ -34,17 +33,19 @@ import AdminCompany from "./Admin/AdminCompany";
 import Profile from "./Profile";
 import AdminStatistics from "./Admin/AdminStatistics";
 import CartSuccess from "./CartSuccess";
-import { GetAllUsersRequest, ProfileRequest, SetUpCartRequest } from "../http/User";
+import { GetAllUsersRequest, ProfileRequest } from "../http/User";
 import Cookies from "js-cookie";
-import { calculateDiscount, GetAllItemsParams, GetAllItemsRequest, GetItemRequest } from "../http/Items";
+import { GetAllItemsParams, GetAllItemsRequest, GetItemRequest } from "../http/Items";
 import { AxiosError } from "axios";
 import { GetAllGenresRequest, GetGenreRequest } from "../http/Genres";
 import { GetAllPublicationsRequest, GetPublicationRequest } from "../http/Publications";
 import { GetAllCompaniesRequest, GetCompanyRequest } from "../http/Companies";
 import { GetAllItemsRatesRequest, GetAllPublicationsCommentsRequest } from "../http/Comments";
 import { GetStatisticsDataRequest } from "../http/Moderation";
+import { useRecoilState } from "recoil";
+import { UserAtom, userState } from "../store/User";
 
-const SearchItem = async (params: Params<string>, admin?: boolean) => {
+const SearchItem = async (params: Params, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID товару") };
@@ -66,7 +67,7 @@ const SearchItem = async (params: Params<string>, admin?: boolean) => {
 	}
 };
 
-const SearchGenre = async (params: Params<string>, admin?: boolean) => {
+const SearchGenre = async (params: Params, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID жанру") };
@@ -90,7 +91,7 @@ const SearchGenre = async (params: Params<string>, admin?: boolean) => {
 	}
 };
 
-const SearchPublication = async (params: Params<string>, admin?: boolean) => {
+const SearchPublication = async (params: Params, user?: UserAtom) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID публікації") };
@@ -98,6 +99,7 @@ const SearchPublication = async (params: Params<string>, admin?: boolean) => {
 		const parsed = parseInt(id);
 		if (isNaN(parsed)) return { error: new ClientError(400, "ID публікації не є числом") };
 
+		const admin = user && user.role.toLowerCase() === "admin";
 		const result = await GetPublicationRequest(parsed, admin).catch((e) => {
 			if (e instanceof ClientError) return e;
 			if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
@@ -105,6 +107,10 @@ const SearchPublication = async (params: Params<string>, admin?: boolean) => {
 			return new ClientError(500, "Помилка сервера");
 		});
 		if (result instanceof ClientError) return { error: result };
+
+		if (user && result && (result.userId !== user.id || user.role.toLowerCase() === "user")) {
+			return { error: new ClientError(403, "Ви не можете переглянути цю публікацію") };
+		}
 
 		const publication = result;
 
@@ -114,7 +120,7 @@ const SearchPublication = async (params: Params<string>, admin?: boolean) => {
 	}
 };
 
-const SearchCompany = async (params: Params<string>, admin?: boolean) => {
+const SearchCompany = async (params: Params, admin?: boolean) => {
 	try {
 		const { id } = params;
 		if (!id) return { error: new ClientError(400, "Не вказано ID компанії") };
@@ -163,6 +169,8 @@ const SearchProfile = async () => {
 	const publicationsComments = user.CommentsList;
 	const itemsRates = user.Rates;
 
+	console.log({ user, cart, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates });
+
 	return { user, cart, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates };
 };
 
@@ -201,7 +209,7 @@ export const GetItems = async (params: GetItemsParams) => {
 		desc: descending,
 		page,
 		limit,
-		hidden: admin ? undefined : false,
+		hidden: admin,
 
 		name: searchParams?.name,
 		priceFrom: searchParams?.priceFrom,
@@ -219,24 +227,10 @@ export const GetItems = async (params: GetItemsParams) => {
 	const result = await GetAllItemsRequest(requestParams);
 	if (!result) return { error: new ClientError(500, "Помилка сервера") };
 
-	let data = result.items;
+	const data = result.items;
 	const totalCount = result.totalCount;
 	const companies = result.companies;
 	const genres = result.genres;
-
-	if (searchParams) {
-		data = data.filter((item) => {
-			const { finalPrice } = calculateDiscount(item);
-			let pass = true;
-			if (searchParams.priceFrom) {
-				pass = pass && finalPrice >= searchParams.priceFrom;
-			}
-			if (searchParams.priceTo) {
-				pass = pass && finalPrice <= searchParams.priceTo;
-			}
-			return pass;
-		});
-	}
 
 	return { data, totalCount, limit, page, sortBy, companies, genres };
 };
@@ -314,8 +308,8 @@ type GetPublicationsParams = {
 	sortBy?: string;
 	searchParams?: {
 		title?: string;
-		dateFrom?: Date;
-		dateTo?: Date;
+		createdFrom?: Date;
+		createdTo?: Date;
 		tags?: string[];
 		authors?: {
 			id: number;
@@ -329,6 +323,12 @@ export const GetPublications = async (params: GetPublicationsParams) => {
 	const { admin = false, limit = 12, page = 1, sortBy = "createdAtAsc", searchParams = undefined } = params;
 	const { sortBy: specificSortBy, descending } = PublicationsSortSwitch(sortBy);
 
+	let authorsIds: number[] = [];
+	if (searchParams && searchParams.authors) {
+		authorsIds = searchParams.authors.map((author) => author.id);
+	}
+	console.log({ tags: searchParams ? searchParams.tags : undefined, authorsIds });
+
 	const result = await GetAllPublicationsRequest({
 		admin,
 		limit,
@@ -336,9 +336,11 @@ export const GetPublications = async (params: GetPublicationsParams) => {
 		sortBy: specificSortBy,
 		desc: descending,
 
-		title: searchParams?.title,
-		dateFrom: searchParams?.dateFrom,
-		dateTo: searchParams?.dateTo,
+		title: searchParams ? searchParams.title : "",
+		createdFrom: searchParams ? searchParams.createdFrom : undefined,
+		createdTo: searchParams ? searchParams.createdTo : undefined,
+		tags: searchParams ? searchParams.tags : undefined,
+		authorsIds: authorsIds,
 	}).catch((e) => {
 		if (e instanceof ClientError) return e;
 		if (e instanceof Error) return new ClientError(500, "Помилка сервера: " + e.message);
@@ -347,22 +349,7 @@ export const GetPublications = async (params: GetPublicationsParams) => {
 	});
 	if (result instanceof ClientError) return { error: result };
 
-	const data = result.publications.filter((publication) => {
-		let pass = true;
-		if (searchParams?.dateFrom) {
-			pass = pass && new Date(publication.createdAt).getTime() >= new Date(searchParams.dateFrom).getTime();
-		}
-		if (searchParams?.dateTo) {
-			pass = pass && new Date(publication.createdAt).getTime() <= new Date(searchParams.dateTo).getTime();
-		}
-		if (searchParams?.tags) {
-			pass = pass && searchParams.tags.every((tag) => publication.tags.includes(tag));
-		}
-		if (searchParams?.authors) {
-			pass = pass && searchParams.authors.some((author) => publication.userId === author.id);
-		}
-		return pass;
-	});
+	const data = result.publications;
 	const totalCount = result.totalCount;
 
 	return { data, totalCount, limit, page, sortBy };
@@ -468,11 +455,11 @@ const GetStatistics = async () => {
 };
 
 export default function Router() {
+	const [user, _] = useRecoilState(userState);
 	const router = createBrowserRouter([
 		{
 			path: "",
 			element: <RootPage />,
-			errorElement: <ErrorPage />,
 			children: [
 				{
 					path: "/",
@@ -505,20 +492,9 @@ export default function Router() {
 								const userData = await SearchProfile();
 								if (userData.error) return { error: userData.error };
 
-								const token = Cookies.get("token");
-								if (!token) return { error: new ClientError(401, "Необхідно авторизуватися") };
-
 								const { user, cart } = userData;
-								const result = await SetUpCartRequest(token).catch((e) => {
-									if (e instanceof ClientError) return e;
-									if (e instanceof Error)
-										return new ClientError(500, "Помилка сервера: " + e.message);
-									if (e instanceof AxiosError) return new ClientError(e.code || "500", e.message);
-									return new ClientError(500, "Помилка сервера");
-								});
-								if (result instanceof ClientError) return { error: result };
 
-								return { user, cart, transactionId: result.transactionId };
+								return { user, cart };
 							},
 						},
 						{
@@ -634,7 +610,7 @@ export default function Router() {
 							element: <NewsForm />,
 							loader: ({ params }) => {
 								console.log("news edit loader");
-								return SearchPublication(params);
+								return SearchPublication(params, user);
 							},
 						},
 					],
@@ -833,7 +809,7 @@ export default function Router() {
 							element: <AdminNewsItem />,
 							loader: ({ params }) => {
 								console.log("admin news item loader");
-								return SearchPublication(params, true);
+								return SearchPublication(params, user);
 							},
 						},
 						{

@@ -1,7 +1,8 @@
-import axios, { type AxiosError } from "axios";
+import { type AxiosError } from "axios";
 import { Genre } from "./Genres";
 import { Company } from "./Companies";
 import { User } from "./User";
+import axiosInstance from "./axiosInstance";
 
 export type Item = {
 	id: number;
@@ -114,8 +115,9 @@ type GetAllReturn = {
 	totalCount: number;
 };
 export const GetAllItemsRequest = async (params: GetAllItemsParams) => {
-	return await axios
-		.get<GetAllReturn>(`/api/shop/items`, {
+	console.log({ params });
+	return await axiosInstance
+		.get<GetAllReturn>(`/shop/items`, {
 			params: params,
 		})
 		.then((res) => {
@@ -137,8 +139,8 @@ type GetItemReturn = Item & {
 	CartedUsers: User[];
 };
 export const GetItemRequest = async (id: number, admin?: boolean) => {
-	return await axios
-		.get<GetItemReturn>(`/api/shop/items/${id}`, {
+	return await axiosInstance
+		.get<GetItemReturn>(`/shop/items/${id}`, {
 			params: {
 				includeHidden: admin,
 				includePublisher: true,
@@ -177,9 +179,9 @@ type CreateItemParams = {
 	genresIds: number[];
 };
 export const CreateItemRequest = async (token: string, params: CreateItemParams) => {
-	return await axios
+	return await axiosInstance
 		.post<Item>(
-			`/api/shop/items`,
+			`/shop/items`,
 			{
 				...params,
 				releaseDate: new Date(params.releaseDate).toISOString().slice(0, 10),
@@ -221,9 +223,9 @@ type UpdateItemParams = {
 	genresIds?: number[];
 };
 export const UpdateItemRequest = async (token: string, id: number, params: UpdateItemParams) => {
-	return await axios
+	return await axiosInstance
 		.patch<Item>(
-			`/api/shop/items/${id}`,
+			`/shop/items/${id}`,
 			{
 				...params,
 				releaseDate: params.releaseDate ? new Date(params.releaseDate).toISOString().slice(0, 10) : undefined,
@@ -231,7 +233,7 @@ export const UpdateItemRequest = async (token: string, id: number, params: Updat
 					? new Date(params.discountFrom).toISOString().slice(0, 10)
 					: undefined,
 				discountTo: params.discountTo ? new Date(params.discountTo).toISOString().slice(0, 10) : undefined,
-				characteristics: params.characteristics ? JSON.stringify(params.characteristics) : undefined,
+				characteristics: params.characteristics ? JSON.stringify(params.characteristics) : null,
 			},
 			{
 				headers: {
@@ -248,8 +250,8 @@ export const UpdateItemRequest = async (token: string, id: number, params: Updat
 };
 
 export const DeleteItemRequest = async (token: string, id: number) => {
-	return await axios
-		.delete<{ ok: true }>(`/api/shop/items/${id}`, {
+	return await axiosInstance
+		.delete<{ ok: true }>(`/shop/items/${id}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -274,9 +276,9 @@ export const calculateDiscount = (item: Item) => {
 };
 
 export const SetItemRateRequest = async (token: string, itemId: number, rate: number, content: string) => {
-	return await axios
+	return await axiosInstance
 		.post<{ message: string; rate: ItemRate; user: User }>(
-			`/api/shop/items/${itemId}/rate`,
+			`/shop/items/${itemId}/rate`,
 			{
 				rate,
 				content,
@@ -296,8 +298,8 @@ export const SetItemRateRequest = async (token: string, itemId: number, rate: nu
 };
 
 export const DeleteItemRateRequest = async (token: string, itemId: number) => {
-	return await axios
-		.delete<{ ok: boolean }>(`/api/shop/items/${itemId}/rate`, {
+	return await axiosInstance
+		.delete<{ ok: boolean }>(`/shop/items/${itemId}/rate`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -311,9 +313,9 @@ export const DeleteItemRateRequest = async (token: string, itemId: number) => {
 };
 
 export const ToggleCartItemRequest = async (token: string, itemId: number) => {
-	return await axios
+	return await axiosInstance
 		.post<{ message: string; ok: boolean }>(
-			`/api/shop/items/${itemId}/toggleCart`,
+			`/shop/items/${itemId}/toggleCart`,
 			{},
 			{
 				headers: {
@@ -330,9 +332,9 @@ export const ToggleCartItemRequest = async (token: string, itemId: number) => {
 };
 
 export const ToggleWishlistItemRequest = async (token: string, itemId: number) => {
-	return await axios
+	return await axiosInstance
 		.post<{ message: string; ok: boolean }>(
-			`/api/shop/items/${itemId}/toggleWishlist`,
+			`/shop/items/${itemId}/toggleWishlist`,
 			{},
 			{
 				headers: {

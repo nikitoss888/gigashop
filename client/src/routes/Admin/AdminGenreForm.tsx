@@ -68,19 +68,16 @@ export default function AdminGenreForm() {
 				name: data.name,
 				description: data.description,
 			}).catch((err) => {
-				if (err instanceof ClientError) throw err;
-				if (err instanceof Error) throw new ClientError(500, err.message);
 				error = err;
 			});
 		} else {
 			result = await CreateGenreRequest(token, { name: data.name, description: data.description }).catch(
 				(err) => {
-					if (err instanceof ClientError) throw err;
-					if (err instanceof Error) throw new ClientError(500, err.message);
 					error = err;
 				}
 			);
 		}
+		console.log({ result, error });
 		if (error) {
 			setAlert({
 				title: "Помилка",

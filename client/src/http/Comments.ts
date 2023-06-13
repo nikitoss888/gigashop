@@ -1,7 +1,7 @@
-import axios from "axios";
 import { ItemRate, Item } from "./Items";
 import { Publication, Comment } from "./Publications";
 import { User } from "./User";
+import axiosInstance from "./axiosInstance";
 
 type GetAllCommentsParams = {
 	sortBy?: string;
@@ -17,8 +17,8 @@ type GetAllCommentsReturn = {
 	totalCount: number;
 };
 export const GetAllPublicationsCommentsRequest = async (params: GetAllCommentsParams) => {
-	return await axios
-		.get<GetAllCommentsReturn>(`/api/comments/news`, {
+	return await axiosInstance
+		.get<GetAllCommentsReturn>(`/comments/news`, {
 			params: {
 				sortBy: params.sortBy,
 				descending: params.descending,
@@ -48,8 +48,8 @@ type GetAllRatesReturn = {
 	totalCount: number;
 };
 export const GetAllItemsRatesRequest = async (params: GetAllRatesParams) => {
-	return await axios
-		.get<GetAllRatesReturn>(`/api/comments/items`, {
+	return await axiosInstance
+		.get<GetAllRatesReturn>(`/comments/items`, {
 			params: {
 				sortBy: params.sortBy,
 				descending: params.descending,

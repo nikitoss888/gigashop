@@ -299,7 +299,15 @@ export default function Item() {
 						</Typography>
 					</DataGroup>
 					{user && (
-						<ButtonGroup>
+						<ButtonGroup
+							fullWidth
+							sx={{
+								gridColumn: {
+									xs: "1 / 2",
+									md: "1 / 3",
+								},
+							}}
+						>
 							<Button
 								variant='contained'
 								onClick={onWishlist}

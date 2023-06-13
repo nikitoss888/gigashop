@@ -29,21 +29,14 @@ const AccordionDetailsStyle = styled(AccordionDetails)`
 	padding: 0 15px 15px 15px;
 `;
 
-const TypographyLink = styled(Typography)`
-	text-decoration: none;
-	&:hover {
-		text-decoration: underline;
-	}
-` as typeof Typography;
-
 export default function AdminStatistics() {
 	let { Users, Items, ItemsRates, Publications, Companies, Genres, PublicationsComments, Wishlists } =
 		useLoaderData() as {
 			Users?: User[];
 			Items?: (Item & {
-				Developers: Company[];
-				Publisher: Company;
-				Genres: Genre[];
+				Developers?: Company[];
+				Publisher?: Company;
+				Genres?: Genre[];
 			})[];
 			Publications?: Publication[];
 			Companies?: Company[];
@@ -91,26 +84,46 @@ export default function AdminStatistics() {
 	).length;
 	const violatingRatesCount = ItemsRates.filter((rate) => rate.violation).length;
 
-	type ItemAvgRate = { item: Item; avg_rate: number };
-	const topRankedItemReducer = (acc: ItemAvgRate, item: Item) => {
-		const itemRates = ItemsRates?.filter((rate) => rate.itemId === item.id) || [];
-		const itemAvgRate =
+	const calcItemAvgRate = (item?: Item) => {
+		if (!item) return -1;
+		const itemRates = ItemsRates ? ItemsRates.filter((rate) => rate.itemId === item.id) : [];
+		let itemAvgRate =
 			Math.round((itemRates.reduce((acc, rate) => acc + rate.rate, 0) / itemRates.length) * 10) / 10;
-
+		itemAvgRate = isNaN(itemAvgRate) ? 0 : itemAvgRate;
+		return itemAvgRate;
+	};
+	const topRankedItemReducer = (acc: { item: Item; avg_rate: number }, item: Item) => {
+		const itemAvgRate = calcItemAvgRate(item);
 		if (itemAvgRate > (acc.avg_rate || -1)) acc = { item, avg_rate: itemAvgRate };
 
 		return acc;
 	};
-	const topRankedItem = Items.reduce(topRankedItemReducer, {} as ItemAvgRate);
-	const topRankedItemCommentsCount = ItemsRates.filter((rate) => rate.itemId === topRankedItem.item.id).length;
+
+	const firstItem = Items.length > 0 ? Items[0] : undefined;
+	const firstItemAvgRate = calcItemAvgRate(firstItem);
+
+	const topItem = firstItem
+		? Items.reduce(topRankedItemReducer, { item: firstItem, avg_rate: firstItemAvgRate })
+		: undefined;
+	const topItemRatesCount = topItem ? ItemsRates.filter((rate) => rate.itemId === topItem.item.id).length : undefined;
 
 	type ItemWishlistedCount = Item & { wishlists: number };
+	const calcItemWishlists = (item?: Item) => {
+		if (!item) return -1;
+		return (Wishlists ? Wishlists.filter((wishlist) => wishlist.itemId === item.id) : []).length;
+	};
 	const mostWishlistedItemReducer = (acc: ItemWishlistedCount, item: Item) => {
-		const itemWishlists = Wishlists?.filter((wishlist) => wishlist.itemId === item.id) || [];
+		const itemWishlists = Wishlists ? Wishlists.filter((wishlist) => wishlist.itemId === item.id) : [];
 		if (itemWishlists.length > acc.wishlists) acc = { ...item, wishlists: itemWishlists.length };
 		return acc;
 	};
-	const mostWishlistedItem = Items.reduce(mostWishlistedItemReducer, {} as ItemWishlistedCount);
+
+	const firstItemWishlistsCount = calcItemWishlists(firstItem);
+
+	const mostWishlistedItem =
+		Items.length > 0
+			? Items.reduce(mostWishlistedItemReducer, { ...Items[0], wishlists: firstItemWishlistsCount })
+			: undefined;
 
 	// Publications
 	const publicationsWeek = Publications.filter(
@@ -140,20 +153,32 @@ export default function AdminStatistics() {
 
 	const violatingPublicationsCommentsCount = PublicationsComments.filter((comment) => comment.violation).length;
 
-	type PublicationRate = { publication: Publication; avg_rate: number };
-	const topRankedPublicationReducer = (acc: PublicationRate, publication: Publication) => {
-		const publicationRates =
-			PublicationsComments?.filter((comment) => comment.publicationId === publication.id) || [];
-		const publicationAvgRate = publicationRates.reduce((acc, rate) => acc + rate.rate, 0) / publicationRates.length;
-
+	const calcPublicationAvgRate = (publication?: Publication) => {
+		if (!publication) return -1;
+		const publicationRates = PublicationsComments
+			? PublicationsComments.filter((comment) => comment.publicationId === publication.id)
+			: [];
+		let publicationAvgRate = publicationRates.reduce((acc, rate) => acc + rate.rate, 0) / publicationRates.length;
+		publicationAvgRate = isNaN(publicationAvgRate) ? 0 : publicationAvgRate;
+		return publicationAvgRate;
+	};
+	const topRankedPublicationReducer = (
+		acc: { publication: Publication; avg_rate: number },
+		publication: Publication
+	) => {
+		const publicationAvgRate = calcPublicationAvgRate(publication);
 		if (publicationAvgRate > (acc.avg_rate || -1)) acc = { publication, avg_rate: publicationAvgRate };
 
 		return acc;
 	};
-	const topRankedPublication = Publications.reduce(topRankedPublicationReducer, {} as PublicationRate);
-	const topRankedPublicationCommentsCount = PublicationsComments.filter(
-		(comment) => comment.publicationId === topRankedPublication.publication.id
-	).length;
+	const topPublication =
+		Publications.length > 0
+			? Publications.reduce(topRankedPublicationReducer, { publication: Publications[0], avg_rate: -1 })
+			: undefined;
+	const topRankedPublicationCommentsCount =
+		topPublication && PublicationsComments.length > 0
+			? PublicationsComments.filter((comment) => comment.publicationId === topPublication.publication.id).length
+			: undefined;
 
 	const violatingPublicationsCount = Publications.filter((publication) => publication.violation).length;
 	const hiddenPublicationsCount = Publications.filter(
@@ -176,22 +201,30 @@ export default function AdminStatistics() {
 	type CompanyItemsCount = { company: Company; count: number };
 
 	const companiesDevelopedItemsCount = Companies.map((company): CompanyItemsCount => {
-		const developedItems = Items?.filter((item) => item.Developers.includes(company)) || [];
+		const developedItems = Items
+			? Items.filter((item) => (item.Developers ? item.Developers.includes(company) : false))
+			: [];
 		return { company, count: developedItems.length };
 	});
-	const topDeveloper = companiesDevelopedItemsCount.reduce((acc, company) => {
-		if (company.count > (acc.count || -1)) acc = company;
-		return acc;
-	}, {} as CompanyItemsCount);
+	const topDeveloper =
+		companiesDevelopedItemsCount.length > 0
+			? companiesDevelopedItemsCount.reduce((acc, company) => {
+					if (company.count > (acc.count || -1)) acc = company;
+					return acc;
+			  })
+			: undefined;
 
 	const companiesPublishedItemsCount = Companies.map((company): CompanyItemsCount => {
-		const publishedItems = Items?.filter((item) => item.company_publisherId === company.id) || [];
+		const publishedItems = Items ? Items.filter((item) => item.company_publisherId === company.id) : [];
 		return { company, count: publishedItems.length };
 	});
-	const topPublisher = companiesPublishedItemsCount.reduce((acc, company) => {
-		if (company.count > (acc.count || -1)) acc = company;
-		return acc;
-	});
+	const topPublisher =
+		companiesPublishedItemsCount.length > 0
+			? companiesPublishedItemsCount.reduce((acc, company) => {
+					if (company.count > (acc.count || -1)) acc = company;
+					return acc;
+			  })
+			: undefined;
 	// Genres
 	const genresCountWeek = Genres.filter((genre) => new Date(genre.createdAt).getTime() > now - 604800000).length;
 	const genresCountMonth = Genres.filter((genre) => new Date(genre.createdAt).getTime() > now - 2592000000).length;
@@ -205,10 +238,13 @@ export default function AdminStatistics() {
 		};
 	};
 	const genresItemsCount = Genres.map(genresItemsCountMapper(Items));
-	const topGenreItemsCount = genresItemsCount.reduce((acc, genreItemsCount) => {
-		if (genreItemsCount.count > acc.count) acc = genreItemsCount;
-		return acc;
-	}, genresItemsCount[0]);
+	const topGenre =
+		genresItemsCount.length > 0
+			? genresItemsCount.reduce((acc, genreItemsCount) => {
+					if (genreItemsCount.count > acc.count) acc = genreItemsCount;
+					return acc;
+			  })
+			: undefined;
 
 	const hiddenGenresCount = Genres.filter((genre) => genre.hide).length;
 
@@ -257,16 +293,33 @@ export default function AdminStatistics() {
 					</Box>
 					<Divider />
 					<Box>
-						<TypographyLink variant='h6' component={Link} to={`/admin/items/${topRankedItem.item.id}`}>
-							Найкращий товар: {topRankedItem.item.name}
-						</TypographyLink>
-						<Typography variant='h6'>Рейтинг: {topRankedItem.avg_rate}</Typography>
-						<Typography variant='h6'>Кількість оцінок: {topRankedItemCommentsCount}</Typography>
+						<Typography
+							variant='h6'
+							{...(topItem && {
+								component: Link,
+								to: `/admin/items/${topItem.item.id}`,
+								sx: {
+									"&:hover": {
+										textDecoration: "underline",
+									},
+								},
+							})}
+						>
+							Найкращий товар: {topItem ? topItem.item.name : "—"}
+						</Typography>
+						<Typography variant='h6'>Рейтинг: {topItem ? topItem.avg_rate : "—"}</Typography>
+						<Typography variant='h6'>
+							Кількість оцінок: {topItemRatesCount ? topItemRatesCount : "—"}
+						</Typography>
 					</Box>
 					<Divider />
 					<Box>
-						<Typography variant='h6'>Найбільш бажаний товар: {mostWishlistedItem.name}</Typography>
-						<Typography variant='h6'>Кількість бажань: {mostWishlistedItem.wishlists}</Typography>
+						<Typography variant='h6'>
+							Найбільш бажаний товар: {mostWishlistedItem ? mostWishlistedItem.name : "—"}
+						</Typography>
+						<Typography variant='h6'>
+							Кількість бажань: {mostWishlistedItem ? mostWishlistedItem.wishlists : "—"}
+						</Typography>
 					</Box>
 				</AccordionDetailsStyle>
 			</Accordion>
@@ -298,14 +351,23 @@ export default function AdminStatistics() {
 					</Box>
 					<Divider />
 					<Box>
-						<TypographyLink
+						<Typography
 							variant='h6'
-							component={Link}
-							to={`/admin/publications/${topRankedPublication.publication.id}`}
+							{...(topPublication && {
+								component: Link,
+								to: `/admin/news/${topPublication.publication.id}`,
+								sx: {
+									"&:hover": {
+										textDecoration: "underline",
+									},
+								},
+							})}
 						>
-							Найкраща публікація за весь час: {topRankedPublication.publication.title}
-						</TypographyLink>
-						<Typography variant='h6'>Загальна оцінка: {topRankedPublication.avg_rate}</Typography>
+							Найкраща публікація за весь час: {topPublication ? topPublication.publication.title : "—"}
+						</Typography>
+						<Typography variant='h6'>
+							Загальна оцінка: {topPublication ? topPublication.avg_rate : "—"}
+						</Typography>
 						<Typography variant='h6'>Кількість коментарів: {topRankedPublicationCommentsCount}</Typography>
 					</Box>
 				</AccordionDetailsStyle>
@@ -324,13 +386,43 @@ export default function AdminStatistics() {
 					</Box>
 					<Divider />
 					<Box>
-						<Typography variant='h6'>Найбільший розробник: {topDeveloper.company.name}</Typography>
-						<Typography variant='h6'>Кількість товарів: {topDeveloper.count}</Typography>
+						<Typography
+							variant='h6'
+							{...(topDeveloper && {
+								component: Link,
+								to: `/admin/companies/${topDeveloper.company.id}`,
+								sx: {
+									"&:hover": {
+										textDecoration: "underline",
+									},
+								},
+							})}
+						>
+							Найбільший розробник: {topDeveloper ? topDeveloper.company.name : "—"}
+						</Typography>
+						<Typography variant='h6'>
+							Кількість товарів: {topDeveloper ? topDeveloper.count : "—"}
+						</Typography>
 					</Box>
 					<Divider />
 					<Box>
-						<Typography variant='h6'>Найбільший видавець: {topPublisher.company.name}</Typography>
-						<Typography variant='h6'>Кількість товарів: {topPublisher.count}</Typography>
+						<Typography
+							variant='h6'
+							{...(topPublisher && {
+								component: Link,
+								to: `/admin/companies/${topPublisher.company.id}`,
+								sx: {
+									"&:hover": {
+										textDecoration: "underline",
+									},
+								},
+							})}
+						>
+							Найбільший видавець: {topPublisher ? topPublisher.company.name : "—"}
+						</Typography>
+						<Typography variant='h6'>
+							Кількість товарів: {topPublisher ? topPublisher.count : "—"}
+						</Typography>
 					</Box>
 				</AccordionDetailsStyle>
 			</Accordion>
@@ -348,8 +440,21 @@ export default function AdminStatistics() {
 					</Box>
 					<Divider />
 					<Box>
-						<Typography variant='h6'>Найбільший жанр: {topGenreItemsCount.genre.name}</Typography>
-						<Typography variant='h6'>Кількість товарів: {topGenreItemsCount.count}</Typography>
+						<Typography
+							variant='h6'
+							{...(topGenre && {
+								component: Link,
+								to: `/admin/genres/${topGenre.genre.id}`,
+								sx: {
+									"&:hover": {
+										textDecoration: "underline",
+									},
+								},
+							})}
+						>
+							Найбільший жанр: {topGenre ? topGenre.genre.name : "—"}
+						</Typography>
+						<Typography variant='h6'>Кількість товарів: {topGenre ? topGenre.count : "—"}</Typography>
 					</Box>
 				</AccordionDetailsStyle>
 			</Accordion>

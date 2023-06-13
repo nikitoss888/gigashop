@@ -4,7 +4,7 @@ import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
 import { ItemRate } from "../../../http/Items";
 import { User } from "../../../http/User";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../../CardsGrid/NotFoundBox";
 
 type ListProps = {
 	rates?: (ItemRate & {
@@ -70,7 +70,7 @@ export default function List({ rates, sorting, limitation, pagination, linkToIte
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{rates ? (
+				{rates && rates.length > 0 ? (
 					rates.map((comment, index: number) => (
 						<>
 							<ListItem
@@ -85,16 +85,10 @@ export default function List({ rates, sorting, limitation, pagination, linkToIte
 						</>
 					))
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Коментарів не знайдено
-					</Typography>
+					<NotFoundBox text='Оцінок немає' />
 				)}
 			</MuiList>
-			<Pagination data={pagination} />
+			{rates && rates.length > 0 && <Pagination data={pagination} />}
 		</Box>
 	);
 }

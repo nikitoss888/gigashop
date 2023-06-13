@@ -1,7 +1,8 @@
-import { ListItem } from "@mui/material";
+import { Box, IconButton, ListItem } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";
 import { Publication } from "../../http/Publications";
+import { Edit } from "@mui/icons-material";
 
 type ListItemProps = {
 	publication: Publication;
@@ -19,15 +20,33 @@ export default function ItemsListItem({ publication }: ListItemProps) {
 				alignItems: "stretch",
 			}}
 		>
-			<Typography
-				variant='h6'
-				{...(!publication.hide && {
-					component: Link,
-					to: `/shop/items/${publication.id}`,
-				})}
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "row",
+					alignItems: "center",
+					gap: "10px",
+				}}
 			>
-				{publication.title}
-			</Typography>
+				<Typography
+					variant='h6'
+					{...(!publication.hide && {
+						component: Link,
+						to: `/shop/items/${publication.id}`,
+					})}
+				>
+					{publication.title}
+					{publication.hide && " (Сховано)"}
+				</Typography>
+				<IconButton component={Link} to={`/news/${publication.id}/edit`}>
+					<Edit />
+				</IconButton>
+			</Box>
+			{publication.violation && (
+				<Typography variant='body1' color='error'>
+					{publication.violation_reason}
+				</Typography>
+			)}
 			<Typography
 				variant='body1'
 				sx={{

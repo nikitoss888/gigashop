@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import jwt_decode, { JwtPayload } from "jwt-decode";
 
 export type UserAtom = {
-	id: string | number;
+	id: number;
 	login: string;
 	email: string;
 	role: string;

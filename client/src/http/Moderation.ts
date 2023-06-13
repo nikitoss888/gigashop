@@ -1,9 +1,9 @@
-import axios from "axios";
 import { Publication, Comment } from "./Publications";
 import { Item, ItemRate, Wishlist } from "./Items";
 import { User } from "./User";
 import { Company } from "./Companies";
 import { Genre } from "./Genres";
+import axiosInstance from "./axiosInstance";
 
 type SetViolationParams = {
 	violation: boolean;
@@ -14,9 +14,9 @@ export const SetPublicationViolationRequest = async (
 	id: number,
 	{ violation, violation_reason }: SetViolationParams
 ) => {
-	return await axios
+	return await axiosInstance
 		.patch<{ message: string; result: Publication }>(
-			`/api/moderation/news/${id}`,
+			`/moderation/news/${id}`,
 			{
 				violation,
 				violation_reason,
@@ -40,9 +40,9 @@ export const SetCommentViolationRequest = async (
 	id: number,
 	{ violation, violation_reason }: SetViolationParams
 ) => {
-	return await axios
+	return await axiosInstance
 		.patch<{ message: string; result: Comment }>(
-			`/api/moderation/comments/${id}`,
+			`/moderation/comments/${id}`,
 			{
 				violation,
 				violation_reason,
@@ -66,9 +66,9 @@ export const SetRateViolationRequest = async (
 	id: number,
 	{ violation, violation_reason }: SetViolationParams
 ) => {
-	return await axios
+	return await axiosInstance
 		.patch<{ message: string; result: ItemRate }>(
-			`/api/moderation/rates/${id}`,
+			`/moderation/rates/${id}`,
 			{
 				violation,
 				violation_reason,
@@ -102,8 +102,8 @@ type GetStatisticsDataResponse = {
 	Wishlists: Wishlist[];
 };
 export const GetStatisticsDataRequest = async (token: string) => {
-	return await axios
-		.get<GetStatisticsDataResponse>(`/api/moderation/statistics`, {
+	return await axiosInstance
+		.get<GetStatisticsDataResponse>(`/moderation/statistics`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -117,9 +117,9 @@ export const GetStatisticsDataRequest = async (token: string) => {
 };
 
 export const ToggleRoleRequest = async (token: string, id: number) => {
-	return await axios
+	return await axiosInstance
 		.patch<{ message: string; result: User }>(
-			`/api/user/toggleModerator/${id}`,
+			`/user/toggleModerator/${id}`,
 			{},
 			{
 				headers: {
@@ -136,9 +136,9 @@ export const ToggleRoleRequest = async (token: string, id: number) => {
 };
 
 export const SetRoleRequest = async (token: string, id: number, role: string) => {
-	return await axios
+	return await axiosInstance
 		.patch<{ message: string; result: User }>(
-			`/api/user/setRole/${id}`,
+			`/user/setRole/${id}`,
 			{
 				role,
 			},

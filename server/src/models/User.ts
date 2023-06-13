@@ -119,6 +119,7 @@ const _includeHandler = (includeBoughtItems: boolean, includeCart: boolean, incl
         });
     }
 
+    console.log({ includeBoughtItems });
     if (includeBoughtItems) {
         include.push({
             model: ItemBought,
@@ -210,15 +211,16 @@ const getUser = async ({ id, includeBoughtItems = false, includeCart = false, in
         includePublications, includePublicationComments);
 
     const user = await User.findByPk(id, { include, attributes: {exclude: ['password']} })
-    const ids = user.Bought.map((item: any) => item.itemId);
+    console.log({ bought: user.Bought });
+    const ids = user.Bought ? user.Bought.map((item: any) => item.itemId) : [];
 
-    const boughtItems = await Item.findAll({
+    const boughtItems = ids.length > 0 ? await Item.findAll({
         where: {
             id: {
                 [Op.in]: ids
             }
         }
-    });
+    }) : [];
 
     return { user, boughtItems };
 }

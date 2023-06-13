@@ -6,17 +6,13 @@ import {
 	AlertTitle,
 	Box,
 	Dialog,
-	IconButton,
 	MenuItem,
 	Select,
 	SelectChangeEvent,
-	Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Typography from "@mui/material/Typography";
 import AccordionDetailsStyle from "../../Common/AccordionDetailsStyle";
-import { Link } from "react-router-dom";
-import { RemoveRedEye } from "@mui/icons-material";
 import { User } from "../../../http/User";
 import { useState } from "react";
 import Cookies from "js-cookie";
@@ -78,25 +74,13 @@ export default function ListItem({ user }: ListItemProps) {
 					</Typography>
 				</AccordionSummary>
 				<AccordionDetailsStyle>
-					<Box
-						sx={{
-							display: "flex",
-							gap: "10px",
-						}}
-					>
-						<Tooltip title={`Відкрити користувача`}>
-							<IconButton component={Link} to={`/admin/items/${user.id}`}>
-								<RemoveRedEye sx={{ color: "primary.main" }} />
-							</IconButton>
-						</Tooltip>
-					</Box>
 					<Box>
 						<Typography variant='h6'>Зареєстровано:</Typography>
-						<Typography variant='body1'>{user.createdAt.toString()}</Typography>
+						<Typography variant='body1'>{user.createdAt.toLocaleString()}</Typography>
 					</Box>
 					<Box>
-						<Typography variant='h6'>Роль:{role === "admin" ? ` ${role}` : ""}</Typography>
-						{role !== "admin" && (
+						<Typography variant='h6'>Роль: {role.toLowerCase() === "admin" ? ` ${role}` : ""}</Typography>
+						{role.toLowerCase() !== "admin" && (
 							<Select
 								labelId='role'
 								id='role'

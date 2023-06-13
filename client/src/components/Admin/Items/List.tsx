@@ -3,7 +3,7 @@ import ListItem from "./ListItem";
 import { Item } from "../../../http/Items";
 import ItemsTopBox from "../../Items/ItemsTopBox";
 import Pagination from "../../Common/Pagination";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../../CardsGrid/NotFoundBox";
 
 type ListProps = {
 	items?: Item[];
@@ -34,19 +34,13 @@ export default function List({ items, onDelete, sorting, limitation, pagination 
 			<ItemsTopBox sorting={sorting} limitation={limitation} />
 			<Pagination data={pagination} />
 			<MuiList>
-				{items ? (
+				{items && items.length > 0 ? (
 					items.map((item) => <ListItem key={item.id.toString(16)} item={item} onDelete={onDelete} />)
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Предметів не знайдено
-					</Typography>
+					<NotFoundBox text='Товари не знайдено' />
 				)}
 			</MuiList>
-			<Pagination data={pagination} />
+			{items && items.length > 0 && <Pagination data={pagination} />}
 		</Box>
 	);
 }

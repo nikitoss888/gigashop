@@ -1,6 +1,6 @@
 import WidgetSingle from "../Cloudinary/WidgetSingle";
 import { useState } from "react";
-import { Box, Button, ButtonGroup, Container, TextField } from "@mui/material";
+import { Alert, AlertColor, AlertTitle, Box, Button, ButtonGroup, Container, Dialog, TextField } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { Controller, FormProvider, useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { LogIn, userState } from "../store/User";
 import { useRecoilState } from "recoil";
 import { useNavigate } from "react-router-dom";
 import ClientError from "../ClientError";
+import { AxiosError } from "axios";
 
 const schema = yup.object().shape({
 	login: yup
@@ -67,6 +68,7 @@ const ImagePreview = styled("img")`
 `;
 
 export default function Register() {
+	document.title = "Реєстрація — gigashop";
 	const [user, setUser] = useRecoilState(userState);
 	const navigate = useNavigate();
 
@@ -89,9 +91,15 @@ export default function Register() {
 		setImage(null);
 	};
 
+	const [alert, setAlert] = useState<{
+		title: string;
+		message: string;
+		severity: AlertColor | undefined;
+	}>({ title: "", message: "", severity: undefined });
+	const [openDialog, setOpenDialog] = useState(false);
+
 	const onSubmit = async (data: any) => {
 		const localImage = image || (process.env.REACT_APP_DEFAULT_USER_IMAGE as string);
-		console.log({ ...data, image: localImage });
 		const result = await RegisterRequest({
 			login: data.login,
 			email: data.email,
@@ -100,13 +108,34 @@ export default function Register() {
 			lastName: data.lastName,
 			image: localImage,
 		}).catch((e) => {
+			console.log(e);
+			if (e instanceof AxiosError) {
+				let response;
+				let status: string | number = 500;
+				let message = "Помилка реєстрації";
+
+				if (e.response) response = e.response;
+
+				if (response && response.data) {
+					message = response.data.message ? response.data.message : message;
+					status = response.status ? response.status : status;
+				}
+
+				return new ClientError(status, message);
+			}
 			if (e instanceof ClientError) {
 				return e;
 			}
 			return new ClientError(500, "Помилка реєстрації");
 		});
 		if (result instanceof ClientError) {
-			throw result;
+			setAlert({
+				title: "Помилка",
+				message: result.message,
+				severity: "error",
+			});
+			setOpenDialog(true);
+			return;
 		}
 
 		const logInResult = LogIn(setUser, result.token);
@@ -120,183 +149,191 @@ export default function Register() {
 	};
 
 	return (
-		<Container
-			sx={{
-				height: "100%",
-				mt: "15px",
-			}}
-		>
-			<Typography variant='h4' textAlign='center' my={3}>
-				Реєстрація
-			</Typography>
-			<FormProvider {...methods}>
-				<Form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
-					<Box
-						sx={{
-							gridColumn: "1 / 3",
-							display: "flex",
-							flexDirection: "row",
-							alignItems: "start",
-							justifyContent: "stretch",
-							gap: "20px",
-						}}
-					>
-						<Box width='100%'>
-							<Typography variant='h6'>Ім&apos;я</Typography>
-							<Controller
-								name='firstName'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='Тарас'
-										variant='outlined'
-										fullWidth
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
+		<>
+			<Container
+				sx={{
+					height: "100%",
+					mt: "15px",
+				}}
+			>
+				<Typography variant='h4' textAlign='center' my={3}>
+					Реєстрація
+				</Typography>
+				<FormProvider {...methods}>
+					<Form onSubmit={methods.handleSubmit(onSubmit)} onReset={onReset}>
+						<Box
+							sx={{
+								gridColumn: "1 / 3",
+								display: "flex",
+								flexDirection: "row",
+								alignItems: "start",
+								justifyContent: "stretch",
+								gap: "20px",
+							}}
+						>
+							<Box width='100%'>
+								<Typography variant='h6'>Ім&apos;я</Typography>
+								<Controller
+									name='firstName'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='Тарас'
+											variant='outlined'
+											fullWidth
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
+							<Box width='100%'>
+								<Typography variant='h6'>Прізвище</Typography>
+								<Controller
+									name='lastName'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='Шевченко'
+											variant='outlined'
+											fullWidth
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
 						</Box>
-						<Box width='100%'>
-							<Typography variant='h6'>Прізвище</Typography>
-							<Controller
-								name='lastName'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='Шевченко'
-										variant='outlined'
-										fullWidth
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
+						<Box
+							sx={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "start",
+								gap: "1rem",
+								gridColumn: "1 / 2",
+								gridRow: "2 / 6",
+							}}
+						>
+							<Typography variant='h6'>Завантажити зображення</Typography>
+							<ButtonGroup fullWidth>
+								<UploadButton onClick={uploadImage} variant='contained'>
+									Завантажити
+								</UploadButton>
+								<Button onClick={unsetImage} variant='contained'>
+									Очистити
+								</Button>
+							</ButtonGroup>
+							{image && <ImagePreview src={image} />}
 						</Box>
-					</Box>
-					<Box
-						sx={{
-							display: "flex",
-							flexDirection: "column",
-							alignItems: "start",
-							gap: "1rem",
-							gridColumn: "1 / 2",
-							gridRow: "2 / 6",
-						}}
-					>
-						<Typography variant='h6'>Завантажити зображення</Typography>
-						<ButtonGroup fullWidth>
-							<UploadButton onClick={uploadImage} variant='contained'>
-								Завантажити
-							</UploadButton>
-							<Button onClick={unsetImage} variant='contained'>
+						<Box
+							sx={{
+								gridColumn: "2 / 3",
+								display: "flex",
+								flexDirection: "column",
+								gap: "10px",
+							}}
+						>
+							<Box width='100%'>
+								<Typography variant='h6'>Пошта</Typography>
+								<Controller
+									name='email'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='qwerty@mail.com'
+											variant='outlined'
+											fullWidth
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
+							<Box width='100%'>
+								<Typography variant='h6'>Логін</Typography>
+								<Controller
+									name='login'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='Qw3rty'
+											variant='outlined'
+											fullWidth
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
+							<Box>
+								<Typography variant='h6'>Пароль</Typography>
+								<Controller
+									name='password'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='Qwerty12345'
+											variant='outlined'
+											fullWidth
+											type='password'
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
+							<Box>
+								<Typography variant='h6'>Повторіть пароль</Typography>
+								<Controller
+									name='confirmPassword'
+									control={methods.control}
+									defaultValue=''
+									render={({ field, fieldState: { error } }) => (
+										<TextField
+											{...field}
+											placeholder='Qwerty12345'
+											variant='outlined'
+											fullWidth
+											type='password'
+											error={!!error}
+											helperText={error ? error.message : null}
+										/>
+									)}
+								/>
+							</Box>
+						</Box>
+						<ButtonGroup
+							sx={{
+								gridColumn: "1 / -1",
+							}}
+							fullWidth
+						>
+							<SubmitButton type='submit' variant='contained'>
+								Відправити
+							</SubmitButton>
+							<Button type='reset' variant='contained'>
 								Очистити
 							</Button>
 						</ButtonGroup>
-						{image && <ImagePreview src={image} />}
-					</Box>
-					<Box
-						sx={{
-							gridColumn: "2 / 3",
-							display: "flex",
-							flexDirection: "column",
-							gap: "10px",
-						}}
-					>
-						<Box width='100%'>
-							<Typography variant='h6'>Пошта</Typography>
-							<Controller
-								name='email'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='qwerty@mail.com'
-										variant='outlined'
-										fullWidth
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
-						</Box>
-						<Box width='100%'>
-							<Typography variant='h6'>Логін</Typography>
-							<Controller
-								name='login'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='Qw3rty'
-										variant='outlined'
-										fullWidth
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
-						</Box>
-						<Box>
-							<Typography variant='h6'>Пароль</Typography>
-							<Controller
-								name='password'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='Qwerty12345'
-										variant='outlined'
-										fullWidth
-										type='password'
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
-						</Box>
-						<Box>
-							<Typography variant='h6'>Повторіть пароль</Typography>
-							<Controller
-								name='confirmPassword'
-								control={methods.control}
-								defaultValue=''
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										placeholder='Qwerty12345'
-										variant='outlined'
-										fullWidth
-										type='password'
-										error={!!error}
-										helperText={error ? error.message : null}
-									/>
-								)}
-							/>
-						</Box>
-					</Box>
-					<ButtonGroup
-						sx={{
-							gridColumn: "1 / -1",
-						}}
-						fullWidth
-					>
-						<SubmitButton type='submit' variant='contained'>
-							Відправити
-						</SubmitButton>
-						<Button type='reset' variant='contained'>
-							Очистити
-						</Button>
-					</ButtonGroup>
-				</Form>
-			</FormProvider>
-		</Container>
+					</Form>
+				</FormProvider>
+			</Container>
+			<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+				<Alert severity={alert.severity}>
+					<AlertTitle>{alert.title}</AlertTitle>
+					{alert.message}
+				</Alert>
+			</Dialog>
+		</>
 	);
 }

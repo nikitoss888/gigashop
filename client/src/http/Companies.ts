@@ -1,5 +1,6 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { Item } from "./Items";
+import axiosInstance from "./axiosInstance";
 
 export type Company = {
 	id: number;
@@ -27,8 +28,8 @@ type GetAllCompaniesReturn = {
 	totalCount: number;
 };
 export const GetAllCompaniesRequest = async (params: GetAllCompaniesParams) => {
-	return await axios
-		.get<GetAllCompaniesReturn>(`/api/shop/companies`, {
+	return await axiosInstance
+		.get<GetAllCompaniesReturn>(`/shop/companies`, {
 			params: params,
 		})
 		.then((res) => {
@@ -44,8 +45,8 @@ export type GetCompanyReturn = Company & {
 	ItemsPublished: Item[];
 };
 export const GetCompanyRequest = async (id: number, admin?: boolean) => {
-	return await axios
-		.get<GetCompanyReturn>(`/api/shop/companies/${id}`, {
+	return await axiosInstance
+		.get<GetCompanyReturn>(`/shop/companies/${id}`, {
 			params: {
 				includeDeveloped: true,
 				includePublished: true,
@@ -70,8 +71,8 @@ type CreateCompanyParams = {
 };
 type CreateCompanyReturn = Company;
 export const CreateCompanyRequest = async (token: string, params: CreateCompanyParams) => {
-	return await axios
-		.post<CreateCompanyReturn>(`/api/shop/companies`, params, {
+	return await axiosInstance
+		.post<CreateCompanyReturn>(`/shop/companies`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -94,8 +95,8 @@ type UpdateCompanyParams = {
 };
 type UpdateCompanyReturn = Company;
 export const UpdateCompanyRequest = async (token: string, id: number, params: UpdateCompanyParams) => {
-	return await axios
-		.patch<UpdateCompanyReturn>(`/api/shop/companies/${id}`, params, {
+	return await axiosInstance
+		.patch<UpdateCompanyReturn>(`/shop/companies/${id}`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -109,8 +110,8 @@ export const UpdateCompanyRequest = async (token: string, id: number, params: Up
 };
 
 export const DeleteCompanyRequest = async (token: string, id: number) => {
-	return await axios
-		.delete<{ ok: boolean }>(`/api/shop/companies/${id}`, {
+	return await axiosInstance
+		.delete<{ ok: boolean }>(`/shop/companies/${id}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

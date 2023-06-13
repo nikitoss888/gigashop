@@ -1,5 +1,6 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { Item } from "./Items";
+import axiosInstance from "./axiosInstance";
 
 export type Genre = {
 	id: number;
@@ -33,8 +34,8 @@ export const GetAllGenresRequest = async (params: GetAllGenresParams) => {
 		  }
 		: {};
 
-	return await axios
-		.get<GetAllGenresReturn>(`/api/shop/genres`, {
+	return await axiosInstance
+		.get<GetAllGenresReturn>(`/shop/genres`, {
 			params: {
 				...requestParams,
 				name: params.name,
@@ -54,8 +55,8 @@ type GetGenreReturn = Genre & {
 	Items?: Item[];
 };
 export const GetGenreRequest = async (id: number, admin?: boolean) => {
-	return await axios
-		.get<GetGenreReturn>(`/api/shop/genres/${id}`, {
+	return await axiosInstance
+		.get<GetGenreReturn>(`/shop/genres/${id}`, {
 			params: {
 				includeItems: true,
 				includeHidden: admin,
@@ -76,8 +77,8 @@ type CreateGenreParams = {
 };
 type CreateGenreReturn = Genre;
 export const CreateGenreRequest = async (token: string, params: CreateGenreParams) => {
-	return await axios
-		.post<CreateGenreReturn>(`/api/shop/genres`, params, {
+	return await axiosInstance
+		.post<CreateGenreReturn>(`/shop/genres`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -85,7 +86,7 @@ export const CreateGenreRequest = async (token: string, params: CreateGenreParam
 		.then((res) => {
 			return res.data;
 		})
-		.catch((err: AxiosError) => {
+		.catch((err: AxiosError | Error) => {
 			throw new Error(err.message);
 		});
 };
@@ -97,8 +98,8 @@ type UpdateGenreParams = {
 };
 type UpdateGenreReturn = Genre;
 export const UpdateGenreRequest = async (token: string, id: number, params: UpdateGenreParams) => {
-	return await axios
-		.patch<UpdateGenreReturn>(`/api/shop/genres/${id}`, params, {
+	return await axiosInstance
+		.patch<UpdateGenreReturn>(`/shop/genres/${id}`, params, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -112,8 +113,8 @@ export const UpdateGenreRequest = async (token: string, id: number, params: Upda
 };
 
 export const DeleteGenreRequest = async (token: string, id: number) => {
-	return await axios
-		.delete<{ ok: boolean }>(`/api/shop/genres/${id}`, {
+	return await axiosInstance
+		.delete<{ ok: boolean }>(`/shop/genres/${id}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

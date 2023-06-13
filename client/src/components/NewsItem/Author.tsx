@@ -4,6 +4,7 @@ import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { Link } from "react-router-dom";
 import { Delete, Edit } from "@mui/icons-material";
+import { UserAtom } from "../../store/User";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -34,44 +35,48 @@ const InfoBox = styled(Box)`
 `;
 
 type AuthorProps = {
-	user: User;
+	author: User;
+	user?: UserAtom;
 	publicationId: number;
+	onDelete: () => void;
 };
-export default function Author({ user, publicationId }: AuthorProps) {
+export default function Author({ author, user, publicationId, onDelete }: AuthorProps) {
 	return (
 		<BoxStyle>
 			<AvatarBox>
-				<Avatar src={user.image} alt={user.login} />
+				<Avatar src={author.image} alt={author.login} />
 			</AvatarBox>
 			<InfoBox>
 				<Typography variant='h4' component='h3' color='primary'>
-					{`${user.firstName} ${user.lastName}`}
+					{`${author.firstName} ${author.lastName}`}
 				</Typography>
 				<Typography
 					variant='subtitle2'
 					component='h4'
-					color={user.role.toLowerCase() === "user" ? "primary" : "accent.main"}
+					color={author.role.toLowerCase() === "user" ? "primary" : "accent.main"}
 				>
-					{user.role}
+					{author.role}
 				</Typography>
 			</InfoBox>
-			<Box
-				sx={{
-					display: "flex",
-					gap: "10px",
-				}}
-			>
-				<Tooltip title={`Редагувати публікацію`}>
-					<IconButton component={Link} to={`/news/${publicationId}/edit`}>
-						<Edit sx={{ color: "primary.main" }} />
-					</IconButton>
-				</Tooltip>
-				<Tooltip title={`Видалити публікацію`}>
-					<IconButton>
-						<Delete color='error' />
-					</IconButton>
-				</Tooltip>
-			</Box>
+			{user && user.id === author.id && (
+				<Box
+					sx={{
+						display: "flex",
+						gap: "10px",
+					}}
+				>
+					<Tooltip title={`Редагувати публікацію`}>
+						<IconButton component={Link} to={`/news/${publicationId}/edit`}>
+							<Edit sx={{ color: "primary.main" }} />
+						</IconButton>
+					</Tooltip>
+					<Tooltip title={`Видалити публікацію`}>
+						<IconButton onClick={onDelete}>
+							<Delete color='error' />
+						</IconButton>
+					</Tooltip>
+				</Box>
+			)}
 		</BoxStyle>
 	);
 }

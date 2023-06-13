@@ -3,7 +3,7 @@ import { Genre } from "../../../http/Genres";
 import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../../CardsGrid/NotFoundBox";
 
 type ListProps = {
 	genres?: Genre[];
@@ -66,7 +66,7 @@ export default function List({ genres, onDelete, sorting, limitation, pagination
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{genres ? (
+				{genres && genres.length > 0 ? (
 					genres.map((genre, index: number) => (
 						<>
 							<ListItem key={genre.id.toString(16)} genre={genre} onDelete={onDelete} />
@@ -76,16 +76,10 @@ export default function List({ genres, onDelete, sorting, limitation, pagination
 						</>
 					))
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Жанрів не знайдено
-					</Typography>
+					<NotFoundBox text='Жанри не знайдено' />
 				)}
 			</MuiList>
-			<Pagination data={pagination} />
+			{genres && genres.length > 0 && <Pagination data={pagination} />}
 		</Box>
 	);
 }

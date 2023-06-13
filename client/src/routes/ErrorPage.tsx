@@ -3,6 +3,8 @@ import styled from "@emotion/styled";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { Box } from "@mui/material";
+import ClientError from "../ClientError";
+import { useErrorBoundary } from "react-error-boundary";
 
 const ErrorWrapper = styled(Box)`
 	display: flex;
@@ -13,10 +15,10 @@ const ErrorWrapper = styled(Box)`
 `;
 
 type ErrorPageProps = {
-	error?: Error;
-	resetErrorBoundary?: () => void;
+	error?: Error | ClientError;
 };
-export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps = {}) {
+export default function ErrorPage({ error }: ErrorPageProps) {
+	const { resetBoundary } = useErrorBoundary();
 	const navigate = useNavigate();
 	if (process.env.NODE_ENV !== "production") console.error(error);
 
@@ -40,28 +42,56 @@ export default function ErrorPage({ error, resetErrorBoundary }: ErrorPageProps 
 		default:
 			title = "Щось пішло не так...";
 	}
-	resetErrorBoundary?.();
 
 	return (
 		<ErrorWrapper>
 			<Typography variant='h2'>{title}</Typography>
 			<Typography variant='h3'>Помилка {name}</Typography>
 			<Typography variant='h4'>{message}</Typography>
-			<Button
-				variant='contained'
+			<Box
 				sx={{
-					backgroundColor: "accent.main",
-					color: "secondary.main",
-					"&:hover": {
-						backgroundColor: "accent.main",
-					},
-				}}
-				onClick={() => {
-					navigate(-1);
+					display: "flex",
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "center",
+					gap: "15px",
 				}}
 			>
-				{location.pathname === "/" ? "На головну" : "Назад"}
-			</Button>
+				<Button
+					variant='contained'
+					sx={{
+						backgroundColor: "accent.main",
+						color: "secondary.main",
+						"&:hover": {
+							backgroundColor: "accent.main",
+						},
+					}}
+					onClick={() => {
+						resetBoundary();
+						navigate(-1);
+					}}
+				>
+					{location.pathname === "/" ? "На головну" : "Назад"}
+				</Button>
+				{name === "401" && (
+					<Button
+						variant='contained'
+						sx={{
+							backgroundColor: "accent.main",
+							color: "secondary.main",
+							"&:hover": {
+								backgroundColor: "accent.main",
+							},
+						}}
+						onClick={() => {
+							resetBoundary();
+							navigate("/login");
+						}}
+					>
+						Увійти
+					</Button>
+				)}
+			</Box>
 		</ErrorWrapper>
 	);
 }

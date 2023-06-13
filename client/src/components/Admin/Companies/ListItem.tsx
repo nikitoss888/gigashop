@@ -42,8 +42,8 @@ export default function ListItem({ company, onDelete }: ListItemProps) {
 					</Tooltip>
 				</Box>
 				<Box>
-					<Typography variant='h6'>Дата випуску:</Typography>
-					<Typography variant='body1'>{company.founded.toString()}</Typography>
+					<Typography variant='h6'>Дата заснування:</Typography>
+					<Typography variant='body1'>{new Date(company.founded).toLocaleDateString()}</Typography>
 				</Box>
 				<Box>
 					<Typography variant='h6'>Директор:</Typography>

@@ -4,7 +4,7 @@ import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
 import { Comment, Publication } from "../../../http/Publications";
 import { User } from "../../../http/User";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../../CardsGrid/NotFoundBox";
 
 type ListProps = {
 	comments?: (Comment & { User: User; Publication: Publication })[];
@@ -68,7 +68,7 @@ export default function List({ comments, sorting, limitation, pagination, linkTo
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{comments ? (
+				{comments && comments.length > 0 ? (
 					comments.map((company, index: number) => (
 						<>
 							<ListItem
@@ -83,16 +83,10 @@ export default function List({ comments, sorting, limitation, pagination, linkTo
 						</>
 					))
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Коментарів не знайдено
-					</Typography>
+					<NotFoundBox text='Коментарів немає' />
 				)}
 			</MuiList>
-			<Pagination data={pagination} />
+			{comments && comments.length > 0 && <Pagination data={pagination} />}
 		</Box>
 	);
 }

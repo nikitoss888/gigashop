@@ -1,10 +1,11 @@
-import { Accordion, AccordionSummary, Box, Divider } from "@mui/material";
+import { Accordion, AccordionSummary, Box, Button, Divider } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import { Link as RouterLink } from "react-router-dom";
 import AccordionDetailsStyle from "../Common/AccordionDetailsStyle";
-import { UserAtom } from "../../store/User";
+import { LogOut, UserAtom, userState } from "../../store/User";
+import { useRecoilState } from "recoil";
 
 const Avatar = styled("img")`
 	width: 45px;
@@ -15,6 +16,7 @@ type LoggedInXsProps = {
 	user: UserAtom;
 };
 export default function LoggedInXs({ user }: LoggedInXsProps) {
+	const [_, setUser] = useRecoilState(userState);
 	return (
 		<Accordion
 			disableGutters
@@ -64,7 +66,18 @@ export default function LoggedInXs({ user }: LoggedInXsProps) {
 				<Typography
 					variant='h6'
 					component={RouterLink}
-					to='/profile'
+					to='/cart'
+					sx={{
+						color: "secondary.main",
+						textDecoration: "none",
+					}}
+				>
+					Кошик
+				</Typography>
+				<Typography
+					variant='h6'
+					component={Button}
+					onClick={() => LogOut(setUser)}
 					sx={{
 						color: "secondary.main",
 						textDecoration: "none",

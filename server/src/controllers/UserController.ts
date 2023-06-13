@@ -94,14 +94,16 @@ class UserController extends Controller {
                     'адміністраторів та модераторів'));
             }
 
+            let error: unknown;
             let token = await UserController._createUser(email, login, firstName, lastName,
                 password, image, role)
                 .catch((e: ApiError | Error | unknown) => {
                     // ToDO: delete image
                     //
                     // if (image) super.deleteFile(USERS_DIR, image);
-                    return next(super.exceptionHandle(e));
+                    error = e;
                 });
+            if (error) return next(super.exceptionHandle(error));
 
             return res.json({message: "Реєстрацію пройдено успішно", token});
         }
@@ -266,7 +268,7 @@ class UserController extends Controller {
                 return next(ApiError.internal('Користувача не знайдено'));
             }
 
-            const data = boughtItems?.map((item: any) => item.dataValues) || [];
+            const data = boughtItems ? boughtItems.map((item: any) => item.dataValues) : [];
 
             return res.json({ ...user.dataValues, BoughtItems: data });
         }
@@ -306,7 +308,6 @@ class UserController extends Controller {
     async buyCart(req: Request, res: Response, next: NextFunction) {
         try {
             const { transactionId } = req.params;
-            console.log({ transactionId });
 
             const alreadyBought = await ItemBought.findOne({ where: { transactionId }});
             if (alreadyBought) return next(ApiError.badRequest('Товари вже придбані'));
@@ -324,8 +325,6 @@ class UserController extends Controller {
                     transactionId
                 };
             });
-
-            console.log({ userId, ids, data });
 
             const bought = await ItemBought.bulkCreate(data);
             await ItemCart.destroy({where: { transactionId }});
@@ -427,7 +426,6 @@ class UserController extends Controller {
             if (user.role.toUpperCase() === ADMIN) return next(ApiError.badRequest('Неможливо змінити роль адміністратора'));
 
             if (![USER, MODERATOR].includes(role.toUpperCase())) role = USER;
-            console.log({ role, result: ![USER, MODERATOR].includes(user.role.toUpperCase()) });
             user.role = role;
 
             const result = await user.save();

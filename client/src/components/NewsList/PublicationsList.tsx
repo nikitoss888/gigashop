@@ -5,7 +5,7 @@ import PublicationItem from "./PublicationItem";
 import Pagination from "../Common/Pagination";
 import NewsTopBox from "./NewsTopBox";
 import { User } from "../../http/User";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../CardsGrid/NotFoundBox";
 
 const BoxStyle = styled(Box)`
 	display: flex;
@@ -34,7 +34,7 @@ export default function PublicationsList({ publications, sorting, limitation, pa
 		<BoxStyle>
 			<NewsTopBox sorting={sorting} limitation={limitation} pagination={pagination} />
 			<BoxStyle>
-				{publications ? (
+				{publications && publications.length > 0 ? (
 					publications.map((publication, index) => (
 						<>
 							<PublicationItem key={publication.id.toString(16)} publication={publication} />
@@ -44,16 +44,10 @@ export default function PublicationsList({ publications, sorting, limitation, pa
 						</>
 					))
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Публікацій не знайдено
-					</Typography>
+					<NotFoundBox text={"Публікацій не знайдено"} />
 				)}
 			</BoxStyle>
-			<Pagination data={pagination} />
+			{publications && publications.length > 0 && <Pagination data={pagination} />}
 		</BoxStyle>
 	);
 }

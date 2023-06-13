@@ -432,10 +432,14 @@ class ItemsController extends Controller {
             let { images } = req.body;
             if (images && !Array.isArray(images)) images = [images];
 
-            let characteristicsParsed: Object | undefined;
-            if (characteristics) {
+            let characteristicsParsed: Object | null | undefined;
+            if (characteristics !== undefined) {
                 characteristicsParsed = JSON.parse(characteristics);
             }
+            else if (characteristics === null) {
+                characteristicsParsed = null;
+            }
+            console.log({ characteristics, characteristicsParsed });
 
             const item = await Item.findByPk(id)
                 .catch((e: unknown) => {
@@ -465,8 +469,7 @@ class ItemsController extends Controller {
                 if (discountTo) item.discountTo = discount ? discountTo : null;
                 if (discountSize !== undefined) item.discountSize = discount ? discountSize : null;
             }
-
-            if (characteristicsParsed) item.characteristics = characteristicsParsed;
+            if (characteristicsParsed !== undefined) item.characteristics = characteristicsParsed;
             if (hide !== undefined) item.hide = hide;
             if (publisherId && await Company.findByPk(publisherId)) item.company_publisherId = publisherId;
 

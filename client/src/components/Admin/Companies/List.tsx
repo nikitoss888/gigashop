@@ -3,7 +3,7 @@ import ListItem from "./ListItem";
 import TopBox from "../../CardsGrid/TopBox";
 import Pagination from "../../Common/Pagination";
 import { Company } from "../../../http/Companies";
-import Typography from "@mui/material/Typography";
+import NotFoundBox from "../../CardsGrid/NotFoundBox";
 
 type ListProps = {
 	companies?: Company[];
@@ -66,7 +66,7 @@ export default function List({ companies, sorting, limitation, pagination, onDel
 			</TopBox>
 			<Pagination data={pagination} />
 			<MuiList>
-				{companies ? (
+				{companies && companies.length > 0 ? (
 					companies.map((company, index: number) => (
 						<>
 							<ListItem key={company.id.toString(16)} company={company} onDelete={onDelete} />
@@ -76,16 +76,10 @@ export default function List({ companies, sorting, limitation, pagination, onDel
 						</>
 					))
 				) : (
-					<Typography
-						component='h6'
-						variant='h6'
-						sx={{ fontWeight: "bold", borderBottom: "2px solid", borderColor: "primary.main" }}
-					>
-						Компаній не знайдено
-					</Typography>
+					<NotFoundBox text='Компанії не знайдено' />
 				)}
 			</MuiList>
-			<Pagination data={pagination} />
+			{companies && companies.length > 0 && <Pagination data={pagination} />}
 		</Box>
 	);
 }

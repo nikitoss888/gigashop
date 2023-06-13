@@ -9,8 +9,9 @@ services:
     ports:
       - 3000:3000
     environment:
-      REACT_APP_NGROK_SERVER_URL: https://a963-188-163-19-100.ngrok-free.app
+      REACT_APP_NGROK_SERVER_URL: https://4433-188-163-19-100.ngrok-free.app
       REACT_APP_NGROK_CLIENT_URL: http://localhost:3000
+      REACT_APP_API_URL: /api
     depends_on:
       - server
 

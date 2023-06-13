@@ -173,22 +173,31 @@ export default function AdminItem() {
 					gap: "10px",
 				}}
 			>
-				{genres?.map((genre) => (
-					<Chip
-						component={Link}
-						to={`/admin/genres/${genre.id}`}
-						key={genre.id.toString(16)}
-						label={genre.name}
-						sx={{ cursor: "pointer" }}
-					/>
-				))}
+				{genres &&
+					genres.map((genre) => (
+						<Chip
+							component={Link}
+							to={`/admin/genres/${genre.id}`}
+							key={genre.id.toString(16)}
+							label={
+								<Typography variant='body2' color='secondary'>
+									{genre.name}
+								</Typography>
+							}
+							sx={{ cursor: "pointer" }}
+						/>
+					))}
 			</Box>
 			<Typography variant='h6'>Видавець:</Typography>
 			{publisher && (
 				<Chip
 					component={Link}
 					to={`/admin/companies/${publisher?.id}`}
-					label={publisher?.name}
+					label={
+						<Typography variant='body2' color='secondary'>
+							{publisher.name}
+						</Typography>
+					}
 					sx={{ cursor: "pointer" }}
 				/>
 			)}
@@ -199,15 +208,20 @@ export default function AdminItem() {
 					gap: "10px",
 				}}
 			>
-				{developers?.map((developer) => (
-					<Chip
-						component={Link}
-						to={`/admin/companies/${developer.id}`}
-						key={developer.id.toString(16)}
-						label={developer.name}
-						sx={{ cursor: "pointer" }}
-					/>
-				))}
+				{developers &&
+					developers.map((developer) => (
+						<Chip
+							component={Link}
+							to={`/admin/companies/${developer.id}`}
+							key={developer.id.toString(16)}
+							label={
+								<Typography variant='body2' color='secondary'>
+									{developer.name}
+								</Typography>
+							}
+							sx={{ cursor: "pointer" }}
+						/>
+					))}
 			</Box>
 			<Typography variant='h6'>Ціна: {item.price}</Typography>
 			<Typography variant='h6'>Кількість: {item.amount}</Typography>
@@ -215,6 +229,18 @@ export default function AdminItem() {
 			<Typography variant='h6'>Рейтинг: {avgRate}</Typography>
 			<Typography variant='h6'>Опис: {item.description}</Typography>
 			<Box>
+				<Typography variant='h6'>Характеристики:</Typography>
+				{Object.entries(item.characteristics).map(([key, value]) => (
+					<Typography key={key} variant='body1'>
+						{key}: {value}
+					</Typography>
+				))}
+			</Box>
+			<Box
+				sx={{
+					width: "100%",
+				}}
+			>
 				<Typography variant='h6' mb={2}>
 					Коментарі:
 				</Typography>

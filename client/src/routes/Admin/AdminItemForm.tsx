@@ -285,7 +285,7 @@ export default function AdminItemForm() {
 	const onSubmit = async (hookFormData: any) => {
 		let characteristicsObject: { [key: string]: string | number | boolean } | undefined;
 
-		if (characteristics) {
+		if (characteristics && characteristics.length > 0) {
 			characteristicsObject = {};
 			const characteristicsArray = characteristics.split(/;\n?/);
 			for (const characteristic of characteristicsArray) {
@@ -294,6 +294,7 @@ export default function AdminItemForm() {
 				characteristicsObject[key] = value;
 			}
 		}
+		console.log({ characteristicsObject });
 
 		const token = Cookies.get("token");
 		if (!token) throw new ClientError(403, "Ви не авторизовані");
@@ -316,7 +317,7 @@ export default function AdminItemForm() {
 				coverImage: coverImage || undefined,
 				characteristics: characteristicsObject,
 				hide: hookFormData.hide,
-				publisherId: itemPublisher?.id || undefined,
+				publisherId: itemPublisher ? itemPublisher.id : undefined,
 				developersIds: itemDevelopers.map((developer) => developer.id),
 				genresIds: itemGenres.map((genre) => genre.id),
 			}).catch((err) => {
@@ -329,7 +330,7 @@ export default function AdminItemForm() {
 				setAlert({
 					severity: "error",
 					title: "Помилка",
-					message: "Дата виходу не вказана",
+					message: "Дата випуску не вказана",
 				});
 				setOpenDialog(true);
 				return;
@@ -577,7 +578,11 @@ export default function AdminItemForm() {
 											<Chip
 												{...getTagProps({ index })}
 												key={index}
-												label={<Typography variant='body2'>{option.name}</Typography>}
+												label={
+													<Typography variant='body2' color='secondary'>
+														{option.name}
+													</Typography>
+												}
 											/>
 										));
 									}}
@@ -606,7 +611,11 @@ export default function AdminItemForm() {
 											<Chip
 												{...getTagProps({ index })}
 												key={index}
-												label={<Typography variant='body2'>{option.name}</Typography>}
+												label={
+													<Typography variant='body2' color='secondary'>
+														{option.name}
+													</Typography>
+												}
 											/>
 										));
 									}}
@@ -633,7 +642,11 @@ export default function AdminItemForm() {
 											<Chip
 												{...getTagProps({ index })}
 												key={index}
-												label={<Typography variant='body2'>{option.name}</Typography>}
+												label={
+													<Typography variant='body2' color='secondary'>
+														{option.name}
+													</Typography>
+												}
 											/>
 										));
 									}}
@@ -746,7 +759,7 @@ export default function AdminItemForm() {
 							<Tooltip title='Форма запису: "назва_характеристики: характеристика;", розділення через ";" із новим рядком'>
 								<InputBox>
 									<Typography variant='h6' component='label' htmlFor='characteristics'>
-										Характеристики *
+										Характеристики
 									</Typography>
 									<TextField
 										id='characteristics'

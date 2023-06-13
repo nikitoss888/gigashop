@@ -116,7 +116,7 @@ export default function AdminBase() {
 							<AccordionLink variant='h6' component={RouterLink} to='/admin/news'>
 								Всі публікації
 							</AccordionLink>
-							<AccordionLink variant='h6' component={RouterLink} to='/admin/news/create'>
+							<AccordionLink variant='h6' component={RouterLink} to='/news/create'>
 								Нова публікація
 							</AccordionLink>
 						</AccordionDetailsStyle>

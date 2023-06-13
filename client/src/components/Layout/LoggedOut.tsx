@@ -14,7 +14,7 @@ export default function LoggedOut() {
 			sx={{
 				display: "flex",
 				flexDirection: "row",
-				gap: "10px",
+				gap: "20px",
 				justifyContent: {
 					xs: "space-between",
 					md: "flex-end",
@@ -22,10 +22,10 @@ export default function LoggedOut() {
 			}}
 		>
 			<Link variant='h6' component={RouterLink} to='/login'>
-				Login
+				Увійти
 			</Link>
 			<Link variant='h6' component={RouterLink} to='/register'>
-				Register
+				Зареєструватись
 			</Link>
 		</Box>
 	);

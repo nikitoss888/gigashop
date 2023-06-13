@@ -7,15 +7,21 @@ import { Company, Genre, Item, ItemRate, Publication, PublicationComment, User, 
 export default class Controller {
     protected exceptionHandle(error: unknown): ApiError {
         if (error instanceof SequelizeValidationError) {
+            console.log(error);
+            if (error.name === 'SequelizeUniqueConstraintError') {
+                return ApiError.badRequest("Запис із даними значеннями вже існує", error.errors);
+            }
             return ApiError.badRequest(error.name, error.errors);
         }
-        else if (error instanceof ApiError) {
+        if (error instanceof ApiError) {
+            console.log({ return: "ApiError" });
             return error;
         }
-        else if (error instanceof Error) {
+        if (error instanceof Error) {
+            console.log({ error, isError: error instanceof Error });
             return ApiError.internal(error.message);
         }
-        else return ApiError.internal("Помилка обробки запиту");
+        return ApiError.internal("Помилка обробки запиту");
     }
 
     // Delete file from static folder
