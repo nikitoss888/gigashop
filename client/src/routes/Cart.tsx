@@ -69,7 +69,7 @@ export default function Cart() {
 				product_description: "Відеоігри та/або контент до них",
 				transactionId: result.transactionId,
 			});
-			console.log({ transactionId: result.transactionId });
+			console.log({ transactionId: result.transactionId, server_url });
 		} else {
 			throw new ClientError(500, "Помилка при встановленні даних транзакції");
 		}

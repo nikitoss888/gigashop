@@ -48,7 +48,9 @@ export default function HeaderXsNav({ isAdminRoute, user }: HeaderXsNavProps) {
 								color: "secondary.main",
 							}}
 						>
-							<Typography variant='h6'>Магазин</Typography>
+							<Typography variant='h6' color='secondary'>
+								Магазин
+							</Typography>
 						</AccordionSummary>
 						<AccordionDetailsStyle>
 							<Typography

@@ -7,6 +7,7 @@ const ContentBox = styled(Box)`
 	display: flex;
 	flex-direction: row;
 	justify-content: space-between;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px;
 `;

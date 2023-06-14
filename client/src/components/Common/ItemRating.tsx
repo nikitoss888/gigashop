@@ -15,7 +15,7 @@ export default function ItemRating({ comments }: RateProps) {
 	avgRate = Math.round(avgRate * 10) / 10;
 
 	return (
-		<DataGroup title='Рейтинг'>
+		<DataGroup title='Оцінка'>
 			{avgRate === 0 ? (
 				<Typography variant='body1'>Не вказано</Typography>
 			) : (

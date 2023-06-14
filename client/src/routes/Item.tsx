@@ -186,6 +186,7 @@ export default function Item() {
 						sx={{
 							gridColumn: 1,
 							gridRow: "2 / 8",
+							minWidth: "500px",
 						}}
 					>
 						<Carousel
