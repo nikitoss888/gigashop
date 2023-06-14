@@ -101,9 +101,9 @@ export default function Home() {
 							marginInline: 5,
 						}}
 					>
-						Ставайте частиною спільноти {process.env.REACT_APP_PROJECT_NAME}! Шукайте та пишіть цікаві
-						<Link to='/news'>публікації</Link> на окремій сторінці новин та коментуйте їх. Дізнавайтеся про
-						нові ігри та події, що відбуваються в ігровому світі.
+						Ставайте частиною спільноти {process.env.REACT_APP_PROJECT_NAME}! Шукайте та пишіть цікаві{" "}
+						<Link to='/news'>публікації</Link> на окремій сторінці та оцінюйте роботи інших. Дізнавайтеся
+						про нові ігри та події, що відбуваються в ігровому світі.
 					</Typography>
 					<ContentImage
 						src='https://res.cloudinary.com/dnqlgypji/image/upload/v1686749469/gigashop/static/pemj9gkj8qrbsenasgyr.jpg'
