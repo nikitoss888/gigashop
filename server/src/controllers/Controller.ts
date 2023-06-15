@@ -24,6 +24,7 @@ export default class Controller {
         return ApiError.internal("Помилка обробки запиту");
     }
 
+    // ToDo: change file deletion from local static to cloud storage
     // Delete file from static folder
     protected deleteFile(dir: string, file: string) {
         const fs = require('fs');

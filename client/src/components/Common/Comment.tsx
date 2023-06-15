@@ -17,6 +17,7 @@ const CommentBox = styled(Box)`
 const Avatar = styled("img")`
 	width: 100%;
 	object-fit: cover;
+	aspect-ratio: 1;
 	border-radius: 50%;
 `;
 

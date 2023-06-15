@@ -12,6 +12,8 @@ const Avatar = styled("img")`
 	width: 45px;
 	aspect-ratio: 1;
 	border-radius: 50%;
+	object-fit: cover;
+	object-position: top;
 `;
 type LoggedInMdProps = {
 	user: UserAtom;

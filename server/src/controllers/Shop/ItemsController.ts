@@ -374,21 +374,16 @@ class ItemsController extends Controller {
 
         const { items, totalCount } = result;
 
-        const companies = await Company.findAll({
-            where: {
-                hide: {
-                    [Op.or]: [false, includeHidden]
-                },
-            },
-        });
+        let where = {};
+        if (includeHidden) where = {
+            hide: {
+                [Op.or]: [false, includeHidden]
+            }
+        }
 
-        const genres = await Genre.findAll({
-            where: {
-                hide: {
-                    [Op.or]: [false, includeHidden]
-                },
-            },
-        });
+        const companies = await Company.findAll({ where });
+
+        const genres = await Genre.findAll({ where });
 
         if (!items) return next(ApiError.notFound('Товари не знайдено'));
         return res.json({ items, totalCount, companies, genres });

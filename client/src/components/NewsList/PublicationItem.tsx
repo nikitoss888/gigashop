@@ -8,6 +8,7 @@ import { User } from "../../http/User";
 
 const MiniAvatarStyle = styled("img")`
 	width: 30px;
+	object-fit: cover;
 	aspect-ratio: 1/1;
 	border-radius: 50%;
 `;

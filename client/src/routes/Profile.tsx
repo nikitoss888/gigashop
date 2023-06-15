@@ -74,7 +74,8 @@ export default function Profile() {
 							width: "100px",
 							height: "100px",
 							aspectRatio: 1,
-							objectFit: "contain",
+							objectFit: "cover",
+							objectPosition: "top",
 						}}
 					/>
 					<Box

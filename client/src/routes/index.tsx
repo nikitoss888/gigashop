@@ -26,7 +26,7 @@ import AdminGenreForm from "./Admin/AdminGenreForm";
 import AdminCompanies from "./Admin/AdminCompanies";
 import AdminCompanyForm from "./Admin/AdminCompanyForm";
 import AdminNewsComments, { SortSwitch as PublicationsCommentsSortSwitch } from "./Admin/AdminNewsComments";
-import AdminItemsComments, { SortSwitch as ItemsRatesSortSwitch } from "./Admin/AdminItemsRates";
+import AdminItemsRates, { SortSwitch as ItemsRatesSortSwitch } from "./Admin/AdminItemsRates";
 import AdminUsers, { SortSwitch as UsersSortSwitch } from "./Admin/AdminUsers";
 import Home from "./Home";
 import AdminCompany from "./Admin/AdminCompany";
@@ -168,8 +168,6 @@ const SearchProfile = async () => {
 	const publications = user.Publications;
 	const publicationsComments = user.CommentsList;
 	const itemsRates = user.Rates;
-
-	console.log({ user, cart, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates });
 
 	return { user, cart, boughtData, boughtItems, wishlist, publications, publicationsComments, itemsRates };
 };
@@ -327,7 +325,6 @@ export const GetPublications = async (params: GetPublicationsParams) => {
 	if (searchParams && searchParams.authors) {
 		authorsIds = searchParams.authors.map((author) => author.id);
 	}
-	console.log({ tags: searchParams ? searchParams.tags : undefined, authorsIds });
 
 	const result = await GetAllPublicationsRequest({
 		admin,
@@ -480,7 +477,6 @@ export default function Router() {
 							path: "/profile",
 							element: <Profile />,
 							loader: async () => {
-								console.log("profile loader");
 								return await SearchProfile();
 							},
 						},
@@ -488,7 +484,6 @@ export default function Router() {
 							path: "/cart",
 							element: <Cart />,
 							loader: async () => {
-								console.log("cart loader");
 								const userData = await SearchProfile();
 								if (userData.error) return { error: userData.error };
 
@@ -501,7 +496,6 @@ export default function Router() {
 							path: "/cart/success",
 							element: <CartSuccess />,
 							loader: async () => {
-								console.log("cart loader");
 								return await SearchProfile();
 							},
 						},
@@ -509,7 +503,6 @@ export default function Router() {
 							path: "/shop/items",
 							element: <Items />,
 							loader: async () => {
-								console.log("items loader");
 								const { data, totalCount, limit, page, sortBy, error, companies, genres } =
 									await GetItems({});
 
@@ -529,7 +522,6 @@ export default function Router() {
 							path: "/shop/items/:id",
 							element: <Item />,
 							loader: ({ params }) => {
-								console.log("item loader");
 								return SearchItem(params);
 							},
 						},
@@ -537,7 +529,6 @@ export default function Router() {
 							path: "/shop/genres",
 							element: <Genres />,
 							loader: async () => {
-								console.log("genres loader");
 								const { data, error } = await GetGenres({});
 								return { data, error };
 							},
@@ -546,7 +537,6 @@ export default function Router() {
 							path: "/shop/genres/:id",
 							element: <Genre />,
 							loader: ({ params }) => {
-								console.log("genre loader");
 								return SearchGenre(params);
 							},
 						},
@@ -554,7 +544,6 @@ export default function Router() {
 							path: "/shop/companies",
 							element: <Companies />,
 							loader: async () => {
-								console.log("companies loader");
 								const { data, totalCount, limit, page, sortBy, error } = await GetCompanies({});
 								return {
 									data,
@@ -570,7 +559,6 @@ export default function Router() {
 							path: "/shop/companies/:id",
 							element: <Company />,
 							loader: ({ params }) => {
-								console.log("company loader");
 								return SearchCompany(params);
 							},
 						},
@@ -578,7 +566,6 @@ export default function Router() {
 							path: "/news",
 							element: <NewsList />,
 							loader: async () => {
-								console.log("news loader");
 								const { data, totalCount, limit, page, sortBy } = await GetPublications({});
 								return {
 									data,
@@ -593,7 +580,6 @@ export default function Router() {
 							path: "/news/:id",
 							element: <NewsItem />,
 							loader: ({ params }) => {
-								console.log("news item loader");
 								return SearchPublication(params);
 							},
 						},
@@ -601,7 +587,6 @@ export default function Router() {
 							path: "/news/create",
 							element: <NewsForm />,
 							loader: () => {
-								console.log("news create loader");
 								return { publication: undefined };
 							},
 						},
@@ -609,7 +594,6 @@ export default function Router() {
 							path: "/news/:id/edit",
 							element: <NewsForm />,
 							loader: ({ params }) => {
-								console.log("news edit loader");
 								return SearchPublication(params, user);
 							},
 						},
@@ -627,7 +611,6 @@ export default function Router() {
 							path: "/admin/statistics",
 							element: <AdminStatistics />,
 							loader: async () => {
-								console.log("admin statistics loader");
 								return await GetStatistics();
 							},
 						},
@@ -635,7 +618,6 @@ export default function Router() {
 							path: "/admin/users",
 							element: <AdminUsers />,
 							loader: async () => {
-								console.log("admin users loader");
 								const { data, totalCount, limit, page, sortBy, error } = await GetUsers({});
 								return {
 									data,
@@ -651,7 +633,6 @@ export default function Router() {
 							path: "/admin/items",
 							element: <AdminItems />,
 							loader: async () => {
-								console.log("admin items loader");
 								const { data, totalCount, limit, page, sortBy, error } = await GetItems({
 									admin: true,
 								});
@@ -670,7 +651,6 @@ export default function Router() {
 							path: "/admin/items/:id",
 							element: <AdminItem />,
 							loader: ({ params }) => {
-								console.log("admin item loader");
 								return SearchItem(params, true);
 							},
 						},
@@ -691,7 +671,6 @@ export default function Router() {
 							path: "/admin/items/:id/edit",
 							element: <AdminItemForm />,
 							loader: async ({ params }) => {
-								console.log("admin item edit loader");
 								const itemData = await SearchItem(params, true);
 								if (itemData.error) return { error: itemData.error };
 
@@ -708,7 +687,6 @@ export default function Router() {
 							path: "/admin/genres",
 							element: <AdminGenres />,
 							loader: async () => {
-								console.log("admin genres loader");
 								const { data, totalCount, sortBy, limit, page, error } = await GetGenres({
 									admin: true,
 								});
@@ -726,7 +704,6 @@ export default function Router() {
 							path: "/admin/genres/:id",
 							element: <AdminGenre />,
 							loader: ({ params }) => {
-								console.log("admin genre loader");
 								return SearchGenre(params, true);
 							},
 						},
@@ -741,7 +718,6 @@ export default function Router() {
 							path: "/admin/genres/:id/edit",
 							element: <AdminGenreForm />,
 							loader: ({ params }) => {
-								console.log("admin genre edit loader");
 								return SearchGenre(params);
 							},
 						},
@@ -749,7 +725,6 @@ export default function Router() {
 							path: "/admin/companies",
 							element: <AdminCompanies />,
 							loader: async () => {
-								console.log("admin companies loader");
 								const { data, totalCount, sortBy, limit, page, error } = await GetCompanies({
 									admin: true,
 								});
@@ -767,7 +742,6 @@ export default function Router() {
 							path: "/admin/companies/:id",
 							element: <AdminCompany />,
 							loader: ({ params }) => {
-								console.log("admin company loader");
 								return SearchCompany(params, true);
 							},
 						},
@@ -782,7 +756,6 @@ export default function Router() {
 							path: "/admin/companies/:id/edit",
 							element: <AdminCompanyForm />,
 							loader: ({ params }) => {
-								console.log("admin company edit loader");
 								return SearchCompany(params);
 							},
 						},
@@ -790,7 +763,6 @@ export default function Router() {
 							path: "/admin/news",
 							element: <AdminNews />,
 							loader: async () => {
-								console.log("admin news loader");
 								const { data, totalCount, sortBy, limit, page, error } = await GetPublications({
 									admin: true,
 								});
@@ -808,7 +780,6 @@ export default function Router() {
 							path: "/admin/news/:id",
 							element: <AdminNewsItem />,
 							loader: ({ params }) => {
-								console.log("admin news item loader");
 								return SearchPublication(params, user);
 							},
 						},
@@ -816,7 +787,6 @@ export default function Router() {
 							path: "/admin/comments/news",
 							element: <AdminNewsComments />,
 							loader: async () => {
-								console.log("admin news comments loader");
 								const { data, totalCount, limit, page, sortBy, error } = await GetPublicationsComments(
 									{}
 								);
@@ -832,9 +802,8 @@ export default function Router() {
 						},
 						{
 							path: "/admin/comments/items",
-							element: <AdminItemsComments />,
+							element: <AdminItemsRates />,
 							loader: async () => {
-								console.log("admin items comments loader");
 								const { data, totalCount, limit, page, sortBy, error } = await GetItemsRates({});
 								return {
 									data,

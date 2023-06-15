@@ -60,8 +60,15 @@ export default function Item() {
 	const wishlisted = item.WishlistedUsers || [];
 	const carted = item.CartedUsers || [];
 
-	const [isWishlisted, setIsWishlisted] = useState(wishlisted?.find((user) => user.id === user?.id) !== undefined);
-	const [isCarted, setIsCarted] = useState(carted?.find((user) => user.id === user?.id) !== undefined);
+	const is_wishlisted =
+		wishlisted.length > 0 && user
+			? wishlisted.find((wishlistedUser) => wishlistedUser.id === user.id) !== undefined
+			: false;
+	const is_carted =
+		carted.length > 0 && user ? carted.find((cartedUser) => cartedUser.id === user.id) !== undefined : false;
+
+	const [isWishlisted, setIsWishlisted] = useState(is_wishlisted);
+	const [isCarted, setIsCarted] = useState(is_carted);
 
 	const [openDialog, setOpenDialog] = useState(false);
 	const [alert, setAlert] = useState<{

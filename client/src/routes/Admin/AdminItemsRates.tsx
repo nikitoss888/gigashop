@@ -18,8 +18,8 @@ const SortSwitch = (sortBy: string) => {
 	}
 };
 
-export default function AdminNewsComments() {
-	document.title = "Коментарі до товарів - Адміністративна панель - gigashop";
+export default function AdminItemsRates() {
+	document.title = "Оцінки до товарів - Адміністративна панель - gigashop";
 
 	const { data, totalCount, initPage, initLimit, initSortBy, error } = useLoaderData() as {
 		data?: (ItemRate & {

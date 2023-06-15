@@ -83,7 +83,7 @@ const _whereHandler = (name?: string, description?: string,
                        amount?: number, amountFrom?: number, amountTo?: number,
                        discount?: boolean, discountFrom?: Date, discountTo?: Date,
                        discountSize?: number, discountSizeFrom?: number, discountSizeTo?: number,
-                       hide = true) => {
+                       hide = false) => {
     let where: {name?: {}, description?: {}, releaseDate?: {}, releaseDateFrom?: {}, releaseDateTo?: {},
         price?: {}, discount?: {}, discountFrom?: {}, discountTo?: {},
         amount?: {}, amountFrom?: {}, amountTo?: {},
@@ -191,9 +191,12 @@ const _whereHandler = (name?: string, description?: string,
             [Op.lte]: discountSizeTo
         };
     }
-    where.hide = {
-        [Op.or]: [false, hide]
+    if (hide) {
+        where.hide = {
+            [Op.or]: [false, hide]
+        };
     }
+    console.log({ hide, whereHide: where.hide });
 
     return where;
 }
@@ -206,9 +209,11 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
     if (includePublisher) {
         let where = {};
 
-        if (!includeHidden) {
+        if (includeHidden) {
             where = {
-                hide: false
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                }
             }
         }
         if (publisherId) {
@@ -230,9 +235,11 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         let where = {};
         let required = false;
 
-        where = {
-            hide: {
-                [Op.or]: [false, includeHidden]
+        if (includeHidden) {
+            where = {
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                }
             }
         }
         if (genresIds) {
@@ -258,9 +265,11 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
         let where = {};
         let required = false;
 
-        if (!includeHidden) {
+        if (includeHidden) {
             where = {
-                hide: false
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                }
             }
         }
         if (developersIds) {
@@ -305,6 +314,18 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
     }
 
     if (includeRated) {
+        let where = {};
+        if (includeHidden) {
+            where = {
+                hide: {
+                    [Op.or]: [false, includeHidden]
+                },
+                violation: {
+                    [Op.or]: [false, includeHidden]
+                }
+            }
+        }
+
         include.push({
             model: ItemRate,
             as: 'Rates',
@@ -313,14 +334,7 @@ let _includeHandler = (includePublisher: boolean, includeGenres: boolean, includ
                 as: 'User',
                 attributes: {exclude: ['password']},
             }],
-            where: {
-                hide: {
-                    [Op.or]: [false, includeHidden]
-                },
-                violation: {
-                    [Op.or]: [false, includeHidden]
-                }
-            },
+            where,
             required: false
         });
     }
@@ -369,6 +383,7 @@ const getItems = async ({name, description, releaseDate, releaseDateFrom, releas
                             includeDevelopers = false, developersIds,
                             includeWishlisted = false, includeInCart = false,
                             includeRated = true, includeHidden = false}: getAllItemsParams) => {
+    console.log({ includeHidden });
     const where   = _whereHandler(name, description, releaseDate, releaseDateFrom, releaseDateTo,
         price, priceFrom, priceTo, amount, amountFrom, amountTo,
         discount, discountFrom, discountTo, discountSize, discountSizeFrom, discountSizeTo, includeHidden)
@@ -379,10 +394,6 @@ const getItems = async ({name, description, releaseDate, releaseDateFrom, releas
     const items = await Item.findAll({
         where, limit, offset: limit * page, order: [[sortBy, descending ? "DESC" : "ASC"]], include
     });
-
-    console.log({
-        where, limit, offset: limit * page, order: [[sortBy, descending ? "DESC" : "ASC"]], include
-    })
 
     return {
         items,
