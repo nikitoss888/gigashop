@@ -35,6 +35,10 @@ jobs:
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/gigashop-server:v1.0
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/gigashop-client:v1.0
 
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials gigashop-cluster --zone europe-west1-b --project ${{ secrets.GCP_PROJECT_ID }}
+
       - name: Deploy to GKE
         run: |
           kubectl apply -f deployment.yaml
